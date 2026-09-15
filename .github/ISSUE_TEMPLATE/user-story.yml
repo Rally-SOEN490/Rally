@@ -1,0 +1,65 @@
+name: User story
+description: Plan a feature as an SOEN 490 user story
+title: "[Story] "
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: State the actor, goal, and outcome.
+      placeholder: As a user, I want to do Y, so I can accomplish Z.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List the observable conditions required for stakeholder signoff.
+    validations:
+      required: true
+  - type: input
+    id: points
+    attributes:
+      label: Story points
+      placeholder: "5"
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Domain risk
+      description: Describe the project or domain risk addressed by this story.
+    validations:
+      required: true
+  - type: input
+    id: feature
+    attributes:
+      label: Feature label
+      description: Name the GitHub label that groups this story.
+    validations:
+      required: true
+  - type: input
+    id: ideal_time
+    attributes:
+      label: Ideal task time
+      placeholder: 8 hours
+    validations:
+      required: true
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI-use acknowledgment
+      description: Name the AI tool and its contribution, or write None.
+    validations:
+      required: true
