@@ -20,7 +20,7 @@ The application stack has not been selected yet. Add installation, configuration
 
 ## Project planning
 
-- GitHub Project board: to be added after the board is created
+- [GitHub Project board](https://github.com/users/FrancoisMartinez/projects/5)
 - [Project documentation](docs/wiki/Home.md)
 - [Meeting minutes](docs/wiki/Meeting-Minutes.md)
 - [Risks](docs/wiki/Risks.md)
