@@ -19,6 +19,6 @@ SOEN 490 requires a brief AI-use acknowledgment on every issue, commit, and pull
 Add this notice at the top of each new source file, using the comment syntax of its language:
 
 ```text
-Copyright (c) 2026 FriedChicken contributors
+Copyright (c) 2026 Rally contributors
 SPDX-License-Identifier: MIT
 ```

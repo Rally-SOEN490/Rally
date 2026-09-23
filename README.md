@@ -1,6 +1,6 @@
-# FriedChicken
+# Rally
 
-FriedChicken is the SOEN 490 project and team repository. The project summary will be added after the proposal is approved.
+Rally is the SOEN 490 project and team repository. The project summary will be added after the proposal is approved.
 
 ## CI status
 
