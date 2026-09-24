@@ -1,6 +1,7 @@
 # Rally
 
-Rally is the SOEN 490 project and team repository. The project summary will be added after the proposal is approved.
+Rally, a **centralized volleyball tournament and community platform** designed to simplify tournament management and help players connect. This project is build as part of a Capstone project for SOEN 490. In this application, organizers can create tournaments, manage teams, brackets, scores, standings, and announcements, while players can build profiles, track their statistics, discover tournaments, and find teams with open positions. The platform brings tournament organization, player statistics, team formation, and community engagement together in one modern and user-friendly application **tailored to Montreal volleyball players and organizers**.
+
 
 ## CI status
 
