@@ -1,5 +1,7 @@
-## What changed
+## Summary
 
-## How it was tested
+## Testing
+
+## Screenshots
 
 ## AI-use acknowledgment

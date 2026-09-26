@@ -15,7 +15,7 @@ Create a short-lived branch for each issue. Reference the issue in commits, such
 
 Link the pull request to its issue from the Development section of the pull request sidebar. GitHub then moves the issue on the project board and closes it when the pull request merges.
 
-Fill in the pull request template and delete any section that does not apply. The reviewer confirms that what remains is enough. Keep the AI-use acknowledgment, writing `None` when no AI tool contributed.
+Fill in the pull request template and delete any section that does not apply, such as Screenshots for changes without a visible UI. The reviewer confirms that what remains is enough. Keep the AI-use acknowledgment, writing `None` when no AI tool contributed.
 
 Pull requests are squash merged. The pull request title becomes the commit title and the body becomes the commit message, so keep both accurate. A team member must review the pull request before merge.
 
