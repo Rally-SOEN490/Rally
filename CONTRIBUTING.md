@@ -11,7 +11,7 @@ Choose the issue form that matches the work:
 
 ## Branches and pull requests
 
-Create a short-lived branch for each issue. Reference the issue in commits, such as `Working on #12`.
+Create a short-lived branch for each issue and name it `<issue number>-<short-name>`, such as `12-team-registration`. The quickest way is **Create a branch** in the issue's Development section, which also links the branch to the issue. Do not rename a branch after opening its pull request, because GitHub closes the pull request. Reference the issue in commits, such as `Working on #12`.
 
 Link the pull request to its issue from the Development section of the pull request sidebar. GitHub then moves the issue on the project board and closes it when the pull request merges.
 
