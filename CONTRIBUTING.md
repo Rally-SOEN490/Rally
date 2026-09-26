@@ -4,10 +4,10 @@
 
 Choose the issue form that matches the work:
 
-- **Epic:** one parent issue per feature, with its stories as sub-issues.
-- **User story:** a user-facing outcome beneath its feature epic. Include the actor, goal, outcome, acceptance criteria, story points, priority, risk, and ideal time for each related task. Add the iteration milestone when the story is planned. Add links to commits, diagrams, discussion notes, and unit tests as work progresses, then record stakeholder signoff or its status.
-- **Task:** a substantial piece of a story or standalone work such as CI or deployment. Attach a story task beneath its story. Keep small steps in the story's checklist, with an ideal time for each. Standalone tasks have no epic parent.
-- **Bug:** a defect with steps to reproduce, expected and actual behaviour, and a way to verify the fix.
+- **Epic:** one parent issue per feature, with its feature label and its stories as sub-issues.
+- **User story:** a user-facing outcome beneath its feature epic. Include the actor, goal, outcome, acceptance criteria, risk, and a task plan. Add the feature label, and set Story points and Priority in the issue fields. Add the iteration milestone when the story is planned. Add links to diagrams, discussion notes, and related pull requests as work progresses, then record stakeholder signoff in a comment.
+- **Task:** a substantial piece of a story or standalone work such as CI or deployment. Attach a story task beneath its story. Keep small steps in the story's checklist. Set Ideal time in the issue fields. Standalone tasks have no epic parent.
+- **Bug:** a defect with steps to reproduce and its expected and actual behaviour.
 
 ## Branches and pull requests
 

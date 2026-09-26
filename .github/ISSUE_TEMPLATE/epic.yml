@@ -1,31 +1,12 @@
 name: Epic
 description: Group the user stories for one Rally feature
 title: "[Epic] "
-labels: ["epic"]
+type: Epic
 body:
   - type: markdown
     attributes:
       value: |
-        Create one epic per feature and attach its stories as sub-issues.
-  - type: dropdown
-    id: feature
-    attributes:
-      label: Feature label
-      description: Select the feature this epic covers.
-      options:
-        - Accounts
-        - PlayerProfile
-        - PlayerStats
-        - Teams
-        - Tournaments
-        - Brackets
-        - Results
-        - Discovery
-        - Notifications
-        - AIAssistant
-        - Platform
-    validations:
-      required: true
+        Create one epic per feature. Add the feature label and attach its stories as sub-issues.
   - type: textarea
     id: outcome
     attributes:
@@ -37,7 +18,7 @@ body:
     id: scope
     attributes:
       label: Scope and completion criteria
-      description: Summarize the planned stories and what would make this epic complete. Track the individual stories as sub-issues.
+      description: Describe what is in and out of scope, and what would make this epic complete. List the stories as sub-issues, not here.
     validations:
       required: true
   - type: textarea

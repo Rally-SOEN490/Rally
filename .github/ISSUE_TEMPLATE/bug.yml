@@ -1,7 +1,7 @@
 name: Bug
 description: Report behaviour that does not work as expected
 title: "[Bug] "
-labels: ["bug"]
+type: Bug
 body:
   - type: textarea
     id: actual
@@ -33,13 +33,6 @@ body:
     attributes:
       label: Context and evidence
       description: Add environment details, screenshots, logs, or links. Do not include private user data or credentials.
-    validations:
-      required: false
-  - type: textarea
-    id: verification
-    attributes:
-      label: Fix verification
-      description: Describe the regression test or manual check needed to confirm the fix.
     validations:
       required: false
   - type: textarea

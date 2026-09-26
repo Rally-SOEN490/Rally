@@ -16,7 +16,7 @@ Name the AI tool and its contribution, or write `None`.
 
 ## Checklist
 
-- [ ] The linked story has acceptance criteria, points, priority, risk, feature label, milestone, and ideal task time.
+- [ ] The linked story has acceptance criteria, risk, a feature label, a milestone, and Story points and Priority issue fields set.
 - [ ] New source files include the MIT notice.
 - [ ] Tests cover the change.
 - [ ] A reviewer other than the author has approved the change.

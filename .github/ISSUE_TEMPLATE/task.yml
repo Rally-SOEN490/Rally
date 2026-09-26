@@ -1,12 +1,12 @@
 name: Task
 description: Track a larger story task or standalone project work
 title: "[Task] "
-labels: ["task"]
+type: Task
 body:
   - type: markdown
     attributes:
       value: |
-        Attach this issue beneath its Story when it implements part of that story. For work such as CI, deployment, test data, or research, leave it standalone. Keep small steps in the Story checklist. Add a milestone when this task is planned for an iteration.
+        Attach this issue beneath its Story when it implements part of that story. For work such as CI, deployment, test data, or research, leave it standalone. Keep small steps in the Story checklist. Set Ideal time in the issue fields. Add a milestone when this task is planned for an iteration.
   - type: textarea
     id: objective
     attributes:
@@ -22,14 +22,6 @@ body:
       placeholder: |
         - [ ] The workflow runs on pull requests.
         - [ ] A failing test blocks merging.
-    validations:
-      required: true
-  - type: input
-    id: ideal_time
-    attributes:
-      label: Ideal time
-      description: Estimate the focused work time, excluding interruptions.
-      placeholder: 4h
     validations:
       required: true
   - type: textarea

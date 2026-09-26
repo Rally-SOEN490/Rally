@@ -1,31 +1,12 @@
 name: User story
 description: Plan a user-facing change for SOEN 490
 title: "[Story] "
-labels: ["user story"]
+type: User story
 body:
   - type: markdown
     attributes:
       value: |
-        Attach this story as a sub-issue of its feature epic. Add a milestone when the story is planned for an iteration. Keep small implementation steps as checkboxes below. A larger step may become a Task sub-issue of this story.
-  - type: dropdown
-    id: feature
-    attributes:
-      label: Feature label
-      description: Select the feature this story belongs to.
-      options:
-        - Accounts
-        - PlayerProfile
-        - PlayerStats
-        - Teams
-        - Tournaments
-        - Brackets
-        - Results
-        - Discovery
-        - Notifications
-        - AIAssistant
-        - Platform
-    validations:
-      required: true
+        Attach this story as a sub-issue of its feature epic and add its feature label. Set Story points and Priority in the issue fields. Add a milestone when the story is planned for an iteration. Keep small implementation steps as checkboxes below. A larger step may become a Task sub-issue of this story.
   - type: textarea
     id: story
     attributes:
@@ -44,25 +25,6 @@ body:
         - [ ] The schedule reflects organizer changes.
     validations:
       required: true
-  - type: input
-    id: points
-    attributes:
-      label: Story points
-      description: Enter the team's estimate.
-      placeholder: "5"
-    validations:
-      required: true
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      options:
-        - Critical
-        - High
-        - Medium
-        - Low
-    validations:
-      required: true
   - type: textarea
     id: risk
     attributes:
@@ -73,30 +35,29 @@ body:
   - type: textarea
     id: tasks
     attributes:
-      label: Task plan and ideal time
-      description: Estimate ideal hours for each related task. Keep small tasks as checkboxes. If a larger task becomes a Task sub-issue, replace its checklist line with an issue link and keep the estimate here.
+      label: Task plan
+      description: List the related tasks as checkboxes. If a larger task becomes a Task sub-issue, replace its checklist line with the issue link.
       placeholder: |
-        - [ ] Validate the match data (2h)
-        - [ ] Show the match in the schedule (3h)
-        - [ ] Add unit tests for schedule changes (1h)
-        - Task sub-issue: #123, generate the schedule (5h)
+        - [ ] Validate the match data
+        - [ ] Show the match in the schedule
+        - [ ] Add unit tests for schedule changes
+        - #123
     validations:
       required: true
   - type: textarea
-    id: evidence
+    id: references
     attributes:
-      label: Evidence and tests
-      description: Add links to commits, pull requests, architecture diagrams, discussion notes, and unit test files as the work progresses.
+      label: Related references
+      description: Link architecture diagrams, discussion notes, and pull requests that affect this story but do not close it. Pull requests that close this story appear under Development automatically.
       placeholder: |
-        Commits and PRs:
         Architecture or discussion notes:
-        Unit tests:
+        Related pull requests:
     validations:
       required: false
   - type: markdown
     attributes:
       value: |
-        When the story is ready, record stakeholder signoff in the issue and update its signoff label.
+        When the stakeholder signs off, record it in a comment on this issue.
   - type: textarea
     id: ai
     attributes:
