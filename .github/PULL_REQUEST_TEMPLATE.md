@@ -1,22 +1,7 @@
-## Related story
+## Summary
 
-Fixes #
+## Testing
 
-## What changed
-
-Describe the change and the engineering decisions behind it.
-
-## Verification
-
-List the automated and manual tests performed.
+## Screenshots
 
 ## AI-use acknowledgment
-
-Name the AI tool and its contribution, or write `None`.
-
-## Checklist
-
-- [ ] The linked story has acceptance criteria, points, priority, risk, feature label, milestone, and ideal task time.
-- [ ] New source files include the MIT notice.
-- [ ] Tests cover the change.
-- [ ] A reviewer other than the author has approved the change.

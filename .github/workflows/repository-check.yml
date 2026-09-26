@@ -18,9 +18,10 @@ jobs:
             LICENSE
             CONTRIBUTING.md
             admin/README.md
-            docs/wiki/Home.md
-            docs/wiki/Meeting-Minutes.md
-            docs/wiki/Risks.md
+            .github/ISSUE_TEMPLATE/epic.yml
+            .github/ISSUE_TEMPLATE/user-story.yml
+            .github/ISSUE_TEMPLATE/task.yml
+            .github/ISSUE_TEMPLATE/bug.yml
           )
           for path in "${required[@]}"; do
             test -f "$path" || { echo "Missing required file: $path"; exit 1; }

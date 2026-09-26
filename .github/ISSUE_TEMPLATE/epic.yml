@@ -1,0 +1,37 @@
+name: Epic
+description: Group the user stories for one Rally feature
+title: "[Epic] "
+type: Epic
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Create one epic per feature. Add the feature label and attach its stories as sub-issues.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Goal
+      description: What should users or organizers be able to do when this feature is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and completion criteria
+      description: Describe what is in and out of scope, and what would make this epic complete. List the stories as sub-issues, not here.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Open decisions and references
+      description: Link relevant backlog entries, stakeholder discussions, or architecture notes.
+    validations:
+      required: false
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI-use acknowledgment
+      description: Name the AI tool and what it contributed, or write None.
+    validations:
+      required: true

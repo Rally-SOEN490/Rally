@@ -1,14 +1,23 @@
 # Contributing
 
-## Issues and user stories
+## Issues
 
-Use the user-story issue form. Every story must include its actor, goal, outcome, acceptance criteria, story points, priority, domain risk, feature label, milestone, and ideal task time.
+Choose the issue form that matches the work:
+
+- **Epic:** one parent issue per feature, with its feature label and its stories as sub-issues.
+- **User story:** a user-facing outcome beneath its feature epic. Include the actor, goal, outcome, acceptance criteria, risk, and a task plan. Add the feature label, and set Story points and Priority in the issue fields. Add the iteration milestone when the story is planned. Add links to diagrams, discussion notes, and related pull requests as work progresses, then record stakeholder signoff in a comment.
+- **Task:** a substantial piece of a story or standalone work such as CI or deployment. Attach a story task beneath its story. Keep small steps in the story's checklist. Set Ideal time in the issue fields. Standalone tasks have no epic parent.
+- **Bug:** a defect with steps to reproduce and its expected and actual behaviour.
 
 ## Branches and pull requests
 
-Create a short-lived branch for each issue. Link commits and pull requests to the issue with its number, such as `Working on #12` or `Fixes #12`.
+Create a short-lived branch for each issue and name it `<issue number>-<short-name>`, such as `12-team-registration`. The quickest way is **Create a branch** in the issue's Development section, which also links the branch to the issue. Do not rename a branch after opening its pull request, because GitHub closes the pull request. Reference the issue in commits, such as `Working on #12`.
 
-Pull requests must explain the change, list the tests performed, and identify any AI assistance. A team member must review the pull request before merge.
+Link the pull request to its issue from the Development section of the pull request sidebar. GitHub then moves the issue on the project board and closes it when the pull request merges.
+
+Fill in the pull request template and delete any section that does not apply, such as Screenshots for changes without a visible UI. The reviewer confirms that what remains is enough. Keep the AI-use acknowledgment, writing `None` when no AI tool contributed.
+
+Pull requests are squash merged. The pull request title becomes the commit title and the body becomes the commit message, so keep both accurate. A team member must review the pull request before merge.
 
 ## AI acknowledgment
 
