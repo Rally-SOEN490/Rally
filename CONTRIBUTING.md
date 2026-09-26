@@ -1,8 +1,13 @@
 # Contributing
 
-## Issues and user stories
+## Issues
 
-Use the user-story issue form. Every story must include its actor, goal, outcome, acceptance criteria, story points, priority, domain risk, feature label, milestone, and ideal task time.
+Choose the issue form that matches the work:
+
+- **Epic:** one parent issue per feature, with its stories as sub-issues.
+- **User story:** a user-facing outcome beneath its feature epic. Include the actor, goal, outcome, acceptance criteria, story points, priority, risk, and ideal time for each related task. Add the iteration milestone when the story is planned. Add links to commits, diagrams, discussion notes, and unit tests as work progresses, then record stakeholder signoff or its status.
+- **Task:** a substantial piece of a story or standalone work such as CI or deployment. Attach a story task beneath its story. Keep small steps in the story's checklist, with an ideal time for each. Standalone tasks have no epic parent.
+- **Bug:** a defect with steps to reproduce, expected and actual behaviour, and a way to verify the fix.
 
 ## Branches and pull requests
 

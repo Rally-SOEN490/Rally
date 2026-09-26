@@ -1,26 +1,54 @@
 name: User story
-description: Plan a feature as an SOEN 490 user story
+description: Plan a user-facing change for SOEN 490
 title: "[Story] "
+labels: ["user story"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Attach this story as a sub-issue of its feature epic. Add a milestone when the story is planned for an iteration. Keep small implementation steps as checkboxes below. A larger step may become a Task sub-issue of this story.
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Feature label
+      description: Select the feature this story belongs to.
+      options:
+        - Accounts
+        - PlayerProfile
+        - PlayerStats
+        - Teams
+        - Tournaments
+        - Brackets
+        - Results
+        - Discovery
+        - Notifications
+        - AIAssistant
+        - Platform
+    validations:
+      required: true
   - type: textarea
     id: story
     attributes:
       label: User story
       description: State the actor, goal, and outcome.
-      placeholder: As a user, I want to do Y, so I can accomplish Z.
+      placeholder: As a player, I want to see my next match, so I can arrive at the right court on time.
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: List the observable conditions required for stakeholder signoff.
+      description: List observable conditions the stakeholder can review.
+      placeholder: |
+        - [ ] The player can see the court and start time for each upcoming match.
+        - [ ] The schedule reflects organizer changes.
     validations:
       required: true
   - type: input
     id: points
     attributes:
       label: Story points
+      description: Enter the team's estimate.
       placeholder: "5"
     validations:
       required: true
@@ -38,28 +66,41 @@ body:
   - type: textarea
     id: risk
     attributes:
-      label: Domain risk
-      description: Describe the project or domain risk addressed by this story.
+      label: Risk
+      description: What could prevent this story from working or being delivered? Include impact and how the team will check it.
     validations:
       required: true
-  - type: input
-    id: feature
+  - type: textarea
+    id: tasks
     attributes:
-      label: Feature label
-      description: Name the GitHub label that groups this story.
+      label: Task plan and ideal time
+      description: Estimate ideal hours for each related task. Keep small tasks as checkboxes. If a larger task becomes a Task sub-issue, replace its checklist line with an issue link and keep the estimate here.
+      placeholder: |
+        - [ ] Validate the match data (2h)
+        - [ ] Show the match in the schedule (3h)
+        - [ ] Add unit tests for schedule changes (1h)
+        - Task sub-issue: #123, generate the schedule (5h)
     validations:
       required: true
-  - type: input
-    id: ideal_time
+  - type: textarea
+    id: evidence
     attributes:
-      label: Ideal task time
-      placeholder: 8 hours
+      label: Evidence and tests
+      description: Add links to commits, pull requests, architecture diagrams, discussion notes, and unit test files as the work progresses.
+      placeholder: |
+        Commits and PRs:
+        Architecture or discussion notes:
+        Unit tests:
     validations:
-      required: true
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        When the story is ready, record stakeholder signoff in the issue and update its signoff label.
   - type: textarea
     id: ai
     attributes:
       label: AI-use acknowledgment
-      description: Name the AI tool and its contribution, or write None.
+      description: Name the AI tool and what it contributed, or write None.
     validations:
       required: true

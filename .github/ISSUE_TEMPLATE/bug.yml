@@ -1,0 +1,51 @@
+name: Bug
+description: Report behaviour that does not work as expected
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Describe the observed behaviour and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen?
+      description: Describe the expected behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the starting state and actions needed to see the bug.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and evidence
+      description: Add environment details, screenshots, logs, or links. Do not include private user data or credentials.
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Fix verification
+      description: Describe the regression test or manual check needed to confirm the fix.
+    validations:
+      required: false
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI-use acknowledgment
+      description: Name the AI tool and what it contributed, or write None.
+    validations:
+      required: true

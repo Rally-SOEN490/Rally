@@ -1,0 +1,56 @@
+name: Epic
+description: Group the user stories for one Rally feature
+title: "[Epic] "
+labels: ["epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Create one epic per feature and attach its stories as sub-issues.
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Feature label
+      description: Select the feature this epic covers.
+      options:
+        - Accounts
+        - PlayerProfile
+        - PlayerStats
+        - Teams
+        - Tournaments
+        - Brackets
+        - Results
+        - Discovery
+        - Notifications
+        - AIAssistant
+        - Platform
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Goal
+      description: What should users or organizers be able to do when this feature is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and completion criteria
+      description: Summarize the planned stories and what would make this epic complete. Track the individual stories as sub-issues.
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Open decisions and references
+      description: Link relevant backlog entries, stakeholder discussions, or architecture notes.
+    validations:
+      required: false
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI-use acknowledgment
+      description: Name the AI tool and what it contributed, or write None.
+    validations:
+      required: true
