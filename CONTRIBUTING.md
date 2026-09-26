@@ -13,9 +13,9 @@ Choose the issue form that matches the work:
 
 Create a short-lived branch for each issue. Reference the issue in commits, such as `Working on #12`.
 
-Start the pull request body with `Closes #12` so GitHub links it to the issue, moves the issue on the project board, and closes it on merge. For work that only covers part of a story, write `Part of #12` instead and link the pull request from the issue's Development section.
+Link the pull request to its issue from the Development section of the pull request sidebar. GitHub then moves the issue on the project board and closes it when the pull request merges.
 
-The pull request must explain the change, list the tests performed, and include an AI-use acknowledgment. The pull request check fails when the issue link or AI acknowledgment is missing. It also copies the issue's labels and milestone to the pull request.
+Fill in the pull request template and delete any section that does not apply. The reviewer confirms that what remains is enough. Keep the AI-use acknowledgment, writing `None` when no AI tool contributed.
 
 Pull requests are squash merged. The pull request title becomes the commit title and the body becomes the commit message, so keep both accurate. A team member must review the pull request before merge.
 
