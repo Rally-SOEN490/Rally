@@ -1,0 +1,40 @@
+name: Task
+description: Track a larger story task or standalone project work
+title: "[Task] "
+type: Task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Attach this issue beneath its Story when it implements part of that story. For work such as CI, deployment, test data, or research, leave it standalone. Keep small steps in the Story checklist. Set Ideal time in the issue fields. Add a milestone when this task is planned for an iteration.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Task
+      description: Describe the work and why it is needed. If it belongs to a Story, name that Story and attach this issue as its sub-issue.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: List the checks or deliverables that will show this task is complete.
+      placeholder: |
+        - [ ] The workflow runs on pull requests.
+        - [ ] A failing test blocks merging.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References and evidence
+      description: Link related decisions, diagrams, commits, pull requests, and tests as they become available.
+    validations:
+      required: false
+  - type: textarea
+    id: ai
+    attributes:
+      label: AI-use acknowledgment
+      description: Name the AI tool and what it contributed, or write None.
+    validations:
+      required: true
