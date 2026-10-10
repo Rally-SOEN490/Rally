@@ -5,8 +5,8 @@ The app is written once in React Native with Expo and TypeScript. The web versio
 ## Prerequisites
 
 - Node.js (current LTS)
-- To test on phone: expo go app
-- To test on ios simulator: Xcode with the iOS Simulator (macOS only, for iOS)
+- To test on phone: Download Expo Go app (phone and computer must be on the same Wi-Fi network)
+- To test on iOS simulator: Download Xcode from App Store on Mac. 
 
 ## Setup
 
@@ -23,11 +23,12 @@ Then:
 - Press `w` to open the web version in your browser.
 - Press `i` to open the iOS simulator.
 - Scan the QR code with Expo Go (Android) or the Camera app (iOS) to open it on your phone.
+- Press `Ctrl+C` in the terminal to stop the server.
 
 ## Troubleshooting
 
 **The UI doesn't update after stopping and restarting the server**
-Expo Go keeps showing the last bundle it loaded. Press `r` in the terminal to reload all connected devices. On web, refresh the browser tab.
+After you stop the server (`Ctrl+C`) and start it again, Expo Go keeps showing the last bundle it loaded. Press `r` in the terminal to reload all connected devices. On web, refresh the browser tab.
 
 **The UI still looks out of date**
 Restart with `npx expo start -c` to clear the Metro cache, then press `r`.
