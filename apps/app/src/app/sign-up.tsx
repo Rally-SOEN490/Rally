@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useState } from "react";
-import { AuthScreen, Button, Field, Social } from "@/components/auth";
+import { AuthScreen, Button, Field, Footer, Social } from "@/components/auth";
 import { auth } from "@/lib/firebase";
 
 export default function SignUp() {
@@ -21,6 +21,7 @@ export default function SignUp() {
       <Field icon="lock" placeholder="Confirm Password" secureTextEntry />
       <Button title="Sign up" onPress={signUp} />
       <Social />
+      <Footer text="Already a member?" label="Log in" href="/login" />
     </AuthScreen>
   );
 }

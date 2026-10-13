@@ -1,6 +1,7 @@
+import { Link } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView } from "expo-symbols";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { ImageBackground, Pressable, ScrollView, Text, TextInput, View, type TextInputProps } from "react-native";
 import { s, yellow } from "./styles";
 
@@ -52,4 +53,10 @@ export const Social = () => (
       <Text style={s.title}>G</Text>
     </Pressable>
   </>
+);
+
+export const Footer = ({ text, label, href }: { text: string; label: string; href: ComponentProps<typeof Link>["href"] }) => (
+  <Text style={s.muted}>
+    {text} <Link dismissTo href={href} style={s.link}>{label}</Link>
+  </Text>
 );
