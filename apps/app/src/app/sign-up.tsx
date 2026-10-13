@@ -10,8 +10,8 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const signUp = () =>
     createUserWithEmailAndPassword(auth, email, password)
-      .then(({ user }) => updateProfile(user, { displayName: name }))
-      .then(() => router.replace("/home"), (e) => alert(e.message));
+      .then(({ user }) => updateProfile(user, { displayName: name }).finally(() => router.replace("/home")))
+      .catch((e) => alert(e.message));
 
   return (
     <AuthScreen kicker="Welcome to Rally" title="Sign up">
