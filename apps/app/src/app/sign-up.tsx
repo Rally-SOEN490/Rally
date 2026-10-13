@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "firebase/auth";
 import { useState } from "react";
 import { AuthScreen, Button, Field, Footer, Social } from "@/components/auth";
 import { auth } from "@/lib/firebase";
@@ -12,7 +12,7 @@ export default function SignUp() {
   const signUp = () => {
     if (password !== confirm) return alert("Passwords don't match");
     createUserWithEmailAndPassword(auth, email, password)
-      .then(({ user }) => updateProfile(user, { displayName: name }).finally(() => router.replace("/home")))
+      .then(({ user }) => Promise.all([updateProfile(user, { displayName: name }), sendEmailVerification(user)]).finally(() => router.replace("/home")))
       .catch((e) => alert(e.message));
   };
 
