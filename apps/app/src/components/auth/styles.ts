@@ -18,4 +18,5 @@ export const s = StyleSheet.create({
   button: { backgroundColor: green, borderRadius: 10, padding: 12, alignItems: "center" },
   buttonText: { color: yellow, fontWeight: "600" },
   google: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", alignSelf: "center" },
+  link: { color: green, fontWeight: "700" },
 });
