@@ -1,6 +1,7 @@
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import { AuthScreen, Button, Field, Footer } from "@/components/auth";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 
 export default function RecoverAccount() {
@@ -8,7 +9,7 @@ export default function RecoverAccount() {
   const reset = () =>
     sendPasswordResetEmail(auth, email)
       .then(() => alert("Check your e-mail for a reset link"))
-      .catch((e) => alert(e.message));
+      .catch((e) => alert(authErrorMessage(e)));
 
   return (
     <AuthScreen

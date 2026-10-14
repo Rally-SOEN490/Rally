@@ -1,4 +1,4 @@
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
@@ -9,15 +9,17 @@ import {
   SocialLogin,
 } from "@/components/auth";
 import { styles } from "@/components/auth/styles";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // No navigation here: once signed in, the guards in _layout.tsx move you on.
   const login = () =>
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => router.replace("/home"))
-      .catch((e) => alert(e.message));
+    signInWithEmailAndPassword(auth, email, password).catch((e) =>
+      alert(authErrorMessage(e)),
+    );
 
   return (
     <AuthScreen greeting="Welcome back" title="Log in">
