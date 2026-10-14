@@ -17,6 +17,7 @@ const icons = {
   mail: { ios: "envelope", android: "mail", web: "mail" },
   lock: { ios: "lock", android: "lock", web: "lock" },
   person: { ios: "person", android: "person", web: "person" },
+  check: { ios: "checkmark", android: "check", web: "check" },
   ball: {
     ios: "volleyball",
     android: "sports_volleyball",
@@ -90,6 +91,35 @@ export const Button = ({
 }) => (
   <Pressable style={styles.button} onPress={onPress}>
     <Text style={styles.buttonText}>{title}</Text>
+  </Pressable>
+);
+
+export const Checkbox = ({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) => (
+  <Pressable
+    style={styles.checkboxRow}
+    onPress={() => onChange(!checked)}
+    accessibilityRole="checkbox"
+    accessibilityState={{ checked }}
+  >
+    <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+      {checked && (
+        <SymbolView
+          name={icons.check}
+          size={14}
+          tintColor={yellow}
+          style={styles.center}
+        />
+      )}
+    </View>
+    <Text style={styles.checkboxLabel}>{label}</Text>
   </Pressable>
 );
 

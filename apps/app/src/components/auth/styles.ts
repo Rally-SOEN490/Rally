@@ -88,6 +88,27 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignSelf: "center",
   },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: green,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: green,
+  },
+  checkboxLabel: {
+    flex: 1,
+    color: "#222",
+  },
   link: { 
     color: green, 
     fontWeight: "700" 
