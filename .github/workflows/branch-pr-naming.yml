@@ -1,0 +1,35 @@
+name: Naming conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  check-naming:
+    name: Check branch name and PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          pattern='^(feature|bug|doc)/RALLY-[0-9]+$'
+          if [[ ! "$BRANCH" =~ $pattern ]]; then
+            echo "::error title=Invalid branch name::'$BRANCH' does not match <prefix>/<ticket-ID>. Use feature/, bug/ or doc/ followed by the ticket ID, e.g. feature/RALLY-1024"
+            exit 1
+          fi
+          echo "Branch name '$BRANCH' is valid."
+
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^RALLY-[0-9]+: .+'
+          if [[ ! "$TITLE" =~ $pattern ]]; then
+            echo "::error title=Invalid PR title::'$TITLE' does not match 'RALLY-XXXX: Title', e.g. RALLY-1024: Add login page"
+            exit 1
+          fi
+          echo "PR title '$TITLE' is valid."
