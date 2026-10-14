@@ -8,7 +8,10 @@ export default function Home() {
   return (
     <SafeAreaView>
       <Text>Logged in as {auth.currentUser?.email}</Text>
-      <Button title="Log out" onPress={() => signOut(auth).then(() => router.replace("/login"))} />
+      <Button
+        title="Log out"
+        onPress={() => signOut(auth).then(() => router.replace("/login"))}
+      />
     </SafeAreaView>
   );
 }
