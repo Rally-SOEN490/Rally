@@ -50,6 +50,8 @@ const announcements = [
 ];
 
 export default function Home() {
+  const user = auth.currentUser;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -63,6 +65,8 @@ export default function Home() {
             <Text style={styles.headerAction}>Log out</Text>
           </Pressable>
         </View>
+
+        <Text style={styles.userText}>Logged in as {user?.email}</Text>
 
         <View style={styles.heroCard}>
           <View style={styles.heroPattern} />
@@ -164,6 +168,7 @@ export default function Home() {
         </View>
       </ScrollView>
     </SafeAreaView>
+
   );
 }
 
@@ -197,6 +202,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#1d2d2a",
     fontWeight: "700",
+  },
+  userText: {
+    fontSize: 14,
+    color: "#213933",
+    marginBottom: 14,
   },
   heroCard: {
     backgroundColor: "#1d4f43",
