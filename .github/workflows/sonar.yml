@@ -19,6 +19,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/app/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: apps/app
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: apps/app
+        run: npm run test:coverage
+
       - name: SonarQube Cloud scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:

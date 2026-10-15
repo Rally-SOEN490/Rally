@@ -14,7 +14,9 @@ export default function RootLayout() {
 // back to index, which redirects you to the right place.
 function RootNavigator() {
   const { user, isLoading } = useSession();
-  const signedOut = !isLoading && !user;
+  // Unlocked while loading too, so a link to /sign-up or /recover-account
+  // isn't bounced to Login before Firebase has answered.
+  const signedOut = !user;
   const unverified = !isLoading && !!user && !user.emailVerified;
   const verified = !isLoading && !!user?.emailVerified;
 
