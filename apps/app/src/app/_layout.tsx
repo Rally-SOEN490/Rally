@@ -33,6 +33,8 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={verified}>
         <Stack.Screen name="home" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="settings" />
       </Stack.Protected>
     </Stack>
   );

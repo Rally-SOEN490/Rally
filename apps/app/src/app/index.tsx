@@ -12,7 +12,7 @@ export default function Index() {
         <ActivityIndicator />
       </SafeAreaView>
     );
-  if (!user) return <Redirect href="/login" />;
-  if (!user.emailVerified) return <Redirect href="/verify-email" />;
-  return <Redirect href="/home" />;
+  if (!user) return <Redirect href={"/login" as any} />;
+  if (!user.emailVerified) return <Redirect href={"/verify-email" as any} />;
+  return <Redirect href={"/home" as any} />;
 }
