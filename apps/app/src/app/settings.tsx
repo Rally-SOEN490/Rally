@@ -23,7 +23,10 @@ import {
 } from "firebase/auth";
 import { apiErrorMessage, deleteMyAccount } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { apiErrorMessage, deleteMyAccount } from "@/lib/api";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
+import { useSession } from "@/lib/session";
 import { useSession } from "@/lib/session";
 
 // Alert.alert with buttons does nothing on web, so use window.confirm there.
@@ -51,6 +54,7 @@ const notify = (title: string, message: string) => {
 
 export default function Settings() {
   const { user } = useSession();
+  const { user } = useSession();
   const [announcementToggles, setAnnouncementToggles] = useState({
     tournamentAnnouncements: true,
     joinRequests: true,
@@ -59,6 +63,7 @@ export default function Settings() {
   const [colorBlindMode, setColorBlindMode] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
+  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
   const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -132,6 +137,10 @@ export default function Settings() {
     setPasswordPromptVisible(false);
     setPassword("");
     setPasswordError("");
+  const closePasswordPrompt = () => {
+    setPasswordPromptVisible(false);
+    setPassword("");
+    setPasswordError("");
   };
 
   const handleDeleteAccount = async () => {
@@ -141,8 +150,36 @@ export default function Settings() {
       "Yes, delete my account",
     );
     if (confirmed) setPasswordPromptVisible(true);
+    if (confirmed) setPasswordPromptVisible(true);
   };
 
+  // Deletes the account from Rally's database first, then from Firebase.
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser?.email) return;
+    setDeleting(true);
+    setPasswordError("");
+
+    try {
+      // Firebase only deletes logins that signed in recently, so check the
+      // password first. This way the deletion below can't be refused halfway.
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, credential);
+    } catch (e) {
+      setPasswordError(authErrorMessage(e));
+      setDeleting(false);
+      return;
+    }
+
+    try {
+      // If the second step fails, the person can still log in and try again,
+      // and deleting from Rally's database again is safe.
+      await deleteMyAccount(currentUser);
+      await deleteUser(currentUser); // also logs them out
+      router.replace("/login");
+    } catch (e) {
+      notify("Unable to delete account", apiErrorMessage(e));
+      setDeleting(false);
   // Deletes the account from Rally's database first, then from Firebase.
   const deleteAccount = async () => {
     const currentUser = auth.currentUser;
@@ -202,6 +239,7 @@ export default function Settings() {
               </View>
               <View style={styles.rowTextStack}>
                 <Text style={styles.rowLabel}>E-mail</Text>
+                <Text style={styles.rowValue}>{user?.email}</Text>
                 <Text style={styles.rowValue}>{user?.email}</Text>
               </View>
             </View>
@@ -352,8 +390,10 @@ export default function Settings() {
 
       <Modal
         visible={passwordPromptVisible}
+        visible={passwordPromptVisible}
         transparent
         animationType="fade"
+        onRequestClose={closePasswordPrompt}
         onRequestClose={closePasswordPrompt}
       >
         <View style={styles.modalBackdrop}>
@@ -371,8 +411,11 @@ export default function Settings() {
               style={styles.modalInput}
             />
             {!!passwordError && <Text style={styles.modalError}>{passwordError}</Text>}
+            {!!passwordError && <Text style={styles.modalError}>{passwordError}</Text>}
             <View style={styles.modalActions}>
               <Pressable
+                accessibilityRole="button"
+                onPress={closePasswordPrompt}
                 accessibilityRole="button"
                 onPress={closePasswordPrompt}
                 style={styles.inlineAction}
@@ -380,6 +423,11 @@ export default function Settings() {
                 <Text style={styles.inlineActionText}>Cancel</Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete my account"
+                onPress={deleteAccount}
+                disabled={!password || deleting}
+                style={[styles.modalDelete, (!password || deleting) && { opacity: 0.5 }]}
                 accessibilityRole="button"
                 accessibilityLabel="Delete my account"
                 onPress={deleteAccount}

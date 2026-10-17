@@ -39,6 +39,7 @@ export const AuthScreen = ({
   <ImageBackground
     source={require("@/assets/images/auth-background.jpg")}
     style={styles.screen}
+    imageStyle={styles.backgroundImage}
   >
     <ScrollView
       contentContainerStyle={styles.content}

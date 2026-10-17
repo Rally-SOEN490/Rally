@@ -1,0 +1,61 @@
+
+name: Auto-number RALLY issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+# Process issues sequentially to avoid duplicate numbers
+concurrency:
+  group: rally-numbering
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  assign-number:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign next RALLY number
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Get all existing issues, including closed ones
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              { owner, repo, state: 'all', per_page: 100 }
+            );
+
+            // Extract RALLY numbers, ignoring pull requests
+            const rallyNumbers = issues
+              .filter(issue =>
+                !issue.pull_request &&
+                issue.number !== context.issue.number
+              )
+              .map(issue => issue.title.match(/^RALLY-(\d+)\b/i))
+              .filter(Boolean)
+              .map(match => Number(match[1]));
+
+            if (rallyNumbers.length === 0) {
+              throw new Error("No existing RALLY numbers found.");
+            }
+
+            // Find the next RALLY number
+            const next = Math.max(...rallyNumbers) + 1;
+
+            // Remove any manually entered RALLY prefix
+            const originalTitle = context.payload.issue.title
+              .replace(/^RALLY-\d+\s*:?\s*/i, '')
+              .trim();
+
+            // Rename the issue
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: context.issue.number,
+              title: `RALLY-${next}: ${originalTitle}`
+            });

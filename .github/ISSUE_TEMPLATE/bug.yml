@@ -1,6 +1,5 @@
 name: Bug
 description: Report behaviour that does not work as expected
-title: "[Bug] "
 type: Bug
 body:
   - type: textarea

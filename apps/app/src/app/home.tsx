@@ -1,12 +1,12 @@
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "@/lib/session";
 
-const navItems = [
-  { label: "Home", active: false },
+const navItems: { label: string; active: boolean; action?: Href }[] = [
+  { label: "Home", active: true },
   { label: "Events", active: false },
-  { label: "Search", active: true },
+  { label: "Search", active: false },
   { label: "Notifications", active: false },
   { label: "You", active: false, action: "/profile" },
 ];
@@ -29,8 +29,8 @@ const announcements = [
 ];
 
 export default function Home() {
-  const { user } = useSession();
-  const playerName = user?.displayName ?? "Chau";
+  // The guards in _layout.tsx only show Home to someone with a Rally account.
+  const { account } = useSession();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -42,7 +42,12 @@ export default function Home() {
 
           <View style={styles.heroCard}>
             <Text style={styles.heroTitle}>Welcome back,</Text>
-            <Text style={styles.heroName}>{playerName}</Text>
+            <Text style={styles.heroName}>{account?.displayName}</Text>
+            {account && (
+              <Text style={styles.heroNote}>
+                Member since {new Date(account.createdAt).toLocaleDateString()}
+              </Text>
+            )}
           </View>
 
           <View style={styles.sectionCard}>
@@ -131,13 +136,13 @@ export default function Home() {
 
       <View style={styles.navBar}>
         {navItems.map((item) => {
-          const isActive = item.label === "Search";
+          const isActive = item.active;
           return (
             <Pressable
               key={item.label}
               style={[styles.navItem, isActive && styles.navItemActive]}
               onPress={() => {
-                if (item.action) router.push(item.action as any);
+                if (item.action) router.push(item.action);
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
@@ -199,6 +204,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     color: "#f5f3ef",
+  },
+  heroNote: {
+    fontSize: 14,
+    color: "#c9d6d0",
+    marginTop: 8,
   },
   sectionCard: {
     backgroundColor: "#f2f0ed",

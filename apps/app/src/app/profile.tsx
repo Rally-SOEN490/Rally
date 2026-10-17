@@ -26,8 +26,8 @@ const results = [
 ];
 
 export default function Profile() {
-  const { user } = useSession();
-  const playerName = user?.displayName ?? "Maya Tremblay";
+  // The guards in _layout.tsx only show Profile to someone with a Rally account.
+  const { account } = useSession();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -36,7 +36,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open settings"
-            onPress={() => router.push("/settings" as any)}
+            onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
             <Text style={styles.gearIcon}>⚙️</Text>
@@ -47,7 +47,7 @@ export default function Profile() {
           <View style={styles.avatarBadge}>
             <Text style={styles.avatarText}>M</Text>
           </View>
-          <Text style={styles.playerName}>{playerName}</Text>
+          <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
         </View>
 
