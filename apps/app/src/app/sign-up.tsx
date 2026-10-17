@@ -12,6 +12,7 @@ import {
   Footer,
   SocialLogin,
 } from "@/components/auth";
+import { ApiError, saveNewUser } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 
@@ -24,18 +25,20 @@ export default function SignUp() {
   // No navigation here: once the account exists, the guards in _layout.tsx
   // move you to the "verify your email" screen.
   const signUp = () => {
+    if (!name.trim()) return alert("Please enter your name.");
     if (password !== confirmPassword) return alert("Passwords don't match");
     if (!isOldEnough)
       return alert("You must be 14 or older to create a Rally account.");
-    // TODO: send the age confirmation to the backend once it exists.
     createUserWithEmailAndPassword(auth, email, password)
       .then(({ user }) =>
         Promise.all([
           updateProfile(user, { displayName: name }),
           sendEmailVerification(user),
+          // Saves the account and the age confirmation in Rally's database.
+          saveNewUser(user, name),
         ]),
       )
-      .catch((e) => alert(authErrorMessage(e)));
+      .catch((e) => alert(e instanceof ApiError ? e.message : authErrorMessage(e)));
   };
 
   return (

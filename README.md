@@ -5,7 +5,7 @@ Rally, a **centralized volleyball tournament and community platform** designed t
 
 ## CI status
 
-GitHub Actions checks that the required repository files remain present. Project-specific build and test jobs will be added after the team chooses the implementation stack.
+GitHub Actions checks that the required repository files remain present, and type-checks and tests the API against PostgreSQL.
 
 ## Release demos
 
@@ -17,7 +17,10 @@ GitHub Actions checks that the required repository files remain present. Project
 
 ## Developer setup
 
-The application stack has not been selected yet. Add installation, configuration, test, and local startup instructions here before implementation begins.
+Rally has two parts. Set up the API first, then the app:
+
+1. [API and database](apps/api/README.md) (`apps/api`): Fastify, PostgreSQL and Prisma.
+2. [App](apps/app/README.md) (`apps/app`): React Native with Expo.
 
 ## Project planning
 
