@@ -7,6 +7,12 @@ export const styles = StyleSheet.create({
   screen: { 
     flex: 1
   },
+  // On the web the photo is drawn at its full size (1838 × 3840) unless we
+  // say otherwise, so only its black top-left corner is visible.
+  backgroundImage: {
+    width: "100%",
+    height: "100%",
+  },
   content: { 
     padding: 16, 
     paddingTop: 85 
