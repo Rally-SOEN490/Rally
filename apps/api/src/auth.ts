@@ -26,7 +26,8 @@ export const firebaseTokenVerifier = (projectId: string): VerifyIdToken => {
 export const requireUser =
   (verifyIdToken: VerifyIdToken) =>
   async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = /^Bearer (.+)$/.exec(request.headers.authorization ?? "")?.[1];
+    // "Bearer" may be written in any case, as the HTTP standard allows.
+    const token = /^Bearer (.+)$/i.exec(request.headers.authorization ?? "")?.[1];
     if (!token) return reply.code(401).send({ message: "Log in to continue." });
     try {
       request.firebaseUid = (await verifyIdToken(token)).uid;

@@ -39,6 +39,24 @@ describe("POST /users/me", () => {
     expect(await testDb.user.count()).toBe(1);
   });
 
+  test("is safe when the same sign-up arrives several times at once", async () => {
+    // For example, a double tap on "Continue".
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () => register("alice", { displayName: "Alice", ageConfirmed: true })),
+    );
+
+    expect(responses.map((response) => response.statusCode)).toEqual([200, 200, 200, 200, 200]);
+    expect(new Set(responses.map((response) => response.json().id)).size).toBe(1);
+    expect(await testDb.user.count()).toBe(1);
+  });
+
+  test("accepts accents and emoji in names", async () => {
+    const response = await register("alice", { displayName: "Zoé 🏐 Nguyễn", ageConfirmed: true });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().displayName).toBe("Zoé 🏐 Nguyễn");
+  });
+
   test("rejects a request without a token", async () => {
     const response = await app.inject({
       method: "POST",
@@ -66,10 +84,13 @@ describe("POST /users/me", () => {
     ["the name is blank", { displayName: "   ", ageConfirmed: true }],
     ["the name is missing", { ageConfirmed: true }],
     ["the name is too long", { displayName: "a".repeat(101), ageConfirmed: true }],
+    ["the name has an invisible character", { displayName: "a\u0000b", ageConfirmed: true }],
+    ["the name has a line break", { displayName: "Alice\nBob", ageConfirmed: true }],
   ])("rejects the request when %s", async (_, body) => {
     const response = await register("alice", body);
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
     expect(await testDb.user.count()).toBe(0);
   });
 });
@@ -95,6 +116,18 @@ describe("GET /users/me", () => {
     const response = await app.inject({ method: "GET", url: "/users/me" });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  test("accepts 'bearer' written in lower case", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: { authorization: "bearer token-alice" },
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 });
 

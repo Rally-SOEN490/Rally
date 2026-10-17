@@ -27,8 +27,13 @@ export const userRoutes: FastifyPluginAsync<{
           type: "object",
           required: ["displayName", "ageConfirmed"],
           properties: {
-            // At least one character that isn't a space.
-            displayName: { type: "string", maxLength: 100, pattern: "\\S" },
+            // At least one character that isn't a space, and no invisible
+            // control characters (PostgreSQL can't store some of them).
+            displayName: {
+              type: "string",
+              maxLength: 100,
+              pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
+            },
             ageConfirmed: { const: true },
           },
         },
