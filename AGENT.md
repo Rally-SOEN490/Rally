@@ -19,7 +19,7 @@ Rally uses:
 - Expo and React Native, web first.
 - TypeScript for the application and backend.
 - Fastify feature modules within one backend.
-- MongoDB through Mongoose.
+- PostgreSQL through Prisma. This replaced MongoDB in October 2026: Rally's data is relational, and PostgreSQL enforces foreign keys, uniqueness and transactions in the database.
 - Firebase Authentication.
 - Cloudflare R2 for images.
 - Resend for application email.
@@ -29,7 +29,7 @@ Do not introduce a new framework, database, service, or messaging system without
 
 ## Code Boundaries
 
-- Screens call the API; they never access MongoDB.
+- Screens call the API; they never access the database.
 - Routes validate requests and call application services.
 - Services coordinate permissions, domain operations, and transactions.
 - Tournament algorithms remain independent of framework and provider SDKs.

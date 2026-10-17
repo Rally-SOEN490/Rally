@@ -14,6 +14,21 @@ jobs:
   sonar:
     name: Analyze
     runs-on: ubuntu-latest
+    # A temporary PostgreSQL for the API tests.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: rally
+          POSTGRES_PASSWORD: rally
+          POSTGRES_DB: rally_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rally"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,14 +38,32 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: apps/app/package-lock.json
+          cache-dependency-path: |
+            apps/app/package-lock.json
+            apps/api/package-lock.json
 
       - name: Install app dependencies
         working-directory: apps/app
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run app tests with coverage
         working-directory: apps/app
+        run: npm run test:coverage
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Type-check the API
+        working-directory: apps/api
+        run: npm run typecheck
+
+      - name: Run API tests with coverage
+        working-directory: apps/api
+        env:
+          # The tests only use TEST_DATABASE_URL. DATABASE_URL just has to be different.
+          DATABASE_URL: postgresql://rally:rally@localhost:5432/rally
+          TEST_DATABASE_URL: postgresql://rally:rally@localhost:5432/rally_test
         run: npm run test:coverage
 
       - name: SonarQube Cloud scan

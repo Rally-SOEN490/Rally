@@ -6,6 +6,7 @@ import { sendEmailVerification, signOut, type User } from "firebase/auth";
 import VerifyEmail from "@/app/verify-email";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
+import { fakeSession } from "../fake-session";
 
 jest.mock("firebase/auth", () => ({
   sendEmailVerification: jest.fn(),
@@ -18,7 +19,7 @@ const user = { email: "sam@example.com", emailVerified: false } as User;
 const refresh = jest.fn();
 
 const renderVerifyEmail = (signedInUser: User | null = user) => {
-  jest.mocked(useSession).mockReturnValue({ user: signedInUser, isLoading: false, refresh });
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user: signedInUser, refresh }));
   return render(<VerifyEmail />);
 };
 

@@ -13,12 +13,16 @@ export default function RootLayout() {
 // while you're on that screen (e.g. you log in or out), Expo Router sends you
 // back to index, which redirects you to the right place.
 function RootNavigator() {
-  const { user, isLoading } = useSession();
+  const { user, isLoading, account } = useSession();
   // Unlocked while loading too, so a link to /sign-up or /recover-account
   // isn't bounced to Login before Firebase has answered.
   const signedOut = !user;
   const unverified = !isLoading && !!user && !user.emailVerified;
   const verified = !isLoading && !!user?.emailVerified;
+  // Verified, but Rally's database has no account for them yet (for example,
+  // saving it failed during sign-up).
+  const needsAccount = verified && account === null;
+  const hasAccount = verified && !!account;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -31,7 +35,10 @@ function RootNavigator() {
       <Stack.Protected guard={unverified}>
         <Stack.Screen name="verify-email" />
       </Stack.Protected>
-      <Stack.Protected guard={verified}>
+      <Stack.Protected guard={needsAccount}>
+        <Stack.Screen name="finish-setup" />
+      </Stack.Protected>
+      <Stack.Protected guard={hasAccount}>
         <Stack.Screen name="home" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="settings" />
