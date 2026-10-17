@@ -1,6 +1,5 @@
 name: Task
 description: Track a larger story task or standalone project work
-title: "[Task] "
 type: Task
 body:
   - type: markdown
