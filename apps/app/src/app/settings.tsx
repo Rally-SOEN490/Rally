@@ -18,8 +18,12 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   signOut,
+  updatePassword,
+  verifyBeforeUpdateEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { authErrorMessage } from "@/lib/auth-errors";
+import { useSession } from "@/lib/session";
 
 // Alert.alert with buttons does nothing on web, so use window.confirm there.
 const confirmAsync = (title: string, message: string, confirmText: string) =>
@@ -56,6 +60,62 @@ export default function Settings() {
   const [reauthVisible, setReauthVisible] = useState(false);
   const [password, setPassword] = useState("");
   const [reauthError, setReauthError] = useState("");
+
+  const { user } = useSession();
+  const [editing, setEditing] = useState<null | "email" | "password">(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const [confirmValue, setConfirmValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const closeEdit = () => {
+    setEditing(null);
+    setCurrentPassword("");
+    setNewValue("");
+    setConfirmValue("");
+    setEditError("");
+  };
+
+  const handleSaveEdit = async () => {
+    const current = auth.currentUser;
+    if (!current?.email || !editing) return;
+    const value = newValue.trim();
+
+    if (editing === "email" && value.toLowerCase() === current.email.toLowerCase()) {
+      setEditError("That's already your e-mail.");
+      return;
+    }
+    if (editing === "password" && value !== confirmValue) {
+      setEditError("Passwords don't match.");
+      return;
+    }
+
+    setSaving(true);
+    setEditError("");
+    try {
+      await reauthenticateWithCredential(
+        current,
+        EmailAuthProvider.credential(current.email, currentPassword),
+      );
+      if (editing === "email") {
+        await verifyBeforeUpdateEmail(current, value);
+        closeEdit();
+        notify(
+          "Check your new inbox",
+          `We sent a verification link to ${value}. Your e-mail will change once you click it.`,
+        );
+      } else {
+        await updatePassword(current, newValue);
+        closeEdit();
+        notify("Password updated", "Your password has been changed.");
+      }
+    } catch (e) {
+      setEditError(authErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -132,18 +192,22 @@ export default function Settings() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account & login</Text>
 
-          <View style={styles.rowItem}>
+          <Pressable
+            style={styles.rowItem}
+            accessibilityRole="button"
+            onPress={() => setEditing("email")}
+          >
             <View style={styles.rowLeft}>
               <View style={styles.iconBadge}>
                 <Text style={styles.iconText}>✉️</Text>
               </View>
               <View style={styles.rowTextStack}>
                 <Text style={styles.rowLabel}>E-mail</Text>
-                <Text style={styles.rowValue}>maya.tremblay@gmail.com</Text>
+                <Text style={styles.rowValue}>{user?.email}</Text>
               </View>
             </View>
             <Text style={styles.rowChevron}>›</Text>
-          </View>
+          </Pressable>
 
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
@@ -152,10 +216,10 @@ export default function Settings() {
               </View>
               <View style={styles.rowTextStack}>
                 <Text style={styles.rowLabel}>Password</Text>
-                <Text style={styles.rowValue}>Last changed Mar 2026</Text>
+                <Text style={styles.rowValue}>••••••••</Text>
               </View>
             </View>
-            <Pressable accessibilityRole="button" style={styles.inlineAction}>
+            <Pressable accessibilityRole="button" style={styles.inlineAction} onPress={() => setEditing("password")}>
               <Text style={styles.inlineActionText}>Change</Text>
             </Pressable>
           </View>
@@ -320,6 +384,77 @@ export default function Settings() {
                 style={[styles.modalDelete, !password && { opacity: 0.5 }]}
               >
                 <Text style={styles.modalDeleteText}>Delete account</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={editing !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeEdit}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {editing === "email" ? "Change e-mail" : "Change password"}
+            </Text>
+            <Text style={styles.rowValue}>
+              {editing === "email"
+                ? "Enter your current password and your new e-mail. We'll send a verification link to the new address."
+                : "Enter your current password, then choose a new one."}
+            </Text>
+            <TextInput
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Current password"
+              style={styles.modalInput}
+            />
+            <TextInput
+              value={newValue}
+              onChangeText={setNewValue}
+              secureTextEntry={editing === "password"}
+              autoCapitalize="none"
+              keyboardType={editing === "email" ? "email-address" : "default"}
+              placeholder={editing === "email" ? "New e-mail address" : "New password"}
+              style={styles.modalInput}
+            />
+            {editing === "password" && (
+              <TextInput
+                value={confirmValue}
+                onChangeText={setConfirmValue}
+                secureTextEntry
+                autoCapitalize="none"
+                placeholder="Confirm new password"
+                style={styles.modalInput}
+              />
+            )}
+            {!!editError && <Text style={styles.modalError}>{editError}</Text>}
+            <View style={styles.modalActions}>
+              <Pressable onPress={closeEdit} style={styles.inlineAction}>
+                <Text style={styles.inlineActionText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSaveEdit}
+                disabled={
+                  saving ||
+                  !currentPassword ||
+                  !newValue ||
+                  (editing === "password" && !confirmValue)
+                }
+                style={[
+                  styles.modalSave,
+                  (saving ||
+                    !currentPassword ||
+                    !newValue ||
+                    (editing === "password" && !confirmValue)) && { opacity: 0.5 },
+                ]}
+              >
+                <Text style={styles.modalSaveText}>{saving ? "Saving…" : "Save"}</Text>
               </Pressable>
             </View>
           </View>
@@ -555,6 +690,16 @@ const styles = StyleSheet.create({
   },
   modalDeleteText: {
     color: "#fff",
+    fontWeight: "700",
+  },
+  modalSave: {
+  backgroundColor: "#12382d",
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  },
+  modalSaveText: {
+    color: "#f5f3ef",
     fontWeight: "700",
   },
 });
