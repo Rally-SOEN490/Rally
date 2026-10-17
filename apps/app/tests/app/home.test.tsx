@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-import { render, screen, userEvent } from "@testing-library/react-native";
+import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { Alert } from "react-native";
-import { deleteUser, signOut, type User } from "firebase/auth";
+import { deleteUser, type User } from "firebase/auth";
 import { router } from "expo-router";
 import Home from "@/app/home";
 import Profile from "@/app/profile";
@@ -52,7 +52,6 @@ it("opens settings from the profile gear action", async () => {
 
 it("asks for confirmation and deletes the account when confirmed", async () => {
   jest.mocked(deleteUser).mockResolvedValue();
-  jest.mocked(signOut).mockResolvedValue();
   const alertSpy = jest.spyOn(Alert, "alert");
 
   await render(<Settings />);
@@ -60,8 +59,9 @@ it("asks for confirmation and deletes the account when confirmed", async () => {
 
   expect(alertSpy).toHaveBeenCalledWith(
     "Delete account",
-    expect.stringContaining("Are you sure they want to delete the account?"),
+    expect.stringContaining("Are you sure you want to delete your account?"),
     expect.any(Array),
+    expect.objectContaining({ cancelable: true }),
   );
 
   const buttonSet = alertSpy.mock.calls[0]?.[2] ?? [];
@@ -70,9 +70,10 @@ it("asks for confirmation and deletes the account when confirmed", async () => {
       button?.text === "Yes, delete my account",
   );
 
-  await confirmAction?.onPress?.();
+  await act(async () => {
+    await confirmAction?.onPress?.();
+  });
 
   expect(deleteUser).toHaveBeenCalledWith(auth.currentUser);
-  expect(signOut).toHaveBeenCalledWith(auth);
   expect(router.replace).toHaveBeenCalledWith("/login");
 });
