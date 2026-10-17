@@ -1,6 +1,5 @@
 name: Epic
 description: Group the user stories for one Rally feature
-title: "[Epic] "
 type: Epic
 body:
   - type: markdown

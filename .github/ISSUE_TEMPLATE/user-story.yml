@@ -1,6 +1,5 @@
 name: User story
 description: Plan a user-facing change for SOEN 490
-title: "[Story] "
 type: User story
 body:
   - type: markdown
