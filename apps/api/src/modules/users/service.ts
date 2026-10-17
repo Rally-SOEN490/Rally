@@ -28,4 +28,11 @@ export const createUserService = (users: UserRepository) => ({
     const user = await users.findByFirebaseUid(firebaseUid);
     return user ? toResponse(user) : null;
   },
+
+  // Removes everything Rally stores about the person. Once users have teams and
+  // results, this must keep match history but replace their name with "Deleted
+  // player" (see the architecture page on the Wiki).
+  remove: async (firebaseUid: string) => {
+    await users.deleteByFirebaseUid(firebaseUid);
+  },
 });

@@ -41,4 +41,10 @@ export const userRoutes: FastifyPluginAsync<{
     const user = await users.getCurrent(request.firebaseUid);
     return user ?? reply.code(404).send({ message: "No Rally account found." });
   });
+
+  // Deletes the logged-in person's Rally data. The app then deletes their Firebase login.
+  app.delete("/me", async (request, reply) => {
+    await users.remove(request.firebaseUid);
+    return reply.code(204).send();
+  });
 };

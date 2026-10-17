@@ -21,6 +21,10 @@ export const createUserRepository = (db: Database) => ({
       create: user,
       update: {},
     }),
+
+  // Does nothing if the user is already gone, so retrying a deletion is safe.
+  deleteByFirebaseUid: (firebaseUid: string) =>
+    db.user.deleteMany({ where: { firebaseUid } }),
 });
 
 export type UserRepository = ReturnType<typeof createUserRepository>;

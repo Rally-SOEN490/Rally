@@ -97,3 +97,35 @@ describe("GET /users/me", () => {
     expect(response.statusCode).toBe(401);
   });
 });
+
+describe("DELETE /users/me", () => {
+  const remove = (uid: string) =>
+    app.inject({ method: "DELETE", url: "/users/me", headers: authHeader(uid) });
+
+  test("deletes the logged-in user and nobody else", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    const response = await remove("alice");
+
+    expect(response.statusCode).toBe(204);
+    expect(response.body).toBe("");
+    const remaining = await testDb.user.findMany();
+    expect(remaining.map((user) => user.firebaseUid)).toEqual(["bob"]);
+  });
+
+  test("is safe to retry when the user is already gone", async () => {
+    const response = await remove("alice");
+
+    expect(response.statusCode).toBe(204);
+  });
+
+  test("rejects a request without a token", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const response = await app.inject({ method: "DELETE", url: "/users/me" });
+
+    expect(response.statusCode).toBe(401);
+    expect(await testDb.user.count()).toBe(1);
+  });
+});

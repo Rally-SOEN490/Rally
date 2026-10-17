@@ -24,7 +24,8 @@ export const buildApp = async ({
   logger = false,
 }: AppOptions) => {
   const app = Fastify({ logger });
-  await app.register(cors, { origin: corsOrigins });
+  // Browsers only send the request methods listed here.
+  await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "DELETE"] });
   app.decorateRequest("firebaseUid", "");
 
   await app.register(healthRoutes, { db });
