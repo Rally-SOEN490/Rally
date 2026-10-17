@@ -10,6 +10,7 @@
     "dev": "node --watch src/server.ts",
     "start": "node src/server.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
     "prisma": "7.10.0",
     "typescript": "6.0.3",
     "vitest": "5.0.5"

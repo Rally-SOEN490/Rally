@@ -35,6 +35,7 @@ After pulling new code, run `npm install` and `npm run db:deploy` in case someon
 | --- | --- |
 | `npm run dev` | Starts the API and restarts it when files change |
 | `npm test` | Runs the tests against the separate `rally_test` database |
+| `npm run test:coverage` | Runs the tests and shows which lines they cover (full report in `coverage/`) |
 | `npm run typecheck` | Checks the TypeScript types |
 | `npm run db:deploy` | Applies new migrations to your database |
 | `npm run db:migrate -- --name <name>` | Creates a migration after you change the schema |
@@ -57,6 +58,7 @@ prisma/
 src/
   server.ts            starts the API
   app.ts               puts the routes together (tests use this without starting a server)
+  config.ts            reads the settings from .env
   auth.ts              checks the Firebase login token
   db.ts                connects to PostgreSQL
   health.ts            GET /health

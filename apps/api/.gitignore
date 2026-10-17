@@ -4,3 +4,4 @@ dist/
 
 # Created by `prisma generate` (runs automatically after `npm install`).
 /src/generated/
+coverage/
