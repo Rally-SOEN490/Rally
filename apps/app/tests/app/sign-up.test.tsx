@@ -67,19 +67,16 @@ it("saves the new account in Rally's database", async () => {
   expect(saveNewUser).toHaveBeenCalledWith(newUser, "Sam Lee");
 });
 
-it("shows the server's message when the account can't be saved", async () => {
-  jest
-    .mocked(saveNewUser)
-    .mockRejectedValue(new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again."));
+it("still finishes signing up when the account can't be saved yet", async () => {
+  // The "Finish setting up" screen asks again after the email is verified.
+  jest.mocked(saveNewUser).mockRejectedValue(new ApiError(0, "Can't reach the Rally server."));
   await renderSignUp();
   await fillInForm();
   await submit();
 
-  await waitFor(() =>
-    expect(alert).toHaveBeenCalledWith(
-      "Can't reach the Rally server. Check your internet connection and try again.",
-    ),
-  );
+  await waitFor(() => expect(saveNewUser).toHaveBeenCalled());
+  expect(sendEmailVerification).toHaveBeenCalledWith(newUser);
+  expect(alert).not.toHaveBeenCalled();
 });
 
 it("asks for a name before creating the account", async () => {

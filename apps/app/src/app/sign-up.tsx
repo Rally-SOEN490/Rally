@@ -12,7 +12,7 @@ import {
   Footer,
   SocialLogin,
 } from "@/components/auth";
-import { ApiError, saveNewUser } from "@/lib/api";
+import { saveNewUser } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 
@@ -34,11 +34,13 @@ export default function SignUp() {
         Promise.all([
           updateProfile(user, { displayName: name }),
           sendEmailVerification(user),
-          // Saves the account and the age confirmation in Rally's database.
-          saveNewUser(user, name),
+          // Saves the account and the age confirmation in Rally's database. If
+          // that fails, the "Finish setting up" screen asks again once the
+          // email is verified, so there's no need to show an error here.
+          saveNewUser(user, name).catch(() => {}),
         ]),
       )
-      .catch((e) => alert(e instanceof ApiError ? e.message : authErrorMessage(e)));
+      .catch((e) => alert(authErrorMessage(e)));
   };
 
   return (

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import type { User } from "firebase/auth";
-import { ApiError, getMyAccount, saveNewUser } from "@/lib/api";
+import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser } from "@/lib/api";
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
 const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z" };
@@ -71,6 +71,37 @@ describe("getMyAccount", () => {
       status: 0,
       message: "Can't reach the Rally server. Check your internet connection and try again.",
     });
+  });
+});
+
+describe("deleteMyAccount", () => {
+  it("sends a DELETE request with the user's token", async () => {
+    respond(204);
+
+    await expect(deleteMyAccount(user)).resolves.toBeUndefined();
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "DELETE",
+      headers: { Authorization: "Bearer the-token" },
+      body: undefined,
+    });
+  });
+
+  it("fails with the API's message", async () => {
+    respond(401, { message: "Log in to continue." });
+
+    await expect(deleteMyAccount(user)).rejects.toEqual(new ApiError(401, "Log in to continue."));
+  });
+});
+
+describe("apiErrorMessage", () => {
+  it("uses the API's message", () => {
+    expect(apiErrorMessage(new ApiError(0, "Can't reach the Rally server."))).toBe(
+      "Can't reach the Rally server.",
+    );
+  });
+
+  it("uses a general message for other errors", () => {
+    expect(apiErrorMessage(new Error("Boom"))).toBe("Something went wrong. Please try again.");
   });
 });
 

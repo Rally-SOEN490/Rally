@@ -1,14 +1,12 @@
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ApiError, getMyAccount, type RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
-const navItems = [
-  { label: "Home", active: false },
+const navItems: { label: string; active: boolean; action?: Href }[] = [
+  { label: "Home", active: true },
   { label: "Events", active: false },
-  { label: "Search", active: true },
+  { label: "Search", active: false },
   { label: "Notifications", active: false },
   { label: "You", active: false, action: "/profile" },
 ];
@@ -31,22 +29,8 @@ const announcements = [
 ];
 
 export default function Home() {
-  const { user } = useSession();
-  // undefined while loading, null if the API has no account for this login.
-  const [account, setAccount] = useState<RallyUser | null>();
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    if (!user) return;
-    getMyAccount(user)
-      .then(setAccount)
-      .catch((e) =>
-        setError(e instanceof ApiError ? e.message : "Something went wrong. Please try again."),
-      );
-  }, [user]);
-
-  // The name saved in Rally's database, or Firebase's copy until it loads.
-  const playerName = account?.displayName ?? user?.displayName ?? "Chau";
+  // The guards in _layout.tsx only show Home to someone with a Rally account.
+  const { account } = useSession();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -58,16 +42,12 @@ export default function Home() {
 
           <View style={styles.heroCard}>
             <Text style={styles.heroTitle}>Welcome back,</Text>
-            <Text style={styles.heroName}>{playerName}</Text>
-            {error ? (
-              <Text style={styles.heroNote}>{error}</Text>
-            ) : account === null ? (
-              <Text style={styles.heroNote}>{"We couldn't find your Rally account."}</Text>
-            ) : account ? (
+            <Text style={styles.heroName}>{account?.displayName}</Text>
+            {account && (
               <Text style={styles.heroNote}>
                 Member since {new Date(account.createdAt).toLocaleDateString()}
               </Text>
-            ) : null}
+            )}
           </View>
 
           <View style={styles.sectionCard}>
@@ -156,13 +136,13 @@ export default function Home() {
 
       <View style={styles.navBar}>
         {navItems.map((item) => {
-          const isActive = item.label === "Search";
+          const isActive = item.active;
           return (
             <Pressable
               key={item.label}
               style={[styles.navItem, isActive && styles.navItemActive]}
               onPress={() => {
-                if (item.action) router.push(item.action as any);
+                if (item.action) router.push(item.action);
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}

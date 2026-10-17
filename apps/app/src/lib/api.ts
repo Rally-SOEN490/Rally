@@ -19,8 +19,17 @@ export class ApiError extends Error {
   }
 }
 
+// A message to show the user for any error from the API.
+export const apiErrorMessage = (error: unknown) =>
+  error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
+
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
-const request = async (user: User, method: "GET" | "POST", path: string, body?: object) => {
+const request = async (
+  user: User,
+  method: "GET" | "POST" | "DELETE",
+  path: string,
+  body?: object,
+) => {
   const token = await user.getIdToken();
   const response = await fetch(`${API_URL}${path}`, {
     method,
@@ -48,3 +57,8 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   });
+
+// Deletes the person's Rally data. Safe to call again if it was already deleted.
+export const deleteMyAccount = async (user: User): Promise<void> => {
+  await request(user, "DELETE", "/users/me");
+};

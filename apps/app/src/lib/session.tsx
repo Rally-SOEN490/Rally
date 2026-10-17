@@ -9,15 +9,29 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiErrorMessage, getMyAccount, type RallyUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
-type Session = {
+export type Session = {
   user: User | null;
   // True until Firebase tells us whether someone is already signed in.
   isLoading: boolean;
   // Re-fetches the user from Firebase, e.g. after they click the verification link.
   refresh: () => Promise<void>;
+  // The person's Rally account, loaded once their email is verified. undefined
+  // while loading, null if Rally's database has no account for them.
+  account: RallyUser | null | undefined;
+  // Why the account couldn't be loaded, e.g. the API can't be reached.
+  accountError: string | undefined;
+  // Tries loading the account again after an error.
+  reloadAccount: () => void;
+  // Stores the account once the app has created it.
+  setAccount: (account: RallyUser) => void;
 };
+
+// An account (or error) together with the user and attempt it was loaded for,
+// so we never show one person's account to the next person who logs in.
+type LoadedAccount = { key: string; account?: RallyUser | null; error?: string };
 
 const SessionContext = createContext<Session | null>(null);
 
@@ -25,6 +39,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<{ user: User | null; isLoading: boolean }>(
     { user: auth.currentUser, isLoading: true },
   );
+  const [loaded, setLoaded] = useState<LoadedAccount>();
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(
     () =>
@@ -32,14 +48,50 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const { user } = state;
+  // Only look for the Rally account once the email is verified. Sign-up is still
+  // saving it before that, and asking too early would wrongly find nothing.
+  const key = user?.emailVerified ? `${user.uid}/${attempt}` : undefined;
+
+  useEffect(() => {
+    if (!user || !key) return;
+    let isCurrent = true;
+    getMyAccount(user)
+      .then((account) => {
+        if (isCurrent) setLoaded({ key, account });
+      })
+      .catch((error) => {
+        if (isCurrent) setLoaded({ key, error: apiErrorMessage(error) });
+      });
+    // Ignore the answer if the user logged out or changed while we waited.
+    return () => {
+      isCurrent = false;
+    };
+  }, [user, key]);
+
+  const current = loaded?.key === key ? loaded : undefined;
+
   const refresh = async () => {
     await auth.currentUser?.reload();
     // reload() updates the same User object, so pass a new state object to re-render.
     setState({ user: auth.currentUser, isLoading: false });
   };
 
+  const setAccount = (account: RallyUser) => {
+    if (key) setLoaded({ key, account });
+  };
+
   return (
-    <SessionContext.Provider value={{ ...state, refresh }}>
+    <SessionContext.Provider
+      value={{
+        ...state,
+        refresh,
+        account: current?.account,
+        accountError: current?.error,
+        reloadAccount: () => setAttempt((count) => count + 1),
+        setAccount,
+      }}
+    >
       {children}
     </SessionContext.Provider>
   );
