@@ -19,7 +19,10 @@ import {
   reauthenticateWithCredential,
   signOut,
 } from "firebase/auth";
+import { apiErrorMessage, deleteMyAccount } from "@/lib/api";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
+import { useSession } from "@/lib/session";
 
 // Alert.alert with buttons does nothing on web, so use window.confirm there.
 const confirmAsync = (title: string, message: string, confirmText: string) =>
@@ -45,6 +48,7 @@ const notify = (title: string, message: string) => {
 };
 
 export default function Settings() {
+  const { user } = useSession();
   const [announcementToggles, setAnnouncementToggles] = useState({
     tournamentAnnouncements: true,
     joinRequests: true,
@@ -53,42 +57,23 @@ export default function Settings() {
   const [colorBlindMode, setColorBlindMode] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
-  const [reauthVisible, setReauthVisible] = useState(false);
+  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
   const [password, setPassword] = useState("");
-  const [reauthError, setReauthError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.replace("/login" as any);
+      router.replace("/login");
     } catch {
       notify("Unable to log out", "Please try again in a moment.");
     }
   };
 
-  const performDelete = async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      router.replace("/login" as any);
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      // If you store user data in Firestore/Storage, delete it here BEFORE deleteUser,
-      // since you lose permission once the auth user is gone.
-      await deleteUser(user); // also signs the user out
-      router.replace("/login" as any);
-    } catch (e: any) {
-      if (e?.code === "auth/requires-recent-login") {
-        setReauthError("");
-        setReauthVisible(true);
-      } else {
-        notify("Unable to delete account", "Please try again in a moment.");
-      }
-    } finally {
-      setDeleting(false);
-    }
+  const closePasswordPrompt = () => {
+    setPasswordPromptVisible(false);
+    setPassword("");
+    setPasswordError("");
   };
 
   const handleDeleteAccount = async () => {
@@ -97,20 +82,36 @@ export default function Settings() {
       "Are you sure you want to delete your account? This can't be undone.",
       "Yes, delete my account",
     );
-    if (confirmed) await performDelete();
+    if (confirmed) setPasswordPromptVisible(true);
   };
 
-  const handleReauthConfirm = async () => {
-    const user = auth.currentUser;
-    if (!user?.email) return;
+  // Deletes the account from Rally's database first, then from Firebase.
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser?.email) return;
+    setDeleting(true);
+    setPasswordError("");
+
     try {
-      const credential = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(user, credential);
-      setReauthVisible(false);
-      setPassword("");
-      await performDelete();
-    } catch {
-      setReauthError("Incorrect password. Please try again.");
+      // Firebase only deletes logins that signed in recently, so check the
+      // password first. This way the deletion below can't be refused halfway.
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, credential);
+    } catch (e) {
+      setPasswordError(authErrorMessage(e));
+      setDeleting(false);
+      return;
+    }
+
+    try {
+      // If the second step fails, the person can still log in and try again,
+      // and deleting from Rally's database again is safe.
+      await deleteMyAccount(currentUser);
+      await deleteUser(currentUser); // also logs them out
+      router.replace("/login");
+    } catch (e) {
+      notify("Unable to delete account", apiErrorMessage(e));
+      setDeleting(false);
     }
   };
 
@@ -139,7 +140,7 @@ export default function Settings() {
               </View>
               <View style={styles.rowTextStack}>
                 <Text style={styles.rowLabel}>E-mail</Text>
-                <Text style={styles.rowValue}>maya.tremblay@gmail.com</Text>
+                <Text style={styles.rowValue}>{user?.email}</Text>
               </View>
             </View>
             <Text style={styles.rowChevron}>›</Text>
@@ -284,10 +285,10 @@ export default function Settings() {
       </ScrollView>
 
       <Modal
-        visible={reauthVisible}
+        visible={passwordPromptVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setReauthVisible(false)}
+        onRequestClose={closePasswordPrompt}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
@@ -303,23 +304,23 @@ export default function Settings() {
               placeholder="Password"
               style={styles.modalInput}
             />
-            {!!reauthError && <Text style={styles.modalError}>{reauthError}</Text>}
+            {!!passwordError && <Text style={styles.modalError}>{passwordError}</Text>}
             <View style={styles.modalActions}>
               <Pressable
-                onPress={() => {
-                  setReauthVisible(false);
-                  setPassword("");
-                }}
+                accessibilityRole="button"
+                onPress={closePasswordPrompt}
                 style={styles.inlineAction}
               >
                 <Text style={styles.inlineActionText}>Cancel</Text>
               </Pressable>
               <Pressable
-                onPress={handleReauthConfirm}
-                disabled={!password}
-                style={[styles.modalDelete, !password && { opacity: 0.5 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Delete my account"
+                onPress={deleteAccount}
+                disabled={!password || deleting}
+                style={[styles.modalDelete, (!password || deleting) && { opacity: 0.5 }]}
               >
-                <Text style={styles.modalDeleteText}>Delete account</Text>
+                <Text style={styles.modalDeleteText}>{deleting ? "Deleting…" : "Delete account"}</Text>
               </Pressable>
             </View>
           </View>

@@ -36,7 +36,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open settings"
-            onPress={() => router.push("/settings" as any)}
+            onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
             <Text style={styles.gearIcon}>⚙️</Text>
