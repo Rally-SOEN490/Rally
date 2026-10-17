@@ -12,7 +12,7 @@ import {
   Footer,
   SocialLogin,
 } from "@/components/auth";
-import { saveNewUser } from "@/lib/api";
+import { NAME_MAX_LENGTH, saveNewUser } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 
@@ -45,7 +45,7 @@ export default function SignUp() {
 
   return (
     <AuthScreen greeting="Welcome to Rally" title="Sign up">
-      <Field icon="person" placeholder="Full Name" onChangeText={setName} />
+      <Field icon="person" placeholder="Full Name" maxLength={NAME_MAX_LENGTH} onChangeText={setName} />
       <Field
         icon="mail"
         placeholder="E-mail address"

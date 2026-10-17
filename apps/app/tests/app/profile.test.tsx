@@ -11,22 +11,18 @@ import { fakeSession } from "../fake-session";
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
-const user = { email: "sam@example.com", displayName: "Sam Lee" } as User;
+const user = { email: "sam@example.com", displayName: "Old Firebase name" } as User;
+const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z" };
 
 beforeEach(() => {
-  jest.mocked(useSession).mockReturnValue(fakeSession({ user }));
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
 });
 
-it("shows the player's name", async () => {
+it("shows the name saved in Rally's database, like Home does", async () => {
   await render(<Profile />);
+
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
-});
-
-it("shows a placeholder name when the player has none", async () => {
-  jest.mocked(useSession).mockReturnValue(fakeSession({ user: { ...user, displayName: null } }));
-  await render(<Profile />);
-
-  expect(screen.getByText("Maya Tremblay")).toBeOnTheScreen();
+  expect(screen.queryByText("Old Firebase name")).not.toBeOnTheScreen();
 });
 
 it("opens settings from the gear button", async () => {

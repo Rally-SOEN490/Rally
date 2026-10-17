@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Text } from "react-native";
 import { AuthScreen, Button, Checkbox, Field } from "@/components/auth";
 import { styles } from "@/components/auth/styles";
-import { apiErrorMessage, saveNewUser } from "@/lib/api";
+import { apiErrorMessage, NAME_MAX_LENGTH, saveNewUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 
@@ -15,7 +15,7 @@ import { useSession } from "@/lib/session";
 // _layout.tsx take them Home.
 export default function FinishSetup() {
   const { user, setAccount } = useSession();
-  const [name, setName] = useState(user?.displayName ?? "");
+  const [name, setName] = useState((user?.displayName ?? "").slice(0, NAME_MAX_LENGTH));
   const [isOldEnough, setIsOldEnough] = useState(false);
 
   const save = () => {
@@ -33,7 +33,13 @@ export default function FinishSetup() {
       title="Finish setting up"
       subtitle="We need a couple of details before you can use Rally."
     >
-      <Field icon="person" placeholder="Full Name" value={name} onChangeText={setName} />
+      <Field
+        icon="person"
+        placeholder="Full Name"
+        maxLength={NAME_MAX_LENGTH}
+        value={name}
+        onChangeText={setName}
+      />
       <Checkbox
         checked={isOldEnough}
         onChange={setIsOldEnough}

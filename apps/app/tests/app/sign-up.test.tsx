@@ -133,6 +133,11 @@ it("shows a friendly message when the verification email can't be sent", async (
   );
 });
 
+it("limits the name to what the API accepts", async () => {
+  await renderSignUp();
+  expect(screen.getByPlaceholderText("Full Name")).toHaveProp("maxLength", 100);
+});
+
 it("links to Login", async () => {
   await renderSignUp();
   await userEvent.press(screen.getByText("Log in"));

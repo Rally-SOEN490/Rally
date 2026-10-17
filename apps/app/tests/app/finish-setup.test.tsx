@@ -35,6 +35,14 @@ it("starts with the name from sign-up", async () => {
   expect(screen.getByPlaceholderText("Full Name")).toHaveDisplayValue("Sam Lee");
 });
 
+it("limits the name to what the API accepts", async () => {
+  await renderFinishSetup({ ...user, displayName: "L".repeat(120) });
+
+  const field = screen.getByPlaceholderText("Full Name");
+  expect(field).toHaveProp("maxLength", 100);
+  expect(field).toHaveDisplayValue("L".repeat(100));
+});
+
 it("starts with an empty name when Firebase has none", async () => {
   await renderFinishSetup({ ...user, displayName: null });
   expect(screen.getByPlaceholderText("Full Name")).toHaveDisplayValue("");

@@ -9,6 +9,9 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export type RallyUser = { id: string; displayName: string; createdAt: string };
 
+// The longest name the API accepts.
+export const NAME_MAX_LENGTH = 100;
+
 // The API refused the request or couldn't be reached. `message` can be shown to the user.
 export class ApiError extends Error {
   constructor(
