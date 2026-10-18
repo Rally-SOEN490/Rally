@@ -19,10 +19,13 @@ describe("POST /users/me", () => {
     const response = await register("alice", { displayName: " Alice ", ageConfirmed: true });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({
-      displayName: "Alice",
-      badges: [{ key: "champion", name: "Champion", icon: "🏆" }],
+    expect(response.json()).toMatchObject({ displayName: "Alice" });
+    expect(response.json().badges[0]).toMatchObject({
+      key: "champion",
+      name: "Champion",
+      icon: "🏆",
     });
+    expect(response.json().badges).toHaveLength(4);
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
