@@ -18,7 +18,7 @@ const autoAwardedBadgeKeys = badgeCatalog
 export const createUserRepository = (db: Database) => {
   const includeBadges = {
     badges: {
-      orderBy: { awardedAt: "asc" as const },
+      orderBy: [{ awardedAt: "asc" as const }, { badgeType: { key: "asc" as const } }],
       include: { badgeType: true },
     },
   };
