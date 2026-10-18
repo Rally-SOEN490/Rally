@@ -1,16 +1,41 @@
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-import type { User } from "../../generated/prisma/client.ts";
 import type { UserRepository } from "./repository.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
-export type UserResponse = { id: string; displayName: string; createdAt: string };
+export type UserResponse = {
+  id: string;
+  displayName: string;
+  createdAt: string;
+  badges: Array<{
+    key: string;
+    name: string;
+    tier: string;
+    description: string;
+    icon: string;
+    imageUrl: string | null;
+    image: string;
+    awardedAt: string;
+  }>;
+};
 
-const toResponse = (user: User): UserResponse => ({
+type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
+
+const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   createdAt: user.createdAt.toISOString(),
+  badges: user.badges.map(({ badgeType, awardedAt }) => ({
+    key: badgeType.key,
+    name: badgeType.name,
+    tier: badgeType.tier,
+    description: badgeType.description,
+    icon: badgeType.icon,
+    imageUrl: badgeType.imageUrl,
+    image: badgeType.imageUrl ?? "badge-gold-placeholder",
+    awardedAt: awardedAt.toISOString(),
+  })),
 });
 
 export const createUserService = (users: UserRepository) => ({

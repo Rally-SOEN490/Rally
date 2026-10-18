@@ -19,16 +19,20 @@ describe("POST /users/me", () => {
     const response = await register("alice", { displayName: " Alice ", ageConfirmed: true });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({ displayName: "Alice" });
+    expect(response.json()).toMatchObject({
+      displayName: "Alice",
+      badges: [{ key: "champion", name: "Champion", icon: "🏆" }],
+    });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
+    expect(await testDb.userBadge.count({ where: { userId: saved.id } })).toBe(4);
   });
 
   test("does not send back the Firebase ID", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
-    expect(Object.keys(response.json()).sort()).toEqual(["createdAt", "displayName", "id"]);
+    expect(Object.keys(response.json()).sort()).toEqual(["badges", "createdAt", "displayName", "id"]);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -110,6 +114,49 @@ describe("GET /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(alice);
+  });
+
+  test("adds default badges when an existing profile has none", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await testDb.userBadge.deleteMany();
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().badges).toHaveLength(4);
+  });
+
+  test("restores only the missing default badges", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    const [badgeToRemove] = await testDb.userBadge.findMany({
+      where: { userId: user.id },
+      take: 1,
+    });
+    await testDb.userBadge.delete({
+      where: {
+        userId_badgeTypeId: {
+          userId: user.id,
+          badgeTypeId: badgeToRemove.badgeTypeId,
+        },
+      },
+    });
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().badges).toHaveLength(4);
+    expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(4);
+  });
+
+  test("keeps default badges idempotent across repeated profile loads", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(4);
   });
 
   test("rejects a request without a token", async () => {

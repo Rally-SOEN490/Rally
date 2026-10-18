@@ -7,7 +7,21 @@ import type { User } from "firebase/auth";
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
-export type RallyUser = { id: string; displayName: string; createdAt: string };
+export type RallyUser = {
+  id: string;
+  displayName: string;
+  createdAt: string;
+  badges: {
+    key: string;
+    name: string;
+    tier: string;
+    description: string;
+    icon: string;
+    imageUrl: string | null;
+    image: string;
+    awardedAt: string;
+  }[];
+};
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;

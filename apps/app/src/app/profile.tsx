@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,6 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const awards = ["🏆", "🥇", "🥉", "🎖️"];
 const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
@@ -24,6 +24,10 @@ const results = [
   { title: "Verdun Spring Open", year: "May 2026", accent: "#e0e7b8" },
   { title: "Fall Classic 6s", year: "Sep 2025", accent: "#d9e8dc" },
 ];
+
+const badgeImages = {
+  "badge-gold-placeholder": require("@/assets/images/badge-gold-placeholder.png"),
+} as const;
 
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
@@ -76,9 +80,13 @@ export default function Profile() {
         <View style={styles.awardsSection}>
           <Text style={styles.sectionTitle}>Awards</Text>
           <View style={styles.awardsRow}>
-            {awards.map((award, index) => (
-              <View key={`${award}-${index}`} style={styles.awardBadge}>
-                <Text style={styles.awardEmoji}>{award}</Text>
+            {(account?.badges ?? []).map((badge) => (
+              <View key={badge.key} style={styles.awardBadge}>
+                <Image
+                  accessibilityLabel={`${badge.name} badge`}
+                  source={badgeImages[badge.image as keyof typeof badgeImages]}
+                  style={styles.awardImage}
+                />
               </View>
             ))}
           </View>
@@ -291,6 +299,10 @@ const styles = StyleSheet.create({
   },
   awardEmoji: {
     fontSize: 24,
+  },
+  awardImage: {
+    width: 34,
+    height: 34,
   },
   tagSection: {
     marginTop: 22,

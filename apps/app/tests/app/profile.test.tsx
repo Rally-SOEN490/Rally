@@ -12,7 +12,53 @@ jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() 
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
 const user = { email: "sam@example.com", displayName: "Old Firebase name" } as User;
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z" };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [
+    {
+      key: "champion",
+      name: "Champion",
+      tier: "gold",
+      description: "Placeholder championship badge",
+      icon: "🏆",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
+    {
+      key: "winner",
+      name: "Winner",
+      tier: "gold",
+      description: "Placeholder first-place badge",
+      icon: "🥇",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
+    {
+      key: "podium",
+      name: "Podium",
+      tier: "bronze",
+      description: "Placeholder podium badge",
+      icon: "🥉",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
+    {
+      key: "competitor",
+      name: "Competitor",
+      tier: "silver",
+      description: "Placeholder participation badge",
+      icon: "🎖️",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
+  ],
+};
 
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
@@ -30,6 +76,15 @@ it("opens settings from the gear button", async () => {
   await userEvent.press(screen.getByRole("button", { name: "Open settings" }));
 
   expect(router.push).toHaveBeenCalledWith("/settings");
+});
+
+it("shows badges saved on the Rally account", async () => {
+  await render(<Profile />);
+
+  expect(screen.getByLabelText("Champion badge")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Winner badge")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Podium badge")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Competitor badge")).toBeOnTheScreen();
 });
 
 it("goes back Home from the Home tab", async () => {
