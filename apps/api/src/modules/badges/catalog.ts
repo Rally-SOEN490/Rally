@@ -14,6 +14,16 @@ export type BadgeDefinition = {
   autoAward: boolean;
 };
 
+type BadgeDefinitionInput = Pick<BadgeDefinition, "key" | "name" | "description" | "icon"> &
+  Partial<Pick<BadgeDefinition, "tier" | "image" | "autoAward">>;
+
+const createBadge = (definition: BadgeDefinitionInput): BadgeDefinition => ({
+  tier: "Bronze",
+  image: "badge-gold-placeholder",
+  autoAward: true,
+  ...definition,
+});
+
 export const getBadgeTier = (baseTier: string, receivedCount: number): BadgeTier => {
   const normalizedBaseTier =
     badgeTiers.find((tier) => tier.toLowerCase() === baseTier.toLowerCase()) ?? "Bronze";
@@ -25,112 +35,76 @@ export const getBadgeTier = (baseTier: string, receivedCount: number): BadgeTier
 // Add future badge types here. The image identifier maps to a bundled app
 // asset, so changing artwork does not require changing the player-assignment model.
 export const badgeCatalog = [
-  {
+  createBadge({
     key: "champion",
     name: "Champion",
-    tier: "Bronze",
     description: "Placeholder championship badge",
     icon: "🏆",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "winner",
     name: "Winner",
-    tier: "Bronze",
     description: "Placeholder first-place badge",
     icon: "🥇",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "podium",
     name: "Podium",
-    tier: "Bronze",
     description: "Placeholder podium badge",
     icon: "🥉",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "competitor",
     name: "Competitor",
-    tier: "Bronze",
     description: "Placeholder participation badge",
     icon: "🎖️",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "defender",
     name: "Defender",
-    tier: "Bronze",
     description: "Placeholder defensive effort medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "rally",
     name: "Rally",
-    tier: "Bronze",
     description: "Placeholder long-rally medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "blocker",
     name: "Blocker",
-    tier: "Bronze",
     description: "Placeholder blocking medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "server",
     name: "Server",
-    tier: "Bronze",
     description: "Placeholder serving medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "team-player",
     name: "Team Player",
-    tier: "Bronze",
     description: "Placeholder teamwork medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "streak",
     name: "Streak",
-    tier: "Bronze",
     description: "Placeholder winning-streak medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "rising-star",
     name: "Rising Star",
-    tier: "Bronze",
     description: "Placeholder rising-player medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
-  {
+  }),
+  createBadge({
     key: "clutch",
     name: "Clutch",
-    tier: "Bronze",
     description: "Placeholder clutch-play medal",
     icon: "⭐",
-    image: "badge-gold-placeholder",
-    autoAward: true,
-  },
+  }),
 ] satisfies readonly BadgeDefinition[];
