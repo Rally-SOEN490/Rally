@@ -1,3 +1,4 @@
+import { profileText } from "@/locales/en/profiles";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -190,6 +191,14 @@ export default function Settings() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account & login</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={profileText.settingsLink}
+            style={styles.rowItem} onPress={() => router.push("/profile-privacy")}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>{profileText.settingsLink}</Text>
+              <Text style={styles.rowValue}>{profileText.settingsDetail}</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </Pressable>
 
           <Pressable
             style={styles.rowItem}

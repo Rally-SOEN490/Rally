@@ -42,6 +42,7 @@ function RootNavigator() {
         <Stack.Screen name="home" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="profile-privacy" />
       </Stack.Protected>
     </Stack>
   );

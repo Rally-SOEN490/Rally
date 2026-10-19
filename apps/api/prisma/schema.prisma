@@ -25,6 +25,7 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
+  profilePrivacy ProfilePrivacy?
 
   @@map("users")
 }
@@ -54,4 +55,19 @@ model UserBadge {
   @@id([userId, badgeTypeId])
   @@index([badgeTypeId])
   @@map("user_badges")
+}
+
+model ProfilePrivacy {
+  userId String @id @map("user_id") @db.Uuid
+  profileVisible Boolean @default(false) @map("profile_visible")
+  showPhoto Boolean @default(false) @map("show_photo")
+  showBio Boolean @default(false) @map("show_bio")
+  showStatus Boolean @default(false) @map("show_status")
+  showInterests Boolean @default(false) @map("show_interests")
+  showSocialLinks Boolean @default(false) @map("show_social_links")
+  showBadges Boolean @default(false) @map("show_badges")
+  showMemberSince Boolean @default(false) @map("show_member_since")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profile_privacy")
 }

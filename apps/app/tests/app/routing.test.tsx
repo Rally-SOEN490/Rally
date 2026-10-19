@@ -42,6 +42,7 @@ const renderApp = (initialUrl = "/") =>
       home: () => <Text>Home screen</Text>,
       profile: () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
+      "profile-privacy": () => <Text>Privacy screen</Text>,
     },
     { initialUrl },
   );
@@ -139,7 +140,7 @@ describe("the Rally account", () => {
     expect(await screen.findByText("Finish setup screen")).toBeOnTheScreen();
   });
 
-  it.each(["/home", "/profile", "/settings"])(
+  it.each(["/home", "/profile", "/settings", "/profile-privacy"])(
     "keeps a user without an account away from %s",
     async (url) => {
       jest.mocked(getMyAccount).mockResolvedValue(null);

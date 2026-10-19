@@ -6,6 +6,7 @@ import Fastify, { type FastifyError } from "fastify";
 import type { VerifyIdToken } from "./auth.ts";
 import type { Database } from "./db.ts";
 import { healthRoutes } from "./health.ts";
+import { profileRoutes } from "./modules/profiles/routes.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
 export type AppOptions = {
@@ -25,7 +26,7 @@ export const buildApp = async ({
 }: AppOptions) => {
   const app = Fastify({ logger });
   // Browsers only send the request methods listed here.
-  await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "DELETE"] });
+  await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "PATCH", "DELETE"] });
   app.decorateRequest("firebaseUid", "");
 
   // The app shows `message` to the user, so keep it short and never send
@@ -43,5 +44,6 @@ export const buildApp = async ({
 
   await app.register(healthRoutes, { db });
   await app.register(userRoutes, { db, verifyIdToken, prefix: "/users" });
+  await app.register(profileRoutes, { db, verifyIdToken, prefix: "/profiles" });
   return app;
 };
