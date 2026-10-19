@@ -16,5 +16,8 @@ export type ProfilePrivacy = {
 };
 export const getProfilePrivacy = (user: User): Promise<ProfilePrivacy> =>
   request(user, "GET", "/profiles/me/privacy");
-export const saveProfilePrivacy = (user: User, settings: ProfilePrivacy): Promise<ProfilePrivacy> =>
+export const saveProfilePrivacy = (
+  user: User,
+  settings: ProfilePrivacy,
+): Promise<ProfilePrivacy> =>
   request(user, "PATCH", "/profiles/me/privacy", settings);

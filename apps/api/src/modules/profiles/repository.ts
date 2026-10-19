@@ -5,10 +5,11 @@ import type { Database } from "../../db.ts";
 import type { PrivacyUpdate } from "./privacy.ts";
 
 export const createProfileRepository = (db: Database) => ({
-  findOwner: (firebaseUid: string) => db.user.findUnique({
-    where: { firebaseUid },
-    select: { id: true, profilePrivacy: true },
-  }),
+  findOwner: (firebaseUid: string) =>
+    db.user.findUnique({
+      where: { firebaseUid },
+      select: { id: true, profilePrivacy: true },
+    }),
   savePrivacy: (userId: string, settings: PrivacyUpdate) =>
     db.profilePrivacy.upsert({
       where: { userId },

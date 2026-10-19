@@ -2,10 +2,19 @@
 // SPDX-License-Identifier: MIT
 
 import type { ProfileRepository } from "./repository.ts";
-import { defaultPrivacy, privacyKeys, type ProfilePrivacy, type PrivacyUpdate } from "./privacy.ts";
+import {
+  defaultPrivacy,
+  privacyKeys,
+  type ProfilePrivacy,
+  type PrivacyUpdate,
+} from "./privacy.ts";
 
-export const privacyResponse = (stored: ProfilePrivacy | null): ProfilePrivacy =>
-  Object.fromEntries(privacyKeys.map((key) => [key, stored?.[key] ?? defaultPrivacy[key]])) as ProfilePrivacy;
+export const privacyResponse = (
+  stored: ProfilePrivacy | null,
+): ProfilePrivacy =>
+  Object.fromEntries(
+    privacyKeys.map((key) => [key, stored?.[key] ?? defaultPrivacy[key]]),
+  ) as ProfilePrivacy;
 
 export const createProfileService = (profiles: ProfileRepository) => ({
   getPrivacy: async (firebaseUid: string) => {

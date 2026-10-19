@@ -4,18 +4,31 @@
 // Keep feature copy outside screens so it can join the app's future i18next setup.
 export const profileText = {
   privacyTitle: "Profile privacy",
-  privacyIntro: "Choose what other signed-in players can see. Your own profile always shows your details.",
+  privacyIntro:
+    "Choose which parts of your profile other signed-in players can see.",
   visibilityLabel: "Let players view my profile",
-  visibilityDetail: "When enabled, signed-in players can see your name and the sections you choose below.",
-  privateNotice: "Your profile is private until you enable viewing and save.",
+  visibilityDetail:
+    "When enabled, signed-in players can see your name and the sections you choose below.",
+  privateNotice:
+    "After saving with viewing off, other players can’t open your profile.",
   sectionsTitle: "Shared sections",
-  sectionsDetail: "These choices apply when your profile is visible. Empty sections stay empty until you add details to your profile.",
+  sectionsDetail:
+    "These choices apply when your profile is visible. Empty sections stay empty until you add details to your profile.",
   sections: {
-    showPhoto: "Profile photo", showBio: "Bio", showStatus: "Status message",
-    showInterests: "Interests", showSocialLinks: "Social links", showBadges: "Awards",
+    showPhoto: "Profile photo",
+    showBio: "Bio",
+    showStatus: "Status message",
+    showInterests: "Interests",
+    showSocialLinks: "Social links",
+    showBadges: "Awards",
     showMemberSince: "Member since",
   },
-  loading: "Loading…", save: "Save preferences", saving: "Saving…",
-  saved: "Your privacy preferences have been saved.", retry: "Try again",
-  back: "Back to my profile", settingsLink: "Profile privacy", settingsDetail: "Choose what players can see",
+  loading: "Loading…",
+  save: "Save preferences",
+  saving: "Saving…",
+  saved: "Your privacy preferences have been saved.",
+  retry: "Try again",
+  back: "Back to my profile",
+  settingsLink: "Profile privacy",
+  settingsDetail: "Choose what players can see",
 };

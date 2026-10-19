@@ -17,13 +17,13 @@ datasource db {
 // what Rally knows about the person. Field names are camelCase in TypeScript and
 // snake_case in the database.
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  firebaseUid    String   @unique @map("firebase_uid")
-  displayName    String   @map("display_name")
+  id             String          @id @default(uuid()) @db.Uuid
+  firebaseUid    String          @unique @map("firebase_uid")
+  displayName    String          @map("display_name")
   // When the person confirmed at sign-up that they are 14 or older.
-  ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  ageConfirmedAt DateTime        @map("age_confirmed_at") @db.Timestamptz
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
   profilePrivacy ProfilePrivacy?
 
@@ -45,12 +45,12 @@ model BadgeType {
 }
 
 model UserBadge {
-  userId      String    @map("user_id") @db.Uuid
-  badgeTypeId String    @map("badge_type_id") @db.Uuid
-  receivedCount Int      @default(1) @map("received_count")
-  awardedAt   DateTime  @default(now()) @map("awarded_at") @db.Timestamptz
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badgeType   BadgeType @relation(fields: [badgeTypeId], references: [id], onDelete: Cascade)
+  userId        String    @map("user_id") @db.Uuid
+  badgeTypeId   String    @map("badge_type_id") @db.Uuid
+  receivedCount Int       @default(1) @map("received_count")
+  awardedAt     DateTime  @default(now()) @map("awarded_at") @db.Timestamptz
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeType     BadgeType @relation(fields: [badgeTypeId], references: [id], onDelete: Cascade)
 
   @@id([userId, badgeTypeId])
   @@index([badgeTypeId])
@@ -58,16 +58,16 @@ model UserBadge {
 }
 
 model ProfilePrivacy {
-  userId String @id @map("user_id") @db.Uuid
-  profileVisible Boolean @default(false) @map("profile_visible")
-  showPhoto Boolean @default(false) @map("show_photo")
-  showBio Boolean @default(false) @map("show_bio")
-  showStatus Boolean @default(false) @map("show_status")
-  showInterests Boolean @default(false) @map("show_interests")
+  userId          String  @id @map("user_id") @db.Uuid
+  profileVisible  Boolean @default(false) @map("profile_visible")
+  showPhoto       Boolean @default(false) @map("show_photo")
+  showBio         Boolean @default(false) @map("show_bio")
+  showStatus      Boolean @default(false) @map("show_status")
+  showInterests   Boolean @default(false) @map("show_interests")
   showSocialLinks Boolean @default(false) @map("show_social_links")
-  showBadges Boolean @default(false) @map("show_badges")
+  showBadges      Boolean @default(false) @map("show_badges")
   showMemberSince Boolean @default(false) @map("show_member_since")
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profile_privacy")
 }
