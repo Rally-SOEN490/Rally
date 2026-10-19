@@ -25,3 +25,22 @@ AI-use acknowledgment: OpenAI Codex implemented and tested the proposal under th
 - Award display is shared with the existing owner screen. Its earning rules/catalogue are unchanged.
 - Remaining upstream integration: connect profile links from roster, search and free-agent screens when those stories exist, and display real team/statistics/results data when their modules exist. #48 must not be called fully accepted until these dependencies and #181 are resolved.
 - Review order: RALLY-27 first, then RALLY-26. The local RALLY-26 branch is based on RALLY-27, not directly on main.
+
+## Final requirement check (October 19, 2026)
+
+The current [RALLY-26 issue](https://github.com/Rally-SOEN490/Rally/issues/48) still lists positions and an overall level. The [October 7 meeting notes](https://github.com/Rally-SOEN490/Rally/wiki/Meeting-Minutes#meeting-5) explicitly replace positions with interests/status and call for tournament-specific levels. This implementation follows those later notes and the contributor's supplied team discussion. The issue still needs refinement; this document does not imply stakeholder approval of revised acceptance criteria.
+
+| Requirement | Implementation or remaining dependency |
+| --- | --- |
+| Display name, photo, bio, interests, social links, awards | Visitor rendering and server privacy filtering implemented for stored values. Detail editing remains RALLY-22–24. |
+| Short free-text status from the team discussion | Stored/read contract and optional visitor display implemented; owner editing remains a teammate integration. |
+| Looking-for-a-team flag | Separate [RALLY-25 / #47](https://github.com/Rally-SOEN490/Rally/issues/47) remains open. Its future field still needs integration here; free-text status is not a substitute for that flag. |
+| Stats summary and tournament-specific levels/results | Await real statistics/results modules. No fabricated visitor statistics are added. |
+| Private fields absent | Implemented and tested in the API, including denial of private profiles. |
+| Roster, free-agent and search links | Reusable link implemented; those screens do not exist in the current checkout. Connect them when their features land and #181 is resolved. |
+| Signed-out visitors asked to sign in | Implemented and browser-tested, preserving the requested player link. |
+| Owner privacy choices | Implemented and persisted. #49 has no written acceptance criteria, so the documented policy still needs team review alongside #181. |
+
+The [profile mockup](https://github.com/Rally-SOEN490/Rally/wiki/Mockups#profile-page) guides the avatar/name hierarchy, green/neutral palette, awards and interest chips. Unavailable team/statistics/results sections are omitted from the visitor view. Privacy controls extend Settings; the published mockup does not specify that screen. Browser layout has been checked at a narrow width; native simulator builds remain unverified.
+
+The merged badge PR #222 is already in the base. Extracting its gallery touches the owner profile file, so this contribution is not conflict-free by file ownership: coordinate `profile.tsx`, the Prisma schema, and the new profile-detail contract with teammates. Use reviewed feature PRs rather than pushing directly to main.
