@@ -20,15 +20,25 @@ describe("POST /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ displayName: "Alice" });
+    expect(response.json().badges).toContainEqual(expect.objectContaining({
+      key: "champion",
+      name: "Champion",
+      receivedCount: 1,
+    }));
+    expect(response.json().badges).toHaveLength(12);
+    expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]);
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
+    expect(await testDb.userBadge.count({ where: { userId: saved.id } })).toBe(12);
   });
 
   test("does not send back the Firebase ID", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
-    expect(Object.keys(response.json()).sort()).toEqual(["createdAt", "displayName", "id"]);
+    expect(Object.keys(response.json()).sort()).toEqual(["badges", "createdAt", "displayName", "id"]);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -110,6 +120,116 @@ describe("GET /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(alice);
+  });
+
+  test("adds default badges when an existing profile has none", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await testDb.userBadge.deleteMany();
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().badges).toHaveLength(12);
+  });
+
+  test("restores only the missing default badges", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    const [badgeToRemove] = await testDb.userBadge.findMany({
+      where: { userId: user.id },
+      take: 1,
+    });
+    await testDb.userBadge.delete({
+      where: {
+        userId_badgeTypeId: {
+          userId: user.id,
+          badgeTypeId: badgeToRemove.badgeTypeId,
+        },
+      },
+    });
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().badges).toHaveLength(12);
+    expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(12);
+  });
+
+  test("keeps default badges idempotent across repeated profile loads", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(12);
+  });
+
+  test("climbs tiers at ten and twenty receipts and returns all badges for horizontal scrolling", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    const podium = await testDb.badgeType.findUniqueOrThrow({ where: { key: "podium" } });
+    const extra = await testDb.badgeType.upsert({
+      where: { key: "extra" },
+      update: {},
+      create: {
+        key: "extra",
+        name: "Extra",
+        tier: "Bronze",
+        description: "Extra test badge",
+        imageUrl: "badge-gold-placeholder",
+      },
+    });
+
+    await testDb.userBadge.update({
+      where: { userId_badgeTypeId: { userId: user.id, badgeTypeId: podium.id } },
+      data: { receivedCount: 10 },
+    });
+    for (const [key, receivedCount] of [
+    ["champion", 25],
+    ["winner", 22],
+    ["competitor", 17],
+    ["defender", 6],
+    ] as const) {
+      const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
+      await testDb.userBadge.update({
+        where: { userId_badgeTypeId: { userId: user.id, badgeTypeId: badgeType.id } },
+        data: { receivedCount },
+      });
+    }
+    await testDb.userBadge.create({
+      data: { userId: user.id, badgeTypeId: extra.id, receivedCount: 1 },
+    });
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const badges = response.json().badges;
+
+    expect(response.statusCode).toBe(200);
+    expect(badges).toHaveLength(13);
+    expect(badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5)).toEqual([
+      25,
+      22,
+      17,
+      10,
+      6,
+    ]);
+    expect(badges[0]).toMatchObject({ key: "champion", receivedCount: 25, tier: "Gold" });
+    expect(badges[1]).toMatchObject({ key: "winner", receivedCount: 22, tier: "Gold" });
+    expect(badges.find((badge: { key: string }) => badge.key === "podium")).toMatchObject({
+      receivedCount: 10,
+      tier: "Silver",
+    });
+    expect(badges.find((badge: { key: string }) => badge.key === "competitor")).toMatchObject({
+      receivedCount: 17,
+      tier: "Silver",
+    });
+    expect(badges.find((badge: { key: string }) => badge.key === "defender")).toMatchObject({
+      receivedCount: 6,
+      tier: "Bronze",
+    });
+    expect(badges.find((badge: { key: string }) => badge.key === "extra")).toMatchObject({
+      receivedCount: 1,
+    });
   });
 
   test("rejects a request without a token", async () => {

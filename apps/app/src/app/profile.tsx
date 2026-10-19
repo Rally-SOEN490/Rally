@@ -1,12 +1,16 @@
 import { router } from "expo-router";
 import {
+  Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 const stats = [
@@ -16,7 +20,6 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const awards = ["🏆", "🥇", "🥉", "🎖️"];
 const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
@@ -25,9 +28,22 @@ const results = [
   { title: "Fall Classic 6s", year: "Sep 2025", accent: "#d9e8dc" },
 ];
 
+const badgeImages = {
+  "badge-gold-placeholder": require("@/assets/images/badge-gold-placeholder.png"),
+} as const;
+
+const tierColors = {
+  Bronze: "#8c5a3c",
+  Silver: "#9aa1a8",
+  Gold: "#d4a72c",
+} as const;
+
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { account } = useSession();
+  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
+    null,
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -75,13 +91,49 @@ export default function Profile() {
 
         <View style={styles.awardsSection}>
           <Text style={styles.sectionTitle}>Awards</Text>
-          <View style={styles.awardsRow}>
-            {awards.map((award, index) => (
-              <View key={`${award}-${index}`} style={styles.awardBadge}>
-                <Text style={styles.awardEmoji}>{award}</Text>
-              </View>
-            ))}
-          </View>
+          <ScrollView
+            horizontal
+            accessible
+            accessibilityLabel="Scrollable awards"
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.awardsRow}
+          >
+            {[...(account?.badges ?? [])]
+              .sort(
+                (left, right) =>
+                  right.receivedCount - left.receivedCount ||
+                  left.key.localeCompare(right.key),
+              )
+              .map((badge) => (
+              <Pressable
+                key={badge.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${badge.name} badge`}
+                onPress={() => setSelectedBadge(badge)}
+                style={styles.awardBadge}
+              >
+                <View style={styles.awardImageWrapper}>
+                  {badge.tier === "Gold" && (
+                    <>
+                      <Text style={[styles.goldStar, styles.goldStarTop]}>✦</Text>
+                      <Text style={[styles.goldStar, styles.goldStarRight]}>✦</Text>
+                      <Text style={[styles.goldStar, styles.goldStarBottom]}>✦</Text>
+                      <Text style={[styles.goldStar, styles.goldStarLeft]}>✦</Text>
+                    </>
+                  )}
+                  <Image
+                    accessibilityLabel={`${badge.name} badge image`}
+                    source={badgeImages[badge.image as keyof typeof badgeImages]}
+                    style={[
+                      styles.awardImage,
+                      { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.awardName}>{badge.name}</Text>
+              </Pressable>
+              ))}
+          </ScrollView>
         </View>
 
         <View style={styles.tagSection}>
@@ -115,6 +167,37 @@ export default function Profile() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={selectedBadge !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedBadge(null)}
+      >
+        <Pressable
+          onPress={() => setSelectedBadge(null)}
+          style={styles.modalBackdrop}
+        >
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            style={styles.badgeDetails}
+          >
+            <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
+            <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
+            <Text style={styles.badgeDetailsDescription}>
+              {selectedBadge?.description}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close badge details"
+              onPress={() => setSelectedBadge(null)}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <View style={styles.navBar}>
         {[
@@ -280,17 +363,98 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 12,
+    paddingRight: 4,
   },
   awardBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 72,
+    minHeight: 82,
+    borderRadius: 16,
     backgroundColor: "#dfe9e4",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 8,
   },
-  awardEmoji: {
-    fontSize: 24,
+  awardImage: {
+    width: 34,
+    height: 34,
+    borderWidth: 3,
+    borderRadius: 17,
+  },
+  awardImageWrapper: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goldStar: {
+    position: "absolute",
+    color: "#d4a72c",
+    fontSize: 11,
+    lineHeight: 11,
+  },
+  goldStarTop: {
+    top: 0,
+  },
+  goldStarRight: {
+    right: 0,
+  },
+  goldStarBottom: {
+    bottom: 0,
+  },
+  goldStarLeft: {
+    left: 0,
+  },
+  awardName: {
+    color: "#12382d",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 5,
+    textAlign: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(18, 56, 45, 0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  badgeDetails: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#f7f4f1",
+    borderRadius: 20,
+    padding: 22,
+    alignItems: "center",
+  },
+  badgeDetailsTitle: {
+    color: "#12382d",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  badgeDetailsTier: {
+    color: "#536761",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 5,
+  },
+  badgeDetailsDescription: {
+    color: "#536761",
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 14,
+    textAlign: "center",
+  },
+  closeButton: {
+    backgroundColor: "#12382d",
+    borderRadius: 999,
+    marginTop: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+  },
+  closeButtonText: {
+    color: "#f7f4f1",
+    fontSize: 13,
+    fontWeight: "700",
   },
   tagSection: {
     marginTop: 22,

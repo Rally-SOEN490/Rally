@@ -24,6 +24,34 @@ model User {
   ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  badges         UserBadge[]
 
   @@map("users")
+}
+
+model BadgeType {
+  id          String      @id @default(uuid()) @db.Uuid
+  key         String      @unique
+  name        String
+  tier        String
+  description String
+  imageUrl    String?     @map("image_url")
+  autoAward   Boolean     @default(false) @map("auto_award")
+  users       UserBadge[]
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("badge_types")
+}
+
+model UserBadge {
+  userId      String    @map("user_id") @db.Uuid
+  badgeTypeId String    @map("badge_type_id") @db.Uuid
+  receivedCount Int      @default(1) @map("received_count")
+  awardedAt   DateTime  @default(now()) @map("awarded_at") @db.Timestamptz
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeType   BadgeType @relation(fields: [badgeTypeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeTypeId])
+  @@index([badgeTypeId])
+  @@map("user_badges")
 }
