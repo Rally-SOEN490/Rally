@@ -1,16 +1,18 @@
 import { router } from "expo-router";
 import {
+  ActivityIndicator,
   Image,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { RallyUser } from "@/lib/api";
+import { apiErrorMessage, updateMyAccount, type RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 const stats = [
@@ -40,10 +42,28 @@ const tierColors = {
 
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
-  const { account } = useSession();
+  const { user, account, setAccount } = useSession();
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
+  const lookingForTeam = account?.lookingForTeam ?? false;
+  // The switch shows this right away; the badge waits for the server.
+  const [savingValue, setSavingValue] = useState<boolean>();
+  const [saveError, setSaveError] = useState("");
+  const saving = savingValue !== undefined;
+
+  const changeLookingForTeam = async (value: boolean) => {
+    if (!user) return;
+    setSavingValue(value);
+    setSaveError("");
+    try {
+      setAccount(await updateMyAccount(user, { lookingForTeam: value }));
+    } catch (e) {
+      setSaveError(apiErrorMessage(e));
+    } finally {
+      setSavingValue(undefined);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -65,6 +85,45 @@ export default function Profile() {
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
+          {lookingForTeam && (
+            <View testID="looking-for-team-badge" style={styles.lookingBadge}>
+              <View style={styles.lookingDot} />
+              <Text style={styles.lookingBadgeText}>Looking for a team</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.lookingCard}>
+          <View style={styles.lookingRow}>
+            <View style={styles.lookingTextStack}>
+              <Text style={styles.lookingTitle}>Looking for a team</Text>
+              <Text style={styles.lookingHint}>
+                Captains will see a badge on your profile.
+              </Text>
+            </View>
+            {saving && (
+              <ActivityIndicator
+                size="small"
+                color="#1d5c4d"
+                accessibilityLabel="Saving"
+                style={styles.lookingSpinner}
+              />
+            )}
+            <Switch
+              value={savingValue ?? lookingForTeam}
+              onValueChange={changeLookingForTeam}
+              disabled={saving}
+              accessibilityLabel="Looking for a team"
+              accessibilityHint="Shows captains that you're available"
+              accessibilityState={{ disabled: saving, busy: saving }}
+              trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
+            />
+          </View>
+          {!!saveError && (
+            <Text accessibilityRole="alert" style={styles.saveError}>
+              {saveError}
+            </Text>
+          )}
         </View>
 
         <View style={styles.teamBanner}>
@@ -281,6 +340,62 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 15,
     color: "#536761",
+  },
+  lookingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    backgroundColor: "#dfe9e4",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  lookingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#1d5c4d",
+    marginRight: 6,
+  },
+  lookingBadgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#12382d",
+  },
+  lookingCard: {
+    backgroundColor: "#f2f0ed",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 20,
+  },
+  lookingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  lookingTextStack: {
+    flex: 1,
+    marginRight: 12,
+  },
+  lookingTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#12382d",
+  },
+  lookingHint: {
+    fontSize: 12,
+    color: "#536761",
+    marginTop: 2,
+  },
+  lookingSpinner: {
+    marginRight: 8,
+  },
+  saveError: {
+    color: "#d15b57",
+    fontSize: 13,
+    marginTop: 8,
   },
   teamBanner: {
     backgroundColor: "#12382d",

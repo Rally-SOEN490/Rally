@@ -1,13 +1,14 @@
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-import type { UserRepository } from "./repository.ts";
+import type { ProfileChanges, UserRepository } from "./repository.ts";
 import { getBadgeTier } from "../badges/catalog.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
   id: string;
   displayName: string;
+  lookingForTeam: boolean;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -26,6 +27,7 @@ type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFireb
 const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
+  lookingForTeam: user.lookingForTeam,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
@@ -58,6 +60,11 @@ export const createUserService = (users: UserRepository) => ({
 
   getCurrent: async (firebaseUid: string) => {
     const user = await users.findByFirebaseUid(firebaseUid);
+    return user ? toResponse(user) : null;
+  },
+
+  update: async (firebaseUid: string, changes: ProfileChanges) => {
+    const user = await users.updateByFirebaseUid(firebaseUid, changes);
     return user ? toResponse(user) : null;
   },
 

@@ -25,7 +25,7 @@ export const buildApp = async ({
 }: AppOptions) => {
   const app = Fastify({ logger });
   // Browsers only send the request methods listed here.
-  await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "DELETE"] });
+  await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "PATCH", "DELETE"] });
   app.decorateRequest("firebaseUid", "");
 
   // The app shows `message` to the user, so keep it short and never send

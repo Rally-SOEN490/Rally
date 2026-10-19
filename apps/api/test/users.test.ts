@@ -38,7 +38,19 @@ describe("POST /users/me", () => {
   test("does not send back the Firebase ID", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
-    expect(Object.keys(response.json()).sort()).toEqual(["badges", "createdAt", "displayName", "id"]);
+    expect(Object.keys(response.json()).sort()).toEqual([
+      "badges",
+      "createdAt",
+      "displayName",
+      "id",
+      "lookingForTeam",
+    ]);
+  });
+
+  test("starts with 'looking for a team' turned off", async () => {
+    const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    expect(response.json().lookingForTeam).toBe(false);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -248,6 +260,97 @@ describe("GET /users/me", () => {
     });
 
     expect(response.statusCode).toBe(200);
+  });
+});
+
+describe("PATCH /users/me", () => {
+  const update = (uid: string, body: unknown) =>
+    app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: { ...authHeader(uid), "content-type": "application/json" },
+      payload: JSON.stringify(body),
+    });
+  const getMe = (uid: string) =>
+    app.inject({ method: "GET", url: "/users/me", headers: authHeader(uid) });
+
+  beforeEach(() => register("alice", { displayName: "Alice", ageConfirmed: true }));
+
+  test("turns 'looking for a team' on and off", async () => {
+    const on = await update("alice", { lookingForTeam: true });
+
+    expect(on.statusCode).toBe(200);
+    expect(on.json()).toMatchObject({ displayName: "Alice", lookingForTeam: true });
+
+    const off = await update("alice", { lookingForTeam: false });
+
+    expect(off.statusCode).toBe(200);
+    expect(off.json().lookingForTeam).toBe(false);
+  });
+
+  test("saves the change, so it's still there when the profile loads again", async () => {
+    const updated = await update("alice", { lookingForTeam: true });
+
+    const reloaded = (await getMe("alice")).json();
+    expect(reloaded.lookingForTeam).toBe(true);
+    expect(updated.json()).toEqual(reloaded);
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(saved.lookingForTeam).toBe(true);
+  });
+
+  test("changes only the logged-in user", async () => {
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    await update("alice", { lookingForTeam: true });
+
+    expect((await getMe("bob")).json().lookingForTeam).toBe(false);
+  });
+
+  test("returns 404 when the user has no Rally account", async () => {
+    const response = await update("bob", { lookingForTeam: true });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: "No Rally account found." });
+    expect(await testDb.user.count()).toBe(1);
+  });
+
+  test("rejects a request without a token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      payload: { lookingForTeam: true },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect((await getMe("alice")).json().lookingForTeam).toBe(false);
+  });
+
+  test("rejects an invalid token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: { authorization: "Bearer not-a-real-token" },
+      payload: { lookingForTeam: true },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  test.each([
+    ["the body is empty", {}],
+    ["the body isn't an object", [true]],
+    ["the value is null", { lookingForTeam: null }],
+    ["the value is text", { lookingForTeam: "true" }],
+    ["the value is a number", { lookingForTeam: 1 }],
+    ["it has another field", { lookingForTeam: true, displayName: "Mallory" }],
+    ["it only has another field", { displayName: "Mallory" }],
+  ])("rejects the request when %s", async (_, body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false });
   });
 });
 

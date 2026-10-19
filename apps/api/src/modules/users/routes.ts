@@ -4,10 +4,12 @@
 import type { FastifyPluginAsync } from "fastify";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import type { Database } from "../../db.ts";
-import { createUserRepository } from "./repository.ts";
+import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
+
+const noAccount = { message: "No Rally account found." };
 
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
@@ -44,8 +46,30 @@ export const userRoutes: FastifyPluginAsync<{
 
   app.get("/me", async (request, reply) => {
     const user = await users.getCurrent(request.firebaseUid);
-    return user ?? reply.code(404).send({ message: "No Rally account found." });
+    return user ?? reply.code(404).send(noAccount);
   });
+
+  app.patch<{ Body: ProfileChanges }>(
+    "/me",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["lookingForTeam"],
+          // additionalProperties: false would make Fastify drop other fields instead of rejecting them.
+          propertyNames: { const: "lookingForTeam" },
+          properties: {
+            // type: "boolean" would let Fastify turn "true" or 1 into true.
+            lookingForTeam: { enum: [true, false] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await users.update(request.firebaseUid, request.body);
+      return user ?? reply.code(404).send(noAccount);
+    },
+  );
 
   // Deletes the logged-in person's Rally data. The app then deletes their Firebase login.
   app.delete("/me", async (request, reply) => {

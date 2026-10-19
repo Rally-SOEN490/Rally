@@ -1,20 +1,24 @@
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-import { render, screen, userEvent } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
+import { useState } from "react";
 import Profile from "@/app/profile";
+import { ApiError, updateMyAccount, type RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
+jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), updateMyAccount: jest.fn() }));
 
 const user = { email: "sam@example.com", displayName: "Old Firebase name" } as User;
 const account = {
   id: "1",
   displayName: "Sam Lee",
+  lookingForTeam: false,
   createdAt: "2026-10-17T12:00:00.000Z",
   badges: [
     {
@@ -156,4 +160,101 @@ it("ignores the tabs that aren't built yet", async () => {
 
   expect(router.replace).not.toHaveBeenCalled();
   expect(router.push).not.toHaveBeenCalled();
+});
+
+describe("Looking for a team", () => {
+  // Like the real session, setAccount re-renders the screen.
+  const showAccount = (initial: RallyUser) =>
+    jest.mocked(useSession).mockImplementation(function useFakeSession() {
+      const [shown, setShown] = useState(initial);
+      return fakeSession({ user, account: shown, setAccount: setShown });
+    });
+
+  const toggle = () => screen.getByRole("switch", { name: "Looking for a team" });
+  const badge = () => screen.queryByTestId("looking-for-team-badge");
+  // Resolves once saving has finished.
+  const flip = (value: boolean) => fireEvent(toggle(), "valueChange", value);
+
+  const holdSave = () => {
+    let finish!: (saved: RallyUser) => void;
+    jest
+      .mocked(updateMyAccount)
+      .mockReturnValueOnce(new Promise<RallyUser>((resolve) => (finish = resolve)));
+    return finish;
+  };
+
+  it("is off, with no badge, when it was saved off", async () => {
+    showAccount(account);
+    await render(<Profile />);
+
+    expect(toggle().props.value).toBe(false);
+    expect(badge()).not.toBeOnTheScreen();
+  });
+
+  it("is on, with a badge, when it was saved on", async () => {
+    showAccount({ ...account, lookingForTeam: true });
+    await render(<Profile />);
+
+    expect(toggle().props.value).toBe(true);
+    expect(badge()).toBeOnTheScreen();
+  });
+
+  it("shows it's saving, then shows the badge once the server confirms", async () => {
+    showAccount(account);
+    const finishSaving = holdSave();
+    await render(<Profile />);
+
+    const flipped = flip(true);
+
+    await waitFor(() => expect(screen.getByLabelText("Saving")).toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, { lookingForTeam: true });
+    expect(toggle().props.value).toBe(true);
+    expect(toggle()).toBeDisabled();
+    expect(toggle()).toBeBusy();
+    expect(badge()).not.toBeOnTheScreen();
+
+    await act(async () => {
+      finishSaving({ ...account, lookingForTeam: true });
+      await flipped;
+    });
+
+    await waitFor(() => expect(badge()).toBeOnTheScreen());
+    expect(toggle().props.value).toBe(true);
+    expect(toggle()).toBeEnabled();
+    expect(screen.queryByLabelText("Saving")).not.toBeOnTheScreen();
+  });
+
+  it("hides the badge when turned off", async () => {
+    showAccount({ ...account, lookingForTeam: true });
+    jest.mocked(updateMyAccount).mockResolvedValueOnce(account);
+    await render(<Profile />);
+
+    await flip(false);
+
+    await waitFor(() => expect(badge()).not.toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, { lookingForTeam: false });
+    expect(toggle().props.value).toBe(false);
+  });
+
+  it("goes back and explains when saving fails, and can try again", async () => {
+    showAccount(account);
+    jest
+      .mocked(updateMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."))
+      .mockResolvedValueOnce({ ...account, lookingForTeam: true });
+    await render(<Profile />);
+
+    await flip(true);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(toggle().props.value).toBe(false);
+    expect(toggle()).toBeEnabled();
+    expect(badge()).not.toBeOnTheScreen();
+
+    await flip(true);
+
+    await waitFor(() => expect(badge()).toBeOnTheScreen());
+    expect(toggle().props.value).toBe(true);
+    expect(screen.queryByRole("alert")).not.toBeOnTheScreen();
+  });
 });
