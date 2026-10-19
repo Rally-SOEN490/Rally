@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
 
 export const auth = getAuth(
   initializeApp({
@@ -11,3 +11,16 @@ export const auth = getAuth(
     appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   }),
 );
+
+// Opt-in local testing only. Normal development keeps the team's Firebase project.
+const emulatorUrl = process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL;
+if (__DEV__ && emulatorUrl) {
+  const url = new URL(emulatorUrl);
+  if (
+    url.protocol !== "http:" ||
+    !["localhost", "127.0.0.1", "10.0.2.2"].includes(url.hostname)
+  ) {
+    throw new Error("Use a local Firebase Auth emulator address.");
+  }
+  connectAuthEmulator(auth, emulatorUrl, { disableWarnings: true });
+}

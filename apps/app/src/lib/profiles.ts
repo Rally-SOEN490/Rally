@@ -16,5 +16,25 @@ export type ProfilePrivacy = {
 };
 export const getProfilePrivacy = (user: User): Promise<ProfilePrivacy> =>
   request(user, "GET", "/profiles/me/privacy");
-export const saveProfilePrivacy = (user: User, settings: ProfilePrivacy): Promise<ProfilePrivacy> =>
+export const saveProfilePrivacy = (
+  user: User,
+  settings: ProfilePrivacy,
+): Promise<ProfilePrivacy> =>
   request(user, "PATCH", "/profiles/me/privacy", settings);
+
+export type PlayerProfile = {
+  id: string;
+  displayName: string;
+  photoUrl?: string | null;
+  bio?: string | null;
+  statusMessage?: string | null;
+  interests?: string[];
+  socialLinks?: { facebook: string | null; instagram: string | null };
+  memberSince?: string;
+  badges?: import("./api").RallyUser["badges"];
+};
+export const getPlayerProfile = (
+  user: User,
+  id: string,
+): Promise<PlayerProfile> =>
+  request(user, "GET", `/profiles/${encodeURIComponent(id)}`);

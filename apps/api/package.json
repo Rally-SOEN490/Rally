@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:fixtures": "node test/browser-fixtures.mjs"
   },
   "dependencies": {
     "@fastify/cors": "11.3.1",

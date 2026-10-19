@@ -8,7 +8,13 @@ import Profile from "@/app/profile";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
-jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
+jest.mock("expo-router", () => ({
+  router: { push: jest.fn(), replace: jest.fn() },
+  Link: ({ children }: { children: import("react").ReactNode }) => {
+    const { Text } = require("react-native");
+    return <Text>{children}</Text>;
+  },
+}));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
 const user = { email: "sam@example.com", displayName: "Old Firebase name" } as User;

@@ -1,10 +1,14 @@
+import { ActivityIndicator } from "react-native";
+import { ProfileIntentProvider } from "@/lib/profile-intent";
 import { Stack } from "expo-router";
 import { SessionProvider, useSession } from "@/lib/session";
 
 export default function RootLayout() {
   return (
     <SessionProvider>
-      <RootNavigator />
+      <ProfileIntentProvider>
+        <RootNavigator />
+      </ProfileIntentProvider>
     </SessionProvider>
   );
 }
@@ -13,7 +17,7 @@ export default function RootLayout() {
 // while you're on that screen (e.g. you log in or out), Expo Router sends you
 // back to index, which redirects you to the right place.
 function RootNavigator() {
-  const { user, isLoading, account } = useSession();
+  const { user, isLoading, account, accountError } = useSession();
   // Unlocked while loading too, so a link to /sign-up or /recover-account
   // isn't bounced to Login before Firebase has answered.
   const signedOut = !user;
@@ -23,6 +27,10 @@ function RootNavigator() {
   // saving it failed during sign-up).
   const needsAccount = verified && account === null;
   const hasAccount = verified && !!account;
+
+  // Wait before constructing protected routes so restored sessions retain deep links.
+  if (isLoading || (verified && account === undefined && !accountError))
+    return <ActivityIndicator />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -43,6 +51,7 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="profile-privacy" />
+        <Stack.Screen name="players/[id]" />
       </Stack.Protected>
     </Stack>
   );

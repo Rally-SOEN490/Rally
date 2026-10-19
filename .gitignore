@@ -22,3 +22,8 @@ admin/*.jpg
 admin/*.jpeg
 admin/*.tif
 admin/*.tiff
+
+# Local Firebase emulator output
+.firebase/
+firebase-debug.log
+ui-debug.log

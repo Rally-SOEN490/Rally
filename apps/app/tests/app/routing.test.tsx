@@ -6,16 +6,29 @@ import { router } from "expo-router";
 import { act, renderRouter } from "expo-router/testing-library";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { Text } from "react-native";
+import { useEffect } from "react";
+import { useProfileIntent } from "@/lib/profile-intent";
 import RootLayout from "@/app/_layout";
 import Index from "@/app/index";
 import { ApiError, getMyAccount } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
-jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn(), signOut: jest.fn() }));
+jest.mock("firebase/auth", () => ({
+  onAuthStateChanged: jest.fn(),
+  signOut: jest.fn(),
+}));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
-jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"),
+  getMyAccount: jest.fn(),
+}));
 
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [],
+};
 
 let reportUser: (user: User | null) => void;
 
@@ -43,6 +56,7 @@ const renderApp = (initialUrl = "/") =>
       profile: () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
       "profile-privacy": () => <Text>Privacy screen</Text>,
+      "players/[id]": PlayerRouteForTests,
     },
     { initialUrl },
   );
@@ -62,7 +76,8 @@ const allScreens = [
 
 it("shows no screen while Firebase is still checking who is signed in", async () => {
   await renderApp();
-  for (const name of allScreens) expect(screen.queryByText(name)).not.toBeOnTheScreen();
+  for (const name of allScreens)
+    expect(screen.queryByText(name)).not.toBeOnTheScreen();
 });
 
 it.each([
@@ -77,10 +92,20 @@ it.each([
 
 it.each([
   ["a signed-out user away from Home", "/home", signedOut, "Login screen"],
-  ["an unverified user away from Home", "/home", unverified, "Verify email screen"],
+  [
+    "an unverified user away from Home",
+    "/home",
+    unverified,
+    "Verify email screen",
+  ],
   ["a verified user away from Login", "/login", verified, "Home screen"],
   ["a verified user away from Sign up", "/sign-up", verified, "Home screen"],
-  ["a signed-out user away from Verify email", "/verify-email", signedOut, "Login screen"],
+  [
+    "a signed-out user away from Verify email",
+    "/verify-email",
+    signedOut,
+    "Login screen",
+  ],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -129,7 +154,8 @@ describe("the Rally account", () => {
     await renderApp();
     await act(async () => reportUser(verified));
 
-    for (const name of allScreens) expect(screen.queryByText(name)).not.toBeOnTheScreen();
+    for (const name of allScreens)
+      expect(screen.queryByText(name)).not.toBeOnTheScreen();
   });
 
   it("sends a verified user without an account to Finish setup", async () => {
@@ -172,21 +198,31 @@ describe("the Rally account", () => {
 
   describe("when it can't be loaded", () => {
     beforeEach(() => {
-      jest.mocked(getMyAccount).mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
+      jest
+        .mocked(getMyAccount)
+        .mockRejectedValueOnce(
+          new ApiError(0, "Can't reach the Rally server."),
+        );
     });
 
     it("explains the problem", async () => {
       await renderApp();
       await act(async () => reportUser(verified));
 
-      expect(await screen.findByText("We can't load your account")).toBeOnTheScreen();
-      expect(screen.getByText("Can't reach the Rally server.")).toBeOnTheScreen();
+      expect(
+        await screen.findByText("We can't load your account"),
+      ).toBeOnTheScreen();
+      expect(
+        screen.getByText("Can't reach the Rally server."),
+      ).toBeOnTheScreen();
     });
 
     it("tries again and continues Home", async () => {
       await renderApp();
       await act(async () => reportUser(verified));
-      await userEvent.press(await screen.findByRole("button", { name: "Try again" }));
+      await userEvent.press(
+        await screen.findByRole("button", { name: "Try again" }),
+      );
 
       expect(await screen.findByText("Home screen")).toBeOnTheScreen();
       expect(getMyAccount).toHaveBeenCalledTimes(2);
@@ -200,4 +236,33 @@ describe("the Rally account", () => {
       expect(signOut).toHaveBeenCalledWith(auth);
     });
   });
+});
+
+const playerPath = "/players/00000000-0000-0000-0000-000000000001";
+it("retains a player profile link while restoring a signed-in session", async () => {
+  await renderApp(playerPath);
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText("Player profile screen")).toBeOnTheScreen();
+});
+it("returns to the requested player profile after login", async () => {
+  await renderApp(playerPath);
+  await act(async () => reportUser(signedOut));
+  expect(await screen.findByText("Login screen")).toBeOnTheScreen();
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText("Player profile screen")).toBeOnTheScreen();
+});
+
+function PlayerRouteForTests() {
+  const { clearProfileIntent } = useProfileIntent();
+  useEffect(clearProfileIntent, [clearProfileIntent]);
+  return <Text>Player profile screen</Text>;
+}
+it("clears the return path after arrival so later sign-ins go Home", async () => {
+  await renderApp(playerPath);
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText("Player profile screen")).toBeOnTheScreen();
+  await act(async () => reportUser(signedOut));
+  expect(await screen.findByText("Login screen")).toBeOnTheScreen();
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText("Home screen")).toBeOnTheScreen();
 });
