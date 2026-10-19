@@ -41,9 +41,9 @@ export const apiErrorMessage = (error: unknown) =>
   error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
-const request = async (
+export const request = async (
   user: User,
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: object,
 ) => {

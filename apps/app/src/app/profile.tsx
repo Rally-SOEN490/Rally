@@ -1,3 +1,4 @@
+import { ProfileMessage } from "@/components/profile/ProfileMessage";
 import { router } from "expo-router";
 import {
   Image,
@@ -40,14 +41,14 @@ const tierColors = {
 
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
-  const { account } = useSession();
+  const { account, user } = useSession();
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.profileHeader}>
           <Pressable
             accessibilityRole="button"
@@ -61,11 +62,13 @@ export default function Profile() {
 
         <View style={styles.avatarSection}>
           <View style={styles.avatarBadge}>
-            <Text style={styles.avatarText}>M</Text>
+            <Text style={styles.avatarText}>{account?.displayName.charAt(0).toUpperCase()}</Text>
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
         </View>
+
+        {user && account && <ProfileMessage key={user.uid} user={user} />}
 
         <View style={styles.teamBanner}>
           <View style={styles.teamBadge}>
