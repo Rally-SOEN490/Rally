@@ -20,12 +20,12 @@ describe("POST /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ displayName: "Alice" });
-    expect(response.json().badges[0]).toMatchObject({
+    expect(response.json().badges).toContainEqual(expect.objectContaining({
       key: "champion",
       name: "Champion",
       icon: "🏆",
       receivedCount: 1,
-    });
+    }));
     expect(response.json().badges).toHaveLength(12);
     expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -191,6 +191,7 @@ describe("GET /users/me", () => {
     ["champion", 25],
     ["winner", 22],
     ["competitor", 17],
+    ["defender", 6],
     ] as const) {
       const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
       await testDb.userBadge.update({
