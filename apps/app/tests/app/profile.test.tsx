@@ -95,6 +95,12 @@ it("shows badges saved on the Rally account", async () => {
   expect(screen.getByText("Competitor")).toBeOnTheScreen();
 });
 
+it("places badges in a horizontal scroll area", async () => {
+  await render(<Profile />);
+
+  expect(screen.getByLabelText("Scrollable awards")).toBeOnTheScreen();
+});
+
 it("uses the badge tier color for each image border", async () => {
   await render(<Profile />);
 

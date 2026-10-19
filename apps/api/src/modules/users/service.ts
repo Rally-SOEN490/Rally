@@ -28,7 +28,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   createdAt: user.createdAt.toISOString(),
-  badges: user.badges.slice(0, 4).map(({ badgeType, receivedCount, awardedAt }) => ({
+  badges: user.badges.map(({ badgeType, receivedCount, awardedAt }) => ({
     key: badgeType.key,
     name: badgeType.name,
     tier: getBadgeTier(badgeType.tier, receivedCount),

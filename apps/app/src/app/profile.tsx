@@ -91,7 +91,13 @@ export default function Profile() {
 
         <View style={styles.awardsSection}>
           <Text style={styles.sectionTitle}>Awards</Text>
-          <View style={styles.awardsRow}>
+          <ScrollView
+            horizontal
+            accessible
+            accessibilityLabel="Scrollable awards"
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.awardsRow}
+          >
             {(account?.badges ?? []).map((badge) => (
               <Pressable
                 key={badge.key}
@@ -121,7 +127,7 @@ export default function Profile() {
                 <Text style={styles.awardName}>{badge.name}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         <View style={styles.tagSection}>
@@ -351,9 +357,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 12,
+    paddingRight: 4,
   },
   awardBadge: {
-    width: 78,
+    width: 72,
     minHeight: 82,
     borderRadius: 16,
     backgroundColor: "#dfe9e4",
