@@ -6,10 +6,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { Linking } from "react-native";
 
 type ProfileIntent = {
   requestedPlayerId?: string;
@@ -29,6 +31,21 @@ export function ProfileIntentProvider({ children }: { children: ReactNode }) {
         pathname,
       )?.[1],
   );
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      try {
+        const link = new URL(url);
+        if (link.protocol !== "rally:") return;
+        const id = /^\/players\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.exec(
+          link.hostname ? `/${link.hostname}${link.pathname}` : link.pathname,
+        )?.[1];
+        if (id) setRequestedPlayerId(id);
+      } catch {
+        // Malformed external links must not interrupt sign-in.
+      }
+    });
+    return () => subscription.remove();
+  }, []);
   const clearProfileIntent = useCallback(
     () => setRequestedPlayerId(undefined),
     [],

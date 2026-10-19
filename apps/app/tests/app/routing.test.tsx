@@ -5,7 +5,7 @@ import { screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { act, renderRouter } from "expo-router/testing-library";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { Text } from "react-native";
+import { Linking, Text } from "react-native";
 import { useEffect } from "react";
 import { useProfileIntent } from "@/lib/profile-intent";
 import RootLayout from "@/app/_layout";
@@ -31,8 +31,22 @@ const account = {
 };
 
 let reportUser: (user: User | null) => void;
+const nativeLinkListeners = new Set<(event: { url: string }) => void>();
+const openNativeLink = (url: string) => {
+  for (const listener of nativeLinkListeners) listener({ url });
+};
+
 
 beforeEach(() => {
+  nativeLinkListeners.clear();
+  jest.spyOn(Linking, "addEventListener").mockImplementation((_type, listener) => {
+    nativeLinkListeners.add(listener);
+    return {
+      remove: () => {
+        nativeLinkListeners.delete(listener);
+      },
+    } as ReturnType<typeof Linking.addEventListener>;
+  });
   jest.mocked(onAuthStateChanged).mockImplementation((_auth, callback) => {
     reportUser = callback as typeof reportUser;
     return jest.fn();
@@ -266,3 +280,35 @@ it("clears the return path after arrival so later sign-ins go Home", async () =>
   await act(async () => reportUser(verified));
   expect(await screen.findByText("Home screen")).toBeOnTheScreen();
 });
+
+it.each(["rally://players", "rally:///players"])(
+  "retains a %s link received while already signed out",
+  async (prefix) => {
+    await renderApp();
+    await act(async () => reportUser(signedOut));
+    expect(await screen.findByText("Login screen")).toBeOnTheScreen();
+    await act(async () =>
+      openNativeLink(`${prefix}/00000000-0000-0000-0000-000000000001`),
+    );
+    await act(async () => reportUser(verified));
+    expect(await screen.findByText("Player profile screen")).toBeOnTheScreen();
+    await act(async () => reportUser(signedOut));
+    await act(async () => reportUser(verified));
+    expect(await screen.findByText("Home screen")).toBeOnTheScreen();
+  },
+);
+
+it.each([
+  "rally://settings",
+  "https://example.com/players/00000000-0000-0000-0000-000000000001",
+  "rally://players/not-an-id",
+])(
+  "ignores an invalid or unrelated incoming link: %s",
+  async (url) => {
+    await renderApp();
+    await act(async () => reportUser(signedOut));
+    await act(async () => openNativeLink(url));
+    await act(async () => reportUser(verified));
+    expect(await screen.findByText("Home screen")).toBeOnTheScreen();
+  },
+);
