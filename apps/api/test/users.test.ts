@@ -24,8 +24,15 @@ describe("POST /users/me", () => {
       key: "champion",
       name: "Champion",
       icon: "🏆",
+      receivedCount: 1,
     });
     expect(response.json().badges).toHaveLength(4);
+    expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
+      1,
+      1,
+      1,
+      1,
+    ]);
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
@@ -160,6 +167,40 @@ describe("GET /users/me", () => {
 
     const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(4);
+  });
+
+  test("climbs tiers at ten receipts and returns only the top four badges", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    const podium = await testDb.badgeType.findUniqueOrThrow({ where: { key: "podium" } });
+    const extra = await testDb.badgeType.upsert({
+      where: { key: "extra" },
+      update: {},
+      create: {
+        key: "extra",
+        name: "Extra",
+        tier: "Bronze",
+        description: "Extra test badge",
+        icon: "⭐",
+        imageUrl: "badge-gold-placeholder",
+      },
+    });
+
+    await testDb.userBadge.update({
+      where: { userId_badgeTypeId: { userId: user.id, badgeTypeId: podium.id } },
+      data: { receivedCount: 10 },
+    });
+    await testDb.userBadge.create({
+      data: { userId: user.id, badgeTypeId: extra.id, receivedCount: 1 },
+    });
+
+    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const badges = response.json().badges;
+
+    expect(response.statusCode).toBe(200);
+    expect(badges).toHaveLength(4);
+    expect(badges[0]).toMatchObject({ key: "podium", receivedCount: 10, tier: "Silver" });
+    expect(badges.find((badge: { key: string }) => badge.key === "extra")).toBeUndefined();
   });
 
   test("rejects a request without a token", async () => {

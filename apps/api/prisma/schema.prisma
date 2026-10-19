@@ -47,6 +47,7 @@ model BadgeType {
 model UserBadge {
   userId      String    @map("user_id") @db.Uuid
   badgeTypeId String    @map("badge_type_id") @db.Uuid
+  receivedCount Int      @default(1) @map("received_count")
   awardedAt   DateTime  @default(now()) @map("awarded_at") @db.Timestamptz
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   badgeType   BadgeType @relation(fields: [badgeTypeId], references: [id], onDelete: Cascade)

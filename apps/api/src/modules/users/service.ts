@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import type { UserRepository } from "./repository.ts";
+import { getBadgeTier } from "../badges/catalog.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
@@ -16,6 +17,7 @@ export type UserResponse = {
     icon: string;
     imageUrl: string | null;
     image: string;
+    receivedCount: number;
     awardedAt: string;
   }>;
 };
@@ -26,14 +28,15 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   createdAt: user.createdAt.toISOString(),
-  badges: user.badges.map(({ badgeType, awardedAt }) => ({
+  badges: user.badges.slice(0, 4).map(({ badgeType, receivedCount, awardedAt }) => ({
     key: badgeType.key,
     name: badgeType.name,
-    tier: badgeType.tier,
+    tier: getBadgeTier(badgeType.tier, receivedCount),
     description: badgeType.description,
     icon: badgeType.icon,
     imageUrl: badgeType.imageUrl,
     image: badgeType.imageUrl ?? "badge-gold-placeholder",
+    receivedCount,
     awardedAt: awardedAt.toISOString(),
   })),
 });

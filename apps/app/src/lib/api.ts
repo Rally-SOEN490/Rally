@@ -19,6 +19,7 @@ export type RallyUser = {
     icon: string;
     imageUrl: string | null;
     image: string;
+    receivedCount: number;
     awardedAt: string;
   }[];
 };

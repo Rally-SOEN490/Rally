@@ -13,6 +13,14 @@ export type BadgeDefinition = {
   autoAward: boolean;
 };
 
+export const getBadgeTier = (baseTier: string, receivedCount: number): BadgeTier => {
+  const normalizedBaseTier =
+    badgeTiers.find((tier) => tier.toLowerCase() === baseTier.toLowerCase()) ?? "Bronze";
+  const baseIndex = badgeTiers.indexOf(normalizedBaseTier);
+  const earnedSteps = Math.floor(Math.max(0, receivedCount) / 10);
+  return badgeTiers[Math.min(baseIndex + earnedSteps, badgeTiers.length - 1)];
+};
+
 // Add future badge types here. The image identifier maps to a bundled app
 // asset, so changing artwork does not require changing the player-assignment model.
 export const badgeCatalog = [

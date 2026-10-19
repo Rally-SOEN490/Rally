@@ -18,7 +18,10 @@ const autoAwardedBadgeKeys = badgeCatalog
 export const createUserRepository = (db: Database) => {
   const includeBadges = {
     badges: {
-      orderBy: [{ awardedAt: "asc" as const }, { badgeType: { key: "asc" as const } }],
+      orderBy: [
+        { receivedCount: "desc" as const },
+        { badgeType: { key: "asc" as const } },
+      ],
       include: { badgeType: true },
     },
   };
@@ -29,7 +32,11 @@ export const createUserRepository = (db: Database) => {
       select: { id: true },
     });
     await db.userBadge.createMany({
-      data: defaultBadges.map(({ id: badgeTypeId }) => ({ userId, badgeTypeId })),
+      data: defaultBadges.map(({ id: badgeTypeId }) => ({
+        userId,
+        badgeTypeId,
+        receivedCount: 1,
+      })),
       skipDuplicates: true,
     });
   };
