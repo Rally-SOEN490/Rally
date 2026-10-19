@@ -23,7 +23,6 @@ describe("POST /users/me", () => {
     expect(response.json().badges).toContainEqual(expect.objectContaining({
       key: "champion",
       name: "Champion",
-      icon: "🏆",
       receivedCount: 1,
     }));
     expect(response.json().badges).toHaveLength(12);
@@ -178,7 +177,6 @@ describe("GET /users/me", () => {
         name: "Extra",
         tier: "Bronze",
         description: "Extra test badge",
-        icon: "⭐",
         imageUrl: "badge-gold-placeholder",
       },
     });

@@ -14,7 +14,6 @@ export type UserResponse = {
     name: string;
     tier: string;
     description: string;
-    icon: string;
     imageUrl: string | null;
     image: string;
     receivedCount: number;
@@ -39,7 +38,6 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
     name: badgeType.name,
     tier: getBadgeTier(badgeType.tier, receivedCount),
     description: badgeType.description,
-    icon: badgeType.icon,
     imageUrl: badgeType.imageUrl,
     image: badgeType.imageUrl ?? "badge-gold-placeholder",
     receivedCount,

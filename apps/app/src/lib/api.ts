@@ -16,7 +16,6 @@ export type RallyUser = {
     name: string;
     tier: string;
     description: string;
-    icon: string;
     imageUrl: string | null;
     image: string;
     receivedCount: number;
