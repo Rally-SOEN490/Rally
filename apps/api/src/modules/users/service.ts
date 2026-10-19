@@ -28,7 +28,13 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   createdAt: user.createdAt.toISOString(),
-  badges: user.badges.map(({ badgeType, receivedCount, awardedAt }) => ({
+  badges: [...user.badges]
+    .sort(
+      (left, right) =>
+        right.receivedCount - left.receivedCount ||
+        left.badgeType.key.localeCompare(right.badgeType.key),
+    )
+    .map(({ badgeType, receivedCount, awardedAt }) => ({
     key: badgeType.key,
     name: badgeType.name,
     tier: getBadgeTier(badgeType.tier, receivedCount),
@@ -38,7 +44,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
     image: badgeType.imageUrl ?? "badge-gold-placeholder",
     receivedCount,
     awardedAt: awardedAt.toISOString(),
-  })),
+    })),
 });
 
 export const createUserService = (users: UserRepository) => ({

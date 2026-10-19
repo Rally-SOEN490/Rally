@@ -27,6 +27,29 @@ export const createUserRepository = (db: Database) => {
   };
 
   const assignAutoAwardedBadges = async (userId: string) => {
+    for (const badge of badgeCatalog) {
+      await db.badgeType.upsert({
+        where: { key: badge.key },
+        update: {
+          name: badge.name,
+          tier: badge.tier,
+          description: badge.description,
+          icon: badge.icon,
+          imageUrl: badge.image,
+          autoAward: badge.autoAward,
+        },
+        create: {
+          key: badge.key,
+          name: badge.name,
+          tier: badge.tier,
+          description: badge.description,
+          icon: badge.icon,
+          imageUrl: badge.image,
+          autoAward: badge.autoAward,
+        },
+      });
+    }
+
     const defaultBadges = await db.badgeType.findMany({
       where: { key: { in: autoAwardedBadgeKeys } },
       select: { id: true },

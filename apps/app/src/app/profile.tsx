@@ -98,7 +98,13 @@ export default function Profile() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.awardsRow}
           >
-            {(account?.badges ?? []).map((badge) => (
+            {[...(account?.badges ?? [])]
+              .sort(
+                (left, right) =>
+                  right.receivedCount - left.receivedCount ||
+                  left.key.localeCompare(right.key),
+              )
+              .map((badge) => (
               <Pressable
                 key={badge.key}
                 accessibilityRole="button"
@@ -126,7 +132,7 @@ export default function Profile() {
                 </View>
                 <Text style={styles.awardName}>{badge.name}</Text>
               </Pressable>
-            ))}
+              ))}
           </ScrollView>
         </View>
 

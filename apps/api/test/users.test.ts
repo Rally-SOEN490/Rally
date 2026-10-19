@@ -166,7 +166,7 @@ describe("GET /users/me", () => {
     expect(await testDb.userBadge.count({ where: { userId: user.id } })).toBe(12);
   });
 
-  test("climbs tiers at ten receipts and returns all badges for horizontal scrolling", async () => {
+  test("climbs tiers at ten and twenty receipts and returns all badges for horizontal scrolling", async () => {
     await register("alice", { displayName: "Alice", ageConfirmed: true });
     const user = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     const podium = await testDb.badgeType.findUniqueOrThrow({ where: { key: "podium" } });
@@ -188,9 +188,9 @@ describe("GET /users/me", () => {
       data: { receivedCount: 10 },
     });
     for (const [key, receivedCount] of [
-      ["champion", 4],
-      ["winner", 3],
-      ["competitor", 2],
+    ["champion", 25],
+    ["winner", 22],
+    ["competitor", 17],
     ] as const) {
       const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
       await testDb.userBadge.update({
@@ -207,7 +207,27 @@ describe("GET /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(badges).toHaveLength(13);
-    expect(badges[0]).toMatchObject({ key: "podium", receivedCount: 10, tier: "Silver" });
+    expect(badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5)).toEqual([
+      25,
+      22,
+      17,
+      10,
+      1,
+    ]);
+    expect(badges[0]).toMatchObject({ key: "champion", receivedCount: 25, tier: "Gold" });
+    expect(badges[1]).toMatchObject({ key: "winner", receivedCount: 22, tier: "Gold" });
+    expect(badges.find((badge: { key: string }) => badge.key === "podium")).toMatchObject({
+      receivedCount: 10,
+      tier: "Silver",
+    });
+    expect(badges.find((badge: { key: string }) => badge.key === "competitor")).toMatchObject({
+      receivedCount: 17,
+      tier: "Silver",
+    });
+    expect(badges.find((badge: { key: string }) => badge.key === "defender")).toMatchObject({
+      receivedCount: 6,
+      tier: "Bronze",
+    });
     expect(badges.find((badge: { key: string }) => badge.key === "extra")).toMatchObject({
       receivedCount: 1,
     });

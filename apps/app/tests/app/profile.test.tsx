@@ -25,7 +25,7 @@ const account = {
       icon: "🏆",
       imageUrl: null,
       image: "badge-gold-placeholder",
-      receivedCount: 1,
+      receivedCount: 25,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
     {
@@ -36,29 +36,29 @@ const account = {
       icon: "🥇",
       imageUrl: null,
       image: "badge-gold-placeholder",
-      receivedCount: 1,
+      receivedCount: 22,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
     {
       key: "podium",
       name: "Podium",
-      tier: "Bronze",
+      tier: "Gold",
       description: "Placeholder podium badge",
       icon: "🥉",
       imageUrl: null,
       image: "badge-gold-placeholder",
-      receivedCount: 1,
+      receivedCount: 20,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
     {
       key: "competitor",
       name: "Competitor",
-      tier: "Silver",
+      tier: "Bronze",
       description: "Placeholder participation badge",
       icon: "🎖️",
       imageUrl: null,
       image: "badge-gold-placeholder",
-      receivedCount: 1,
+      receivedCount: 17,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
   ],
@@ -108,17 +108,31 @@ it("uses the badge tier color for each image border", async () => {
     expect.arrayContaining([expect.objectContaining({ borderColor: "#d4a72c" })]),
   );
   expect(screen.getByLabelText("Podium badge image").props.style).toEqual(
-    expect.arrayContaining([expect.objectContaining({ borderColor: "#8c5a3c" })]),
+    expect.arrayContaining([expect.objectContaining({ borderColor: "#d4a72c" })]),
   );
   expect(screen.getByLabelText("Competitor badge image").props.style).toEqual(
-    expect.arrayContaining([expect.objectContaining({ borderColor: "#9aa1a8" })]),
+    expect.arrayContaining([expect.objectContaining({ borderColor: "#8c5a3c" })]),
   );
 });
 
 it("shows stars around gold badges only", async () => {
   await render(<Profile />);
 
-  expect(screen.getAllByText("✦")).toHaveLength(8);
+  expect(screen.getAllByText("✦")).toHaveLength(12);
+});
+
+it("shows Gold styling for badges with more than twenty receipts", async () => {
+  await render(<Profile />);
+
+  expect(screen.getByLabelText("Champion badge image").props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ borderColor: "#d4a72c" })]),
+  );
+  expect(screen.getByLabelText("Winner badge image").props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ borderColor: "#d4a72c" })]),
+  );
+  expect(screen.getByLabelText("Podium badge image").props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ borderColor: "#d4a72c" })]),
+  );
 });
 
 it("shows badge details when a badge is pressed", async () => {
