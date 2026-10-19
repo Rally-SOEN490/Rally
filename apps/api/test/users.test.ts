@@ -190,6 +190,17 @@ describe("GET /users/me", () => {
       where: { userId_badgeTypeId: { userId: user.id, badgeTypeId: podium.id } },
       data: { receivedCount: 10 },
     });
+    for (const [key, receivedCount] of [
+      ["champion", 4],
+      ["winner", 3],
+      ["competitor", 2],
+    ] as const) {
+      const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
+      await testDb.userBadge.update({
+        where: { userId_badgeTypeId: { userId: user.id, badgeTypeId: badgeType.id } },
+        data: { receivedCount },
+      });
+    }
     await testDb.userBadge.create({
       data: { userId: user.id, badgeTypeId: extra.id, receivedCount: 1 },
     });
