@@ -1,3 +1,4 @@
+import { UpcomingTeamBanner } from "@/components/profile/UpcomingTeamBanner";
 import { ProfileMessage } from "@/components/profile/ProfileMessage";
 import { router } from "expo-router";
 import {
@@ -65,23 +66,11 @@ export default function Profile() {
             <Text style={styles.avatarText}>{account?.displayName.charAt(0).toUpperCase()}</Text>
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
-          <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
         </View>
 
         {user && account && <ProfileMessage key={user.uid} user={user} />}
 
-        <View style={styles.teamBanner}>
-          <View style={styles.teamBadge}>
-            <Text style={styles.teamEmoji}>🌿</Text>
-          </View>
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>Sunbirds</Text>
-            <Text style={styles.teamMeta}>Co-ed 6s • Captain</Text>
-          </View>
-          <View style={styles.teamTag}>
-            <Text style={styles.teamTagText}>Rank</Text>
-          </View>
-        </View>
+        {user && account && <UpcomingTeamBanner key={user.uid} user={user} />}
 
         <View style={styles.statsRow}>
           {stats.map((stat) => (
@@ -278,55 +267,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 28,
     fontWeight: "800",
-    color: "#12382d",
-  },
-  playerMeta: {
-    marginTop: 2,
-    fontSize: 15,
-    color: "#536761",
-  },
-  teamBanner: {
-    backgroundColor: "#12382d",
-    borderRadius: 20,
-    padding: 14,
-    marginTop: 20,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  teamBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#dfe9e4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  teamEmoji: {
-    fontSize: 20,
-  },
-  teamInfo: {
-    flex: 1,
-  },
-  teamName: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#f5f3ef",
-  },
-  teamMeta: {
-    fontSize: 12,
-    color: "#d9dfd7",
-    marginTop: 4,
-  },
-  teamTag: {
-    backgroundColor: "#f3f6f5",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  teamTagText: {
-    fontSize: 11,
-    fontWeight: "700",
     color: "#12382d",
   },
   statsRow: {
