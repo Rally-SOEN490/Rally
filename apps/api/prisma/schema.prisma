@@ -73,7 +73,6 @@ model ProfilePrivacy {
   @@map("profile_privacy")
 }
 
-// Read contract for profile details. Editing belongs to RALLY-22–24.
 model PlayerProfile {
   userId        String   @id @map("user_id") @db.Uuid
   photoUrl      String?  @map("photo_url")

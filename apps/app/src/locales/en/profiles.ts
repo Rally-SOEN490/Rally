@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-// Keep feature copy outside screens so it can join the app's future i18next setup.
 export const profileText = {
   privacyTitle: "Profile privacy",
   privacyIntro:

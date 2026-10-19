@@ -3,7 +3,6 @@
 
 import { Link } from "expo-router";
 
-// Reuse on roster, search and free-agent entries when those features exist.
 export function PlayerProfileLink({
   id,
   label,
