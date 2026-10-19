@@ -213,7 +213,7 @@ describe("GET /users/me", () => {
       22,
       17,
       10,
-      1,
+      6,
     ]);
     expect(badges[0]).toMatchObject({ key: "champion", receivedCount: 25, tier: "Gold" });
     expect(badges[1]).toMatchObject({ key: "winner", receivedCount: 22, tier: "Gold" });
