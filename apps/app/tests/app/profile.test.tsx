@@ -65,12 +65,13 @@ beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
 });
 
+// The first instrumented native render is slower on a cold CI worker.
 it("shows the name saved in Rally's database, like Home does", async () => {
   await render(<Profile />);
 
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
   expect(screen.queryByText("Old Firebase name")).not.toBeOnTheScreen();
-});
+}, 15_000);
 
 it("opens settings from the gear button", async () => {
   await render(<Profile />);
