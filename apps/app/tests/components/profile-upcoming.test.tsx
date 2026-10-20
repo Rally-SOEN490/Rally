@@ -26,11 +26,15 @@ it("shows an empty state without a fake team or expansion button", async () => {
   expect(screen.queryByText("Sunbirds")).not.toBeOnTheScreen();
   expect(screen.queryByRole("button", { name: /Show all/ })).not.toBeOnTheScreen();
 });
-it("does not show an expansion button for one tournament", async () => {
+it("opens the full event and date details for a single tournament", async () => {
   jest.mocked(getUpcomingTournaments).mockResolvedValue({ tournaments: entries.slice(0, 1) });
   await render(<UpcomingTeamBanner user={user} />);
   expect(await screen.findByText("Team 1")).toBeOnTheScreen();
-  expect(screen.queryByRole("button", { name: /Show all/ })).not.toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Show all upcoming tournaments (1)" }));
+  expect(screen.getByText("Event 1")).toBeOnTheScreen();
+  expect(screen.getByText("Tournament 1")).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Close upcoming tournaments" }));
+  expect(screen.queryByText("Event 1")).not.toBeOnTheScreen();
 });
 it("retries a failed load", async () => {
   jest.mocked(getUpcomingTournaments).mockRejectedValueOnce(new ApiError(503, "Unavailable"));
