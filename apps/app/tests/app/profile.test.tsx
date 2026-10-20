@@ -5,7 +5,7 @@ import { render, screen, userEvent, waitFor } from "@testing-library/react-nativ
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import Profile from "@/app/profile";
-import { updateMyProfile } from "@/lib/api";
+import { updateMyProfile, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
@@ -14,7 +14,11 @@ jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: null }),
 }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
-jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), updateMyProfile: jest.fn() }));
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"),
+  updateMyProfile: jest.fn(),
+  uploadMyProfilePhoto: jest.fn(),
+}));
 
 const user = { email: "sam@example.com", displayName: "Old Firebase name" } as User;
 const account = {
@@ -70,6 +74,7 @@ const account = {
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
   jest.mocked(updateMyProfile).mockResolvedValue(account);
+  jest.mocked(uploadMyProfilePhoto).mockResolvedValue(account);
 });
 
 it("shows the name saved in Rally's database, like Home does", async () => {
@@ -123,6 +128,73 @@ it("offers a profile photo picker in the editor", async () => {
   await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
 
   expect(screen.getByRole("button", { name: "Change profile photo" })).toBeOnTheScreen();
+});
+
+it("previews and uploads a selected profile photo", async () => {
+  const ImagePicker = require("expo-image-picker");
+  const photoAccount = { ...account, profilePhotoUrl: "https://signed.example/avatar.png" };
+  jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: "blob:avatar", mimeType: "image/png", fileSize: 128 }],
+  });
+  jest.mocked(uploadMyProfilePhoto).mockResolvedValue(photoAccount);
+  const setAccount = jest.fn();
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account, setAccount }));
+  await render(<Profile />);
+
+  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
+  await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
+  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({
+    mediaTypes: ["images"],
+    allowsEditing: true,
+    aspect: [1, 1],
+  }));
+  await userEvent.press(screen.getByRole("button", { name: "Save profile" }));
+
+  expect(uploadMyProfilePhoto).toHaveBeenCalledWith(user, { uri: "blob:avatar", mimeType: "image/png" });
+  expect(setAccount).toHaveBeenCalledWith(photoAccount);
+});
+
+it("rejects a selected photo larger than 5 MB", async () => {
+  const ImagePicker = require("expo-image-picker");
+  jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: "blob:large", mimeType: "image/png", fileSize: 5 * 1024 * 1024 + 1 }],
+  });
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
+  await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
+
+  expect(screen.getByText("Choose a photo smaller than 5 MB.")).toBeOnTheScreen();
+});
+
+it("rejects unsupported selected photo types", async () => {
+  const ImagePicker = require("expo-image-picker");
+  jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: "blob:gif", mimeType: "image/gif", fileSize: 128 }],
+  });
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
+  await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
+
+  expect(screen.getByText("Use a JPEG, PNG, or WebP image.")).toBeOnTheScreen();
+});
+
+it("keeps the editor open and shows an upload error", async () => {
+  const ImagePicker = require("expo-image-picker");
+  jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: "blob:avatar", mimeType: "image/png", fileSize: 128 }],
+  });
+  jest.mocked(uploadMyProfilePhoto).mockRejectedValueOnce(new Error("Upload failed"));
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
+  await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
+  await userEvent.press(screen.getByRole("button", { name: "Save profile" }));
+
+  expect(await screen.findByText("Something went wrong. Please try again.")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Bio")).toBeOnTheScreen();
 });
 
 it("shows badges saved on the Rally account", async () => {
