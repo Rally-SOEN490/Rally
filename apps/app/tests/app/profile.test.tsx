@@ -9,7 +9,7 @@ import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
-jest.mock("@/lib/profile-tournaments", () => ({ getUpcomingTournaments: jest.fn().mockResolvedValue({ tournaments: [] }) }));
+jest.mock("@/lib/profile-tournaments", () => ({ getUpcomingTournaments: jest.fn().mockResolvedValue({ tournaments: [] }), getTournamentResults: jest.fn().mockResolvedValue({ results: [] }) }));
 jest.mock("@/lib/profile-message", () => ({ getProfileMessage: jest.fn().mockResolvedValue({ message: "" }), saveProfileMessage: jest.fn() }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
@@ -158,4 +158,13 @@ it("ignores the tabs that aren't built yet", async () => {
 
   expect(router.replace).not.toHaveBeenCalled();
   expect(router.push).not.toHaveBeenCalled();
+});
+
+it("does not present fabricated teams, stats, interests or results as player data", async () => {
+  await render(<Profile />);
+  expect(screen.queryByText("Outside hitter • Sunbirds")).not.toBeOnTheScreen();
+  expect(screen.queryByText("132")).not.toBeOnTheScreen();
+  expect(screen.queryByText("Beach 2s")).not.toBeOnTheScreen();
+  expect(screen.queryByText("Nationals, 9-man")).not.toBeOnTheScreen();
+  expect(await screen.findByText("No tournament results to show yet.")).toBeOnTheScreen();
 });

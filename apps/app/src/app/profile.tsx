@@ -1,3 +1,5 @@
+import { profileCopy } from "@/locales/en/profile";
+import { TournamentResults } from "@/components/profile/TournamentResults";
 import { UpcomingTeamBanner } from "@/components/profile/UpcomingTeamBanner";
 import { ProfileMessage } from "@/components/profile/ProfileMessage";
 import { router } from "expo-router";
@@ -14,21 +16,6 @@ import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
-
-const stats = [
-  { label: "Matches", value: "132" },
-  { label: "Wins", value: "90" },
-  { label: "Top 4", value: "11" },
-  { label: "Events", value: "9" },
-];
-
-const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
-const results = [
-  { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
-  { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
-  { title: "Verdun Spring Open", year: "May 2026", accent: "#e0e7b8" },
-  { title: "Fall Classic 6s", year: "Sep 2025", accent: "#d9e8dc" },
-];
 
 const badgeImages = {
   "badge-gold-placeholder": require("@/assets/images/badge-gold-placeholder.png"),
@@ -71,15 +58,6 @@ export default function Profile() {
         {user && account && <ProfileMessage key={user.uid} user={user} />}
 
         {user && account && <UpcomingTeamBanner key={`upcoming/${user.uid}`} user={user} />}
-
-        <View style={styles.statsRow}>
-          {stats.map((stat) => (
-            <View key={stat.label} style={styles.statCard}>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
 
         <View style={styles.awardsSection}>
           <Text style={styles.sectionTitle}>Awards</Text>
@@ -130,34 +108,10 @@ export default function Profile() {
 
         <View style={styles.tagSection}>
           <Text style={styles.sectionTitle}>Interested in</Text>
-          <View style={styles.tagRow}>
-            {interested.map((tag) => (
-              <View key={tag} style={styles.tagPill}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+          <Text style={styles.emptyText}>{profileCopy.noInterests}</Text>
         </View>
 
-        <View style={styles.resultsSection}>
-          <View style={styles.resultsHeader}>
-            <Text style={styles.sectionTitle}>Results</Text>
-            <Text style={styles.linkText}>See all</Text>
-          </View>
-          <View style={styles.resultList}>
-            {results.map((result) => (
-              <View key={result.title} style={styles.resultItem}>
-                <View style={[styles.resultBadge, { backgroundColor: result.accent }]}>
-                  <Text style={styles.resultBadgeText}>🏆</Text>
-                </View>
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultTitle}>{result.title}</Text>
-                </View>
-                <Text style={styles.resultYear}>{result.year}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        {user && account && <TournamentResults key={user.uid} user={user} />}
       </ScrollView>
 
       <Modal
@@ -269,31 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#12382d",
   },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#12382d",
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#536761",
-    marginTop: 6,
-  },
   awardsSection: {
     marginTop: 24,
   },
@@ -399,77 +328,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  emptyText: { color: "#536761", fontSize: 14, marginTop: 12 },
   tagSection: {
     marginTop: 22,
-  },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
-  },
-  tagPill: {
-    backgroundColor: "#f2f0ed",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#12382d",
-    fontWeight: "600",
-  },
-  resultsSection: {
-    marginTop: 24,
-  },
-  resultsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#204d42",
-    fontWeight: "600",
-  },
-  resultList: {
-    marginTop: 12,
-    gap: 10,
-  },
-  resultItem: {
-    backgroundColor: "#f2f0ed",
-    borderRadius: 12,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  resultBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  resultBadgeText: {
-    fontSize: 18,
-  },
-  resultInfo: {
-    flex: 1,
-  },
-  resultTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#12382d",
-  },
-  resultYear: {
-    fontSize: 12,
-    color: "#5d6c68",
-    fontWeight: "600",
   },
   navBar: {
     position: "absolute",

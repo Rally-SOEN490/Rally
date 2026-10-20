@@ -9,6 +9,7 @@ export const profileCopy = {
   save: "Save message", saving: "Saving…", cancel: "Cancel", saved: "Message saved.",
   removed: "Message removed.", loading: "Loading profile message…", retry: "Try again",
   limit: "Keep your message to 280 characters or fewer.",
+  loadingResults: "Loading tournament results…", placement: "Placement", noInterests: "No interests added yet.",
   results: "Results", noResults: "No tournament results to show yet.",
   seeAll: "See all results", seeLess: "Show fewer results", team: "Your next team",
 };

@@ -10,5 +10,6 @@ export const participationRoutes: FastifyPluginAsync<{ db: Database; verifyIdTok
   const profiles = createParticipationService(createParticipationRepository(db));
   app.addHook("onRequest", async (_request, reply) => { reply.header("Cache-Control", "no-store"); });
   app.addHook("preHandler", requireUser(verifyIdToken));
+  app.get("/me/results", (request) => profiles.history(request.firebaseUid));
   app.get("/me/upcoming", (request) => profiles.upcoming(request.firebaseUid));
 };
