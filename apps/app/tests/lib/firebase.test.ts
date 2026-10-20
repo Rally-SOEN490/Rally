@@ -41,7 +41,7 @@ it("only connects to a local emulator when explicitly requested", () => {
     delete process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL;
   }
 });
-it.each(["https://auth.example", "http://auth.example"])(
+it.each(["https://auth.example", "http://auth.example", "http://192.0.2.10:9099"])(
   "rejects a remote emulator address %s",
   (url) => {
     process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL = url;

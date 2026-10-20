@@ -18,7 +18,7 @@ if (__DEV__ && emulatorUrl) {
   const url = new URL(emulatorUrl);
   if (
     url.protocol !== "http:" ||
-    !["localhost", "127.0.0.1", "10.0.2.2"].includes(url.hostname)
+    !["localhost", "127.0.0.1"].includes(url.hostname)
   ) {
     throw new Error("Use a local Firebase Auth emulator address.");
   }
