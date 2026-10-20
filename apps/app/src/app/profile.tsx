@@ -1,6 +1,9 @@
-import { profileCopy } from "@/locales/en/profile";
 import { TournamentResults } from "@/components/profile/TournamentResults";
 import { UpcomingTeamBanner } from "@/components/profile/UpcomingTeamBanner";
+import { StatusBar } from "expo-status-bar";
+import { ProfileIcon } from "@/components/profile/ProfileIcon";
+import { ProfileStats } from "@/components/profile/ProfileStats";
+import { profileCopy } from "@/locales/en/profile";
 import { ProfileMessage } from "@/components/profile/ProfileMessage";
 import { router } from "expo-router";
 import {
@@ -36,6 +39,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.profileHeader}>
           <Pressable
@@ -44,13 +48,13 @@ export default function Profile() {
             onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
-            <Text style={styles.gearIcon}>⚙️</Text>
+            <ProfileIcon name="settings" size={18} />
           </Pressable>
         </View>
 
         <View style={styles.avatarSection}>
           <View style={styles.avatarBadge}>
-            <Text style={styles.avatarText}>{account?.displayName.charAt(0).toUpperCase()}</Text>
+            <ProfileIcon name="person" size={64} color="#a4b3ad" />
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
         </View>
@@ -59,8 +63,10 @@ export default function Profile() {
 
         {user && account && <UpcomingTeamBanner key={`upcoming/${user.uid}`} user={user} />}
 
+        <ProfileStats />
+
         <View style={styles.awardsSection}>
-          <Text style={styles.sectionTitle}>Awards</Text>
+          <View style={styles.resultsHeader}><Text style={styles.sectionTitle}>{profileCopy.awards}</Text><Text style={styles.awardCount}>{account?.badges.length ?? 0}</Text></View>
           <ScrollView
             horizontal
             accessible
@@ -107,8 +113,8 @@ export default function Profile() {
         </View>
 
         <View style={styles.tagSection}>
-          <Text style={styles.sectionTitle}>Interested in</Text>
-          <Text style={styles.emptyText}>{profileCopy.noInterests}</Text>
+          <Text style={styles.sectionTitle}>{profileCopy.interests}</Text>
+          <View style={styles.tagPill}><Text style={styles.tagText}>{profileCopy.noInterests}</Text></View>
         </View>
 
         {user && account && <TournamentResults key={`results/${user.uid}`} user={user} />}
@@ -147,24 +153,26 @@ export default function Profile() {
 
       <View style={styles.navBar}>
         {[
-          { label: "Home" },
-          { label: "Events" },
-          { label: "Search" },
-          { label: "Notifications" },
-          { label: "You", active: true },
+          { label: profileCopy.home, icon: "home" as const },
+          { label: profileCopy.events, icon: "events" as const },
+          { label: profileCopy.teams, icon: "teams" as const },
+          { label: profileCopy.search, icon: "search" as const },
+          { label: profileCopy.you, icon: "person" as const, active: true },
         ].map((item) => (
           <Pressable
             key={item.label}
-            style={[styles.navItem, item.active && styles.navItemActive]}
+            style={styles.navItem}
             onPress={() => {
               if (item.label === "Home") router.replace("/home");
             }}
             accessibilityRole="button"
             accessibilityLabel={item.label}
+            disabled={!item.active && item.label !== profileCopy.home}
+            accessibilityState={{ selected: !!item.active, disabled: !item.active && item.label !== profileCopy.home }}
           >
-            <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
-            </Text>
+            <View style={[styles.navIconCircle, item.active && styles.navItemActive]}>
+              <ProfileIcon name={item.icon} size={18} color={item.active ? "#204d3e" : "#6c8177"} />
+            </View>
             <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>{item.label}</Text>
           </Pressable>
         ))}
@@ -174,115 +182,27 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#e8e4df",
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 110,
-  },
-  profileHeader: {
-    alignItems: "flex-end",
-    paddingTop: 18,
-    paddingBottom: 8,
-  },
-  gearButton: {
-    backgroundColor: "#f4f1ee",
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gearIcon: {
-    fontSize: 20,
-  },
-  avatarSection: {
-    alignItems: "center",
-    marginTop: 8,
-  },
-  avatarBadge: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    backgroundColor: "#d5d9d1",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 4,
-    borderColor: "#f7f4f1",
-  },
-  avatarText: {
-    fontSize: 52,
-    fontWeight: "700",
-    color: "#12382d",
-  },
-  playerName: {
-    marginTop: 12,
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#12382d",
-  },
-  awardsSection: {
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#12382d",
-  },
-  awardsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-    paddingRight: 4,
-  },
-  awardBadge: {
-    width: 72,
-    minHeight: 82,
-    borderRadius: 16,
-    backgroundColor: "#dfe9e4",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  awardImage: {
-    width: 34,
-    height: 34,
-    borderWidth: 3,
-    borderRadius: 17,
-  },
-  awardImageWrapper: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  goldStar: {
-    position: "absolute",
-    color: "#d4a72c",
-    fontSize: 11,
-    lineHeight: 11,
-  },
-  goldStarTop: {
-    top: 0,
-  },
-  goldStarRight: {
-    right: 0,
-  },
-  goldStarBottom: {
-    bottom: 0,
-  },
-  goldStarLeft: {
-    left: 0,
-  },
-  awardName: {
-    color: "#12382d",
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 5,
-    textAlign: "center",
-  },
+  navIconCircle: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  awardCount: { fontSize: 10, color: "#839387" },
+  safeArea: { flex: 1, backgroundColor: "#f4f5ef" },
+  content: { paddingHorizontal: 18, paddingBottom: 100, width: "100%", maxWidth: 480, alignSelf: "center" },
+  profileHeader: { height: 0, zIndex: 1 },
+  gearButton: { position: "absolute", top: 12, right: 0, backgroundColor: "#fff", width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e8ece4" },
+  avatarSection: { alignItems: "center", paddingTop: 20 },
+  avatarBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: "#e8ece6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderStyle: "dashed", borderColor: "#b7c5bb" },
+  playerName: { marginTop: 12, fontSize: 22, fontWeight: "800", color: "#172e25" },
+  awardsSection: { marginTop: 18 },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: "#172e25" },
+  awardsRow: { flexDirection: "row", gap: 12, marginTop: 10, paddingBottom: 2, paddingRight: 4 },
+  awardBadge: { width: 74, minHeight: 76, alignItems: "center", justifyContent: "flex-start" },
+  awardImage: { width: 46, height: 46, borderWidth: 2, borderRadius: 23, backgroundColor: "#264f40" },
+  awardImageWrapper: { width: 58, height: 58, alignItems: "center", justifyContent: "center", borderRadius: 29, backgroundColor: "#e3e9dc" },
+  goldStar: { position: "absolute", color: "#d4a72c", fontSize: 6, lineHeight: 7 },
+  goldStarTop: { top: 0 },
+  goldStarRight: { right: 0 },
+  goldStarBottom: { bottom: 0 },
+  goldStarLeft: { left: 0 },
+  awardName: { color: "#30493c", fontSize: 9, marginTop: 5, textAlign: "center" },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(18, 56, 45, 0.45)",
@@ -328,48 +248,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  emptyText: { color: "#536761", fontSize: 14, marginTop: 12 },
-  tagSection: {
-    marginTop: 22,
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 14,
-    left: 20,
-    right: 20,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navItem: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#dfe9e4",
-  },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: "#4d5d58",
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: "#12382d",
-  },
+  tagSection: { marginTop: 16 },
+  tagPill: { alignSelf: "flex-start", marginTop: 10, backgroundColor: "#fff", borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#e4e9df" },
+  tagText: { fontSize: 10, color: "#718378" },
+  resultsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  navBar: { position: "absolute", bottom: 10, width: "94%", maxWidth: 460, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.97)", borderRadius: 36, borderWidth: 1, borderColor: "#e6ebe1", paddingVertical: 6, paddingHorizontal: 8, flexDirection: "row", alignItems: "center", boxShadow: "0px 5px 18px rgba(28,57,43,0.12)" },
+  navItem: { flex: 1, minHeight: 48, alignItems: "center", justifyContent: "center" },
+  navItemActive: { backgroundColor: "#dfebe2" },
+  navLabel: { fontSize: 9, marginTop: 1, color: "#6c8177" },
+  navLabelActive: { color: "#234d40", fontWeight: "700" },
 });
