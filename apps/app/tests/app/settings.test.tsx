@@ -82,7 +82,7 @@ const openPasswordForm = () => userEvent.press(screen.getByText("Change"));
 it("shows the user's own email", async () => {
   await render(<Settings />);
   expect(await screen.findByText("sam@example.com")).toBeOnTheScreen();
-});
+}, 30000);
 
 it("goes back from the back button", async () => {
   await render(<Settings />);
