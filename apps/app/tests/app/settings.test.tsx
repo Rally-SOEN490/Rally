@@ -15,7 +15,7 @@ import {
 } from "firebase/auth";
 import { Alert, Platform } from "react-native";
 import Settings from "@/app/settings";
-import { ApiError, deleteMyAccount } from "@/lib/api";
+import { ApiError, deleteMyAccount, getMyGender, saveMyGender } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
@@ -31,7 +31,12 @@ jest.mock("firebase/auth", () => ({
 }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
-jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), deleteMyAccount: jest.fn() }));
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"),
+  deleteMyAccount: jest.fn(),
+  getMyGender: jest.fn(),
+  saveMyGender: jest.fn(),
+}));
 
 const user = { email: "sam@example.com" } as User;
 
@@ -41,6 +46,8 @@ beforeEach(() => {
   jest.mocked(signOut).mockResolvedValue();
   jest.mocked(reauthenticateWithCredential).mockResolvedValue({} as UserCredential);
   jest.mocked(deleteMyAccount).mockResolvedValue();
+  jest.mocked(getMyGender).mockResolvedValue({ gender: null });
+  jest.mocked(saveMyGender).mockImplementation(async (_user, gender) => ({ gender }));
   jest.mocked(deleteUser).mockResolvedValue();
   jest.mocked(updatePassword).mockResolvedValue();
   jest.mocked(verifyBeforeUpdateEmail).mockResolvedValue();
@@ -102,6 +109,16 @@ describe("preferences", () => {
     await userEvent.press(screen.getByText("EN"));
 
     expect(screen.getByText("EN")).toBeOnTheScreen();
+  });
+
+  it("saves the selected gender and can clear it", async () => {
+    await render(<Settings />);
+
+    await userEvent.press(screen.getByRole("radio", { name: "Female" }));
+    expect(saveMyGender).toHaveBeenCalledWith(user, "female");
+
+    await userEvent.press(screen.getByRole("button", { name: "Clear gender" }));
+    expect(saveMyGender).toHaveBeenLastCalledWith(user, null);
   });
 });
 

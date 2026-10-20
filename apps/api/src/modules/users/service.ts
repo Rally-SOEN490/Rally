@@ -21,6 +21,8 @@ export type UserResponse = {
   }>;
 };
 
+export type Gender = "male" | "female";
+
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
 
 const toResponse = (user: UserWithBadges): UserResponse => ({
@@ -67,4 +69,8 @@ export const createUserService = (users: UserRepository) => ({
   remove: async (firebaseUid: string) => {
     await users.deleteByFirebaseUid(firebaseUid);
   },
+
+  getGender: (firebaseUid: string) => users.getGender(firebaseUid),
+
+  setGender: (firebaseUid: string, gender: Gender | null) => users.setGender(firebaseUid, gender),
 });

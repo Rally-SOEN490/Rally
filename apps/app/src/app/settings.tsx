@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -21,7 +21,7 @@ import {
   updatePassword,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import { apiErrorMessage, deleteMyAccount } from "@/lib/api";
+import { apiErrorMessage, deleteMyAccount, getMyGender, saveMyGender, type Gender } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
@@ -57,6 +57,9 @@ export default function Settings() {
   });
   const [language, setLanguage] = useState<"EN" | "FR">("EN");
   const [colorBlindMode, setColorBlindMode] = useState(false);
+  const [gender, setGender] = useState<Gender | null>(null);
+  const [genderLoading, setGenderLoading] = useState(true);
+  const [genderSaving, setGenderSaving] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
   const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
@@ -70,6 +73,29 @@ export default function Settings() {
   const [confirmValue, setConfirmValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    getMyGender(user)
+      .then(({ gender: savedGender }) => setGender(savedGender))
+      .catch((error) => notify("Unable to load gender", apiErrorMessage(error)))
+      .finally(() => setGenderLoading(false));
+  }, [user]);
+
+  const updateGender = async (value: Gender | null) => {
+    if (!user || genderSaving) return;
+    const previous = gender;
+    setGender(value);
+    setGenderSaving(true);
+    try {
+      await saveMyGender(user, value);
+    } catch (error) {
+      setGender(previous);
+      notify("Unable to save gender", apiErrorMessage(error));
+    } finally {
+      setGenderSaving(false);
+    }
+  };
 
   const closeEdit = () => {
     setEditing(null);
@@ -226,6 +252,41 @@ export default function Settings() {
               <Text style={styles.inlineActionText}>Change</Text>
             </Pressable>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Co-ed roster information</Text>
+          <Text style={styles.privacyNote}>
+            Optional. This is private and is not shown on your profile.
+          </Text>
+          <View style={styles.genderOptions}>
+            {(["male", "female"] as const).map((option) => (
+              <Pressable
+                key={option}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: gender === option, disabled: genderLoading || genderSaving }}
+                accessibilityLabel={option === "male" ? "Male" : "Female"}
+                disabled={genderLoading || genderSaving}
+                onPress={() => updateGender(option)}
+                style={[styles.genderOption, gender === option && styles.genderOptionActive]}
+              >
+                <Text style={[styles.genderOptionText, gender === option && styles.genderOptionTextActive]}>
+                  {option === "male" ? "Male" : "Female"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {gender !== null && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear gender"
+              disabled={genderSaving}
+              onPress={() => updateGender(null)}
+              style={styles.clearGender}
+            >
+              <Text style={styles.clearGenderText}>Prefer not to say</Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -578,6 +639,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#687872",
     marginTop: 2,
+  },
+  privacyNote: {
+    fontSize: 12,
+    color: "#687872",
+    marginBottom: 10,
+  },
+  genderOptions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  genderOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  genderOptionActive: {
+    borderColor: "#12382d",
+    backgroundColor: "#dfe9e4",
+  },
+  genderOptionText: {
+    color: "#5a675f",
+    fontWeight: "700",
+  },
+  genderOptionTextActive: {
+    color: "#12382d",
+  },
+  clearGender: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+  },
+  clearGenderText: {
+    color: "#687872",
+    textDecorationLine: "underline",
   },
   rowChevron: {
     fontSize: 26,

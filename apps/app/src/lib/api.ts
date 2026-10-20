@@ -23,6 +23,8 @@ export type RallyUser = {
   }[];
 };
 
+export type Gender = "male" | "female";
+
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
 
@@ -43,7 +45,7 @@ export const apiErrorMessage = (error: unknown) =>
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
 const request = async (
   user: User,
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: object,
 ) => {
@@ -79,3 +81,11 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
 export const deleteMyAccount = async (user: User): Promise<void> => {
   await request(user, "DELETE", "/users/me");
 };
+
+export const getMyGender = (user: User): Promise<{ gender: Gender | null }> =>
+  request(user, "GET", "/users/me/gender");
+
+export const saveMyGender = (
+  user: User,
+  gender: Gender | null,
+): Promise<{ gender: Gender | null }> => request(user, "PATCH", "/users/me/gender", { gender });
