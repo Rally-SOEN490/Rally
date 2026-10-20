@@ -11,7 +11,7 @@ jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn() }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
 
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = { id: "1", displayName: "Sam Lee", bio: null, profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 const verified = { uid: "sam", email: "sam@example.com", emailVerified: true } as User;
 
 const unsubscribe = jest.fn();

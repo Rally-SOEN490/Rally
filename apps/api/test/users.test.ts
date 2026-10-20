@@ -38,7 +38,16 @@ describe("POST /users/me", () => {
   test("does not send back the Firebase ID", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
-    expect(Object.keys(response.json()).sort()).toEqual(["badges", "createdAt", "displayName", "id"]);
+    expect(Object.keys(response.json()).sort()).toEqual([
+      "badges",
+      "bio",
+      "createdAt",
+      "displayName",
+      "id",
+      "profilePhotoUrl",
+    ]);
+    expect(response.json().bio).toBeNull();
+    expect(response.json().profilePhotoUrl).toBeNull();
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -248,6 +257,81 @@ describe("GET /users/me", () => {
     });
 
     expect(response.statusCode).toBe(200);
+  });
+});
+
+describe("PATCH /users/me", () => {
+  const update = (uid: string, body: object) =>
+    app.inject({ method: "PATCH", url: "/users/me", headers: authHeader(uid), payload: body });
+
+  test("updates the logged-in user's display name and bio", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    const response = await update("alice", { displayName: " Alice Smith ", bio: "Beach volleyball player" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ displayName: "Alice Smith", bio: "Beach volleyball player" });
+    expect((await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "bob" } })).displayName).toBe("Bob");
+  });
+
+  test("clears the bio when it is empty", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await update("alice", { displayName: "Alice", bio: "About me" });
+
+    const response = await update("alice", { displayName: "Alice", bio: "   " });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().bio).toBeNull();
+  });
+
+  test("returns 404 when the Rally account does not exist", async () => {
+    const response = await update("alice", { displayName: "Alice", bio: "About me" });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  test.each([
+    ["a blank display name", { displayName: "  ", bio: "About me" }],
+    ["a display name over 100 characters", { displayName: "a".repeat(101), bio: "About me" }],
+    ["a bio over 300 characters", { displayName: "Alice", bio: "a".repeat(301) }],
+  ])("rejects %s", async (_, body) => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      payload: { displayName: "Alice", bio: "About me" },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("POST /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "POST",
+      url: "/users/me/photo",
+      headers: { ...authHeader("alice"), "content-type": "multipart/form-data; boundary=photo" },
+      payload: "--photo--\r\n",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({ method: "POST", url: "/users/me/photo" });
+
+    expect(response.statusCode).toBe(401);
   });
 });
 

@@ -19,6 +19,8 @@ npm install
 npm run db:deploy           # create the tables
 ```
 
+To enable profile photo uploads, create a private Cloudflare R2 bucket and an R2 API token with object read/write access to that bucket. Add the account ID, access key ID, secret access key, and bucket name to the `R2_*` settings in `.env`. Leave all four blank to keep photo uploads disabled. The API validates images, enforces a 5 MB limit, stores objects in R2, and returns short-lived signed URLs; credentials never go to the app.
+
 ## Every day
 
 ```bash
