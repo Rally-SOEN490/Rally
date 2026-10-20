@@ -25,7 +25,9 @@ try {
     try { await auth.createUser({ ...account, password, emailVerified: true }); }
     catch (reason) {
       if (reason.code !== "auth/uid-already-exists") throw reason;
-      await auth.updateUser(account.uid, { ...account, password, emailVerified: true });
+      const existing = await auth.getUser(account.uid);
+      if (existing.email !== account.email) throw new Error("Unexpected account at the fixture UID.");
+      if (!existing.emailVerified) await auth.updateUser(account.uid, { emailVerified: true });
     }
     await db.user.upsert({ where: { firebaseUid: account.uid }, update: {}, create: {
       firebaseUid: account.uid, displayName: account.displayName, ageConfirmedAt: now,
