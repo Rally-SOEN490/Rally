@@ -85,3 +85,7 @@ To make a new EAS build:
 eas build --profile development --platform ios
 eas build --profile development --platform android
 ```
+
+### Optional local Firebase Auth emulator
+
+Set `EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL=http://127.0.0.1:9099` only for disposable local testing. On Android, run `adb reverse tcp:9099 tcp:9099` before opening the development build so the device loopback reaches the host emulator. The app accepts only HTTP loopback addresses in development; production builds ignore this opt-in setting. Keep the local emulator project separate from the team Firebase project.
