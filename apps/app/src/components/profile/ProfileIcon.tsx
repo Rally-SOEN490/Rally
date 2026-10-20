@@ -15,6 +15,9 @@ const symbols = {
   top: { ios: "medal", android: "workspace_premium", web: "workspace_premium" },
   calendar: { ios: "calendar", android: "calendar_month", web: "calendar_month" },
   next: { ios: "chevron.right", android: "chevron_right", web: "chevron_right" },
+  block: { ios: "hand.raised.fill", android: "back_hand", web: "back_hand" },
+  bolt: { ios: "bolt.fill", android: "bolt", web: "bolt" },
+  shield: { ios: "shield.fill", android: "shield", web: "shield" },
   star: { ios: "star.fill", android: "star", web: "star" },
 } as const;
 
