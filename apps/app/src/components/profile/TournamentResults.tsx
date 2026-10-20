@@ -9,6 +9,12 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { apiErrorMessage } from "@/lib/api";
 import { getTournamentResults, type TournamentResult } from "@/lib/profile-tournaments";
 import { profileCopy as copy } from "@/locales/en/profile";
+const podiumColors: Record<number, { background: string; border: string }> = {
+  1: { background: "#f8df77", border: "#d7b44a" },
+  2: { background: "#e2e7df", border: "#aebbb5" },
+  3: { background: "#efc196", border: "#bb8c60" },
+};
+const ordinaryColors = { background: "#fff", border: "transparent" };
 const date = (value: string) => new Date(value).toLocaleDateString(undefined, { month: "short", year: "numeric" });
 export function TournamentResults({ user }: { user: User }) {
   const [entries, setEntries] = useState<TournamentResult[]>();
@@ -35,10 +41,10 @@ export function TournamentResults({ user }: { user: User }) {
     <View style={styles.list}>
       {(expanded ? entries : entries?.slice(0, 3))?.map((entry) => {
         const podium = entry.placement <= 3;
-        const accent = entry.placement === 1 ? "#f8df77" : entry.placement === 2 ? "#e2e7df" : entry.placement === 3 ? "#efc196" : "#fff";
-        return <View key={entry.id} style={[styles.result, { backgroundColor: accent }]}>
+        const colors = podiumColors[entry.placement] ?? ordinaryColors;
+        return <View key={entry.id} style={[styles.result, { backgroundColor: colors.background }]}>
           {podium && <ProfileStripes color="rgba(255,255,255,0.3)" />}
-          <View style={[styles.medal, podium && styles.podiumMedal, { borderColor: entry.placement === 1 ? "#d7b44a" : entry.placement === 2 ? "#aebbb5" : entry.placement === 3 ? "#bb8c60" : "transparent" }]}>
+          <View style={[styles.medal, podium && styles.podiumMedal, { borderColor: colors.border }]}>
             {podium && <ProfileIcon name="star" size={12} color="#7a6740" />}
             <Text accessibilityLabel={`${copy.placement} ${entry.placement}`} style={styles.place}>#{entry.placement}</Text>
           </View>
