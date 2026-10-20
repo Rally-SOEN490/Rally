@@ -70,7 +70,7 @@ export default function Profile() {
 
         {user && account && <ProfileMessage key={user.uid} user={user} />}
 
-        {user && account && <UpcomingTeamBanner key={user.uid} user={user} />}
+        {user && account && <UpcomingTeamBanner key={`upcoming/${user.uid}`} user={user} />}
 
         <View style={styles.statsRow}>
           {stats.map((stat) => (
