@@ -6,6 +6,7 @@ import Fastify, { type FastifyError } from "fastify";
 import type { VerifyIdToken } from "./auth.ts";
 import type { Database } from "./db.ts";
 import { healthRoutes } from "./health.ts";
+import { participationRoutes } from "./modules/profile-participation/routes.ts";
 import { messageRoutes } from "./modules/profile-message/routes.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
@@ -45,5 +46,6 @@ export const buildApp = async ({
   await app.register(healthRoutes, { db });
   await app.register(userRoutes, { db, verifyIdToken, prefix: "/users" });
   await app.register(messageRoutes, { db, verifyIdToken, prefix: "/profiles" });
+  await app.register(participationRoutes, { db, verifyIdToken, prefix: "/profiles" });
   return app;
 };

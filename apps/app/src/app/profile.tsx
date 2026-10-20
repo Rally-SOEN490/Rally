@@ -1,3 +1,4 @@
+import { UpcomingTeamBanner } from "@/components/profile/UpcomingTeamBanner";
 import { StatusBar } from "expo-status-bar";
 import { ProfileIcon } from "@/components/profile/ProfileIcon";
 import { ProfileStats } from "@/components/profile/ProfileStats";
@@ -65,18 +66,7 @@ export default function Profile() {
 
         {user && account && <ProfileMessage key={user.uid} user={user} />}
 
-        <View style={styles.teamBanner}>
-          <View style={styles.teamBadge}>
-            <Text style={styles.teamEmoji}>🌿</Text>
-          </View>
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>Sunbirds</Text>
-            <Text style={styles.teamMeta}>Co-ed 6s • Captain</Text>
-          </View>
-          <View style={styles.teamTag}>
-            <Text style={styles.teamTagText}>Rank</Text>
-          </View>
-        </View>
+        {user && account && <UpcomingTeamBanner key={`upcoming/${user.uid}`} user={user} />}
 
         <ProfileStats />
 

@@ -9,6 +9,7 @@ import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
+jest.mock("@/lib/profile-tournaments", () => ({ getUpcomingTournaments: jest.fn().mockResolvedValue({ tournaments: [] }) }));
 jest.mock("@/lib/profile-message", () => ({ getProfileMessage: jest.fn().mockResolvedValue({ message: "" }), saveProfileMessage: jest.fn() }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 

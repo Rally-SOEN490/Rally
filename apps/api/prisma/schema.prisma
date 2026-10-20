@@ -26,6 +26,7 @@ model User {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
   profileMessage ProfileMessage?
+  profileParticipations ProfileParticipation[]
 
   @@map("users")
 }
@@ -63,4 +64,27 @@ model ProfileMessage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profile_messages")
+}
+
+enum ProfileParticipationState {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model ProfileParticipation {
+  userId String @map("user_id") @db.Uuid
+  registrationId String @map("registration_id") @db.Uuid
+  eventName String @map("event_name") @db.VarChar(140)
+  tournamentName String @map("tournament_name") @db.VarChar(140)
+  teamName String @map("team_name") @db.VarChar(140)
+  format String @db.VarChar(100)
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt DateTime @map("ends_at") @db.Timestamptz
+  state ProfileParticipationState @default(CONFIRMED)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "profile_participations_user_fkey")
+
+  @@id([userId, registrationId])
+  @@index([userId, state, startsAt, registrationId], map: "profile_participations_upcoming_idx")
+  @@map("profile_participations")
 }
