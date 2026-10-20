@@ -20,6 +20,8 @@ import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 
+const badgeIcons = { blocker: "block", clutch: "bolt", competitor: "ball", defender: "shield" } as const;
+
 const tierColors = {
   Bronze: "#8c5a3c",
   Silver: "#9aa1a8",
@@ -41,6 +43,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open settings"
+            hitSlop={8}
             onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
@@ -98,7 +101,7 @@ export default function Profile() {
                     accessibilityLabel={`${badge.name} badge image`}
                     style={[styles.awardImage, { borderColor: tierColors[badge.tier as keyof typeof tierColors] }]}
                   >
-                    <ProfileIcon name={badge.key === "blocker" ? "block" : badge.key === "clutch" ? "bolt" : badge.key === "competitor" ? "ball" : badge.key === "defender" ? "shield" : "events"} size={23} color={tierColors[badge.tier as keyof typeof tierColors] ?? "#d4a72c"} />
+                    <ProfileIcon name={badgeIcons[badge.key as keyof typeof badgeIcons] ?? "events"} size={23} color={tierColors[badge.tier as keyof typeof tierColors] ?? "#d4a72c"} />
                   </View>
                 </View>
                 <Text style={styles.awardName}>{badge.name}</Text>
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
   awardCount: { fontSize: 10, color: "#839387" },
   safeArea: { flex: 1, backgroundColor: "#f4f5ef" },
   content: { paddingHorizontal: 18, paddingBottom: 100, width: "100%", maxWidth: 480, alignSelf: "center" },
-  profileHeader: { height: 0, zIndex: 1 },
+  profileHeader: { position: "absolute", top: 0, right: 18, width: 44, height: 56, zIndex: 1 },
   gearButton: { position: "absolute", top: 12, right: 0, backgroundColor: "#fff", width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e8ece4" },
   avatarSection: { alignItems: "center", paddingTop: 20 },
   avatarBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: "#e8ece6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderStyle: "dashed", borderColor: "#b7c5bb" },
