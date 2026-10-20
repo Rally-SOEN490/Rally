@@ -82,9 +82,9 @@ model ProfileParticipation {
   startsAt DateTime @map("starts_at") @db.Timestamptz
   endsAt DateTime @map("ends_at") @db.Timestamptz
   state ProfileParticipationState @default(CONFIRMED)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "profile_participations_user_fkey")
 
   @@id([userId, registrationId])
-  @@index([userId, state, startsAt, registrationId])
+  @@index([userId, state, startsAt, registrationId], map: "profile_participations_upcoming_idx")
   @@map("profile_participations")
 }
