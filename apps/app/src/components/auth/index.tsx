@@ -54,7 +54,7 @@ export const AuthScreen = ({
           style={styles.center}
         />
       </View>
-      <Text style={styles.hero}>It's time to</Text>
+      <Text style={styles.hero}>It&apos;s time to</Text>
       <Text style={[styles.hero, styles.highlight]}>Rally Up</Text>
       <View style={styles.card}>
         {!!greeting && <Text style={styles.muted}>{greeting}</Text>}
