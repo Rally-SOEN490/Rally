@@ -180,7 +180,8 @@ export default function Settings() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
-            onPress={() => router.back()}
+            // After a reload, Settings can be the only screen, with nothing to go back to.
+            onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))}
             style={styles.backButton}
           >
             <Text style={styles.backText}>‹</Text>
