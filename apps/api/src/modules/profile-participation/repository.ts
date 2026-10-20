@@ -11,6 +11,14 @@ export const createParticipationRepository = (db: ParticipationDatabase) => ({
     where: { userId, state: "CONFIRMED", startsAt: { gt: now } },
     orderBy: [{ startsAt: "asc" }, { registrationId: "asc" }],
   }),
+  history: (userId: string, now: Date) => db.profileParticipation.findMany({
+    where: { userId, state: "COMPLETED", placement: { not: null }, endsAt: { lte: now } },
+    orderBy: [{ endsAt: "desc" }, { registrationId: "asc" }],
+  }),
+  finalizeResult: (userId: string, registrationId: string, placement: number, now: Date) => db.profileParticipation.updateMany({
+    where: { userId, registrationId, state: { in: ["CONFIRMED", "COMPLETED"] }, endsAt: { lte: now } },
+    data: { state: "COMPLETED", placement },
+  }),
   syncRegistration: (snapshot: RegistrationSnapshot) => db.profileParticipation.upsert({
     where: { userId_registrationId: { userId: snapshot.userId, registrationId: snapshot.registrationId } },
     create: snapshot,

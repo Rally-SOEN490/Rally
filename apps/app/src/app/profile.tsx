@@ -1,3 +1,4 @@
+import { TournamentResults } from "@/components/profile/TournamentResults";
 import { UpcomingTeamBanner } from "@/components/profile/UpcomingTeamBanner";
 import { StatusBar } from "expo-status-bar";
 import { ProfileIcon } from "@/components/profile/ProfileIcon";
@@ -18,13 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
-const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
-const results = [
-  { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
-  { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
-  { title: "Verdun Spring Open", year: "May 2026", accent: "#e0e7b8" },
-  { title: "Fall Classic 6s", year: "Sep 2025", accent: "#d9e8dc" },
-];
 
 const badgeIcons = { blocker: "block", clutch: "bolt", competitor: "ball", defender: "shield" } as const;
 
@@ -118,34 +112,10 @@ export default function Profile() {
 
         <View style={styles.tagSection}>
           <Text style={styles.sectionTitle}>{profileCopy.interests}</Text>
-          <View style={styles.tagRow}>
-            {interested.map((tag) => (
-              <View key={tag} style={styles.tagPill}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+          <View style={styles.tagPill}><Text style={styles.tagText}>{profileCopy.noInterests}</Text></View>
         </View>
 
-        <View style={styles.resultsSection}>
-          <View style={styles.resultsHeader}>
-            <Text style={styles.sectionTitle}>Results</Text>
-            <Text style={styles.linkText}>See all</Text>
-          </View>
-          <View style={styles.resultList}>
-            {results.map((result) => (
-              <View key={result.title} style={styles.resultItem}>
-                <View style={[styles.resultBadge, { backgroundColor: result.accent }]}>
-                  <Text style={styles.resultBadgeText}>🏆</Text>
-                </View>
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultTitle}>{result.title}</Text>
-                </View>
-                <Text style={styles.resultYear}>{result.year}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        {user && account && <TournamentResults key={`results/${user.uid}`} user={user} />}
       </ScrollView>
 
       <Modal
@@ -219,87 +189,9 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingBottom: 100, width: "100%", maxWidth: 480, alignSelf: "center" },
   profileHeader: { position: "absolute", top: 0, right: 18, width: 44, height: 56, zIndex: 1 },
   gearButton: { position: "absolute", top: 12, right: 0, backgroundColor: "#fff", width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e8ece4" },
-  gearIcon: {
-    fontSize: 20,
-  },
   avatarSection: { alignItems: "center", paddingTop: 20 },
   avatarBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: "#e8ece6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderStyle: "dashed", borderColor: "#b7c5bb" },
-  avatarText: {
-    fontSize: 52,
-    fontWeight: "700",
-    color: "#12382d",
-  },
   playerName: { marginTop: 12, fontSize: 22, fontWeight: "800", color: "#172e25" },
-  playerMeta: { marginTop: 3, fontSize: 11, color: "#718378" },
-  teamBanner: {
-    backgroundColor: "#12382d",
-    borderRadius: 20,
-    padding: 14,
-    marginTop: 20,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  teamBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#dfe9e4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  teamEmoji: {
-    fontSize: 20,
-  },
-  teamInfo: {
-    flex: 1,
-  },
-  teamName: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#f5f3ef",
-  },
-  teamMeta: {
-    fontSize: 12,
-    color: "#d9dfd7",
-    marginTop: 4,
-  },
-  teamTag: {
-    backgroundColor: "#f3f6f5",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  teamTagText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#12382d",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#12382d",
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#536761",
-    marginTop: 6,
-  },
   awardsSection: { marginTop: 18 },
   sectionTitle: { fontSize: 14, fontWeight: "700", color: "#172e25" },
   awardsRow: { flexDirection: "row", gap: 12, marginTop: 10, paddingBottom: 2, paddingRight: 4 },
@@ -358,79 +250,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   tagSection: { marginTop: 16 },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
-  },
-  tagPill: {
-    backgroundColor: "#f2f0ed",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#12382d",
-    fontWeight: "600",
-  },
-  resultsSection: { marginTop: 18 },
+  tagPill: { alignSelf: "flex-start", marginTop: 10, backgroundColor: "#fff", borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#e4e9df" },
+  tagText: { fontSize: 10, color: "#718378" },
   resultsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  linkText: {
-    fontSize: 14,
-    color: "#204d42",
-    fontWeight: "600",
-  },
-  resultList: {
-    marginTop: 12,
-    gap: 10,
-  },
-  resultItem: {
-    backgroundColor: "#f2f0ed",
-    borderRadius: 12,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-  },
-  resultBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  resultBadgeText: {
-    fontSize: 18,
-  },
-  resultInfo: {
-    flex: 1,
-  },
-  resultTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#12382d",
-  },
-  resultYear: {
-    fontSize: 12,
-    color: "#5d6c68",
-    fontWeight: "600",
-  },
   navBar: { position: "absolute", bottom: 10, width: "94%", maxWidth: 460, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.97)", borderRadius: 36, borderWidth: 1, borderColor: "#e6ebe1", paddingVertical: 6, paddingHorizontal: 8, flexDirection: "row", alignItems: "center", boxShadow: "0px 5px 18px rgba(28,57,43,0.12)" },
   navItem: { flex: 1, minHeight: 48, alignItems: "center", justifyContent: "center" },
   navItemActive: { backgroundColor: "#dfebe2" },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
   navLabel: { fontSize: 9, marginTop: 1, color: "#6c8177" },
   navLabelActive: { color: "#234d40", fontWeight: "700" },
 });

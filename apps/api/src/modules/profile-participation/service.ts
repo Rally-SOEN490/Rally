@@ -18,6 +18,22 @@ export const createParticipationService = (rows: ParticipationRepository) => ({
       teamName: entry.teamName, format: entry.format, startsAt: entry.startsAt.toISOString(),
     })) };
   },
+  history: async (uid: string, now = new Date()) => {
+    const owner = await rows.findOwner(uid);
+    if (!owner) throw Object.assign(new Error("No Rally account found."), { statusCode: 404 });
+    return { results: (await rows.history(owner.id, now)).map((entry) => ({
+      id: entry.registrationId, eventName: entry.eventName, tournamentName: entry.tournamentName,
+      teamName: entry.teamName, endedAt: entry.endsAt.toISOString(), placement: entry.placement!,
+    })) };
+  },
+  // Only a trusted results producer may publish or correct a final placement.
+  finalizeResult: async (userId: string, registrationId: string, placement: number, now = new Date()) => {
+    if (!uuid.test(userId) || !uuid.test(registrationId) || !Number.isInteger(placement) || placement < 1 || placement > 2147483647 || !Number.isFinite(now.getTime())) {
+      throw new Error("Invalid finalized result.");
+    }
+    const result = await rows.finalizeResult(userId, registrationId, placement, now);
+    if (result.count !== 1) throw new Error("No eligible completed participation found.");
+  },
   // Called by trusted registration code in its transaction, never by a player HTTP route.
   syncRegistration: async (snapshot: RegistrationSnapshot) => {
     if (!uuid.test(snapshot.userId) || !uuid.test(snapshot.registrationId) ||

@@ -45,3 +45,22 @@ Related: #229, #25, #180. Mockup:
 https://github.com/Rally-SOEN490/Rally/wiki/Mockups#profile-page
 
 AI-use acknowledgment: OpenAI Codex assisted with implementation, tests and documentation.
+
+## Confirmed results (#230; profile slice of #52)
+
+The results producer uses `finalizeResult(userId, registrationId, placement, now)`
+inside its tournament-close/correction transaction. It must authorize staff and
+verify official standings before calling this internal function. Only an existing
+confirmed/completed participation with end <= now can be finalized. Cancelled,
+missing and future participations are refused; placements must be positive
+PostgreSQL integers. Retrying the same placement is safe. Trusted corrections can
+change the placement, but never the tournament-time event/team/name snapshots.
+The authoritative producer remains responsible for its score revision/audit log.
+There is no player-write result endpoint and no derived match/statistics totals.
+
+GET `/profiles/me/results` returns completed rows with a non-null placement and
+end <= now, newest first then registration UUID. It is owner-only and no-store.
+The profile previews three results and expands all on request. Until the results
+producer is implemented/connected, real profiles show no results. Future
+anonymized competition history belongs to the competition module, not this
+account-owned projection. This change does not close the broader RALLY-30 (#52).

@@ -14,6 +14,8 @@ export const profileCopy = {
   save: "Save message", saving: "Saving…", cancel: "Cancel", saved: "Message saved.",
   removed: "Message removed.", loading: "Loading profile message…", retry: "Try again",
   limit: "Keep your message to 280 characters or fewer.",
+  loadingResults: "Loading tournament results…", placement: "Placement",
   results: "Results", noResults: "No tournament results to show yet.",
+  seeAllShort: "See all", seeLessShort: "Show less",
   seeAll: "See all results", seeLess: "Show fewer results", team: "Your next team",
 };
