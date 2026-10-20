@@ -7,7 +7,6 @@ import { profileCopy } from "@/locales/en/profile";
 import { ProfileMessage } from "@/components/profile/ProfileMessage";
 import { router } from "expo-router";
 import {
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -20,9 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
-const badgeImages = {
-  "badge-gold-placeholder": require("@/assets/images/badge-gold-placeholder.png"),
-} as const;
 
 const tierColors = {
   Bronze: "#8c5a3c",
@@ -97,15 +93,11 @@ export default function Profile() {
                       <Text style={[styles.goldStar, styles.goldStarLeft]}>✦</Text>
                     </>
                   )}
-                  <Image
+                  <View
+                    accessibilityRole="image"
                     accessibilityLabel={`${badge.name} badge image`}
-                    source={badgeImages[badge.image as keyof typeof badgeImages]}
-                    style={[
-                      styles.awardImage,
-                      { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
-                    ]}
-                  />
-                  <View pointerEvents="none" style={styles.awardSymbol}>
+                    style={[styles.awardImage, { borderColor: tierColors[badge.tier as keyof typeof tierColors] }]}
+                  >
                     <ProfileIcon name={badge.key === "blocker" ? "block" : badge.key === "clutch" ? "bolt" : badge.key === "competitor" ? "ball" : badge.key === "defender" ? "shield" : "events"} size={23} color={tierColors[badge.tier as keyof typeof tierColors] ?? "#d4a72c"} />
                   </View>
                 </View>
@@ -188,7 +180,6 @@ const styles = StyleSheet.create({
   avatarSilhouette: { width: 58, height: 58, alignItems: "center", justifyContent: "flex-end" },
   avatarHead: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#a5b2ab", marginBottom: 5 },
   avatarShoulders: { width: 42, height: 25, borderTopLeftRadius: 23, borderTopRightRadius: 23, borderBottomLeftRadius: 5, borderBottomRightRadius: 5, backgroundColor: "#a5b2ab" },
-  awardSymbol: { position: "absolute", width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: "#234e3c", borderWidth: 2, borderColor: "#66806a", boxShadow: "inset 0px 0px 8px rgba(0,0,0,0.2)" },
   navIconCircle: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   awardCount: { fontSize: 10, color: "#839387" },
   safeArea: { flex: 1, backgroundColor: "#f4f5ef" },
@@ -202,7 +193,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 14, fontWeight: "700", color: "#172e25" },
   awardsRow: { flexDirection: "row", gap: 12, marginTop: 10, paddingBottom: 2, paddingRight: 4 },
   awardBadge: { width: 74, minHeight: 76, alignItems: "center", justifyContent: "flex-start" },
-  awardImage: { width: 46, height: 46, borderWidth: 2, borderRadius: 23, backgroundColor: "#264f40", opacity: 0.12 },
+  awardImage: { width: 46, height: 46, borderWidth: 2, borderRadius: 23, backgroundColor: "#264f40", alignItems: "center", justifyContent: "center", boxShadow: "0px 2px 5px rgba(28,57,43,0.18)" },
   awardImageWrapper: { width: 58, height: 58, alignItems: "center", justifyContent: "center", borderRadius: 29, backgroundColor: "#e3e9dc" },
   goldStar: { position: "absolute", color: "#d4a72c", fontSize: 6, lineHeight: 7 },
   goldStarTop: { top: 0 },
