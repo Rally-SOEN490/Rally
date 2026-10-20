@@ -28,7 +28,7 @@ const askPermission = (origin: string, method: string) =>
     },
   });
 
-test.each(["GET", "POST", "DELETE"])("lets the app send %s requests", async (method) => {
+test.each(["GET", "POST", "PATCH", "DELETE"])("lets the app send %s requests", async (method) => {
   const response = await askPermission("http://localhost:8081", method);
 
   expect(response.statusCode).toBe(204);

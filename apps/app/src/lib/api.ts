@@ -10,6 +10,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export type RallyUser = {
   id: string;
   displayName: string;
+  lookingForTeam: boolean;
   createdAt: string;
   badges: {
     key: string;
@@ -22,6 +23,8 @@ export type RallyUser = {
     awardedAt: string;
   }[];
 };
+
+export type ProfileChanges = { lookingForTeam: boolean };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
@@ -43,7 +46,7 @@ export const apiErrorMessage = (error: unknown) =>
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
 const request = async (
   user: User,
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: object,
 ) => {
@@ -74,6 +77,9 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   });
+
+export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
+  request(user, "PATCH", "/users/me", changes);
 
 // Deletes the person's Rally data. Safe to call again if it was already deleted.
 export const deleteMyAccount = async (user: User): Promise<void> => {

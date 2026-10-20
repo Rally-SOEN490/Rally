@@ -2,10 +2,23 @@
 // SPDX-License-Identifier: MIT
 
 import type { User } from "firebase/auth";
-import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser } from "@/lib/api";
+import {
+  ApiError,
+  apiErrorMessage,
+  deleteMyAccount,
+  getMyAccount,
+  saveNewUser,
+  updateMyAccount,
+} from "@/lib/api";
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  lookingForTeam: false,
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [],
+};
 
 // Pretends the API answered with this status and JSON body.
 const respond = (status: number, body?: object) =>
@@ -71,6 +84,30 @@ describe("getMyAccount", () => {
       status: 0,
       message: "Can't reach the Rally server. Check your internet connection and try again.",
     });
+  });
+});
+
+describe("updateMyAccount", () => {
+  it("sends the change with the user's token and returns the updated account", async () => {
+    respond(200, { ...account, lookingForTeam: true });
+
+    await expect(updateMyAccount(user, { lookingForTeam: true })).resolves.toEqual({
+      ...account,
+      lookingForTeam: true,
+    });
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ lookingForTeam: true }),
+    });
+  });
+
+  it("fails with the API's message", async () => {
+    respond(400, { message: "Some of the details you sent aren't valid." });
+
+    await expect(updateMyAccount(user, { lookingForTeam: true })).rejects.toEqual(
+      new ApiError(400, "Some of the details you sent aren't valid."),
+    );
   });
 });
 
