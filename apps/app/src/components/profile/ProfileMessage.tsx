@@ -79,11 +79,11 @@ export function ProfileMessage({ user }: { user: User }) {
   );
 }
 const styles = StyleSheet.create({
-  card: { marginTop: 20, padding: 16, borderRadius: 20, backgroundColor: "#f7f4f1", borderWidth: 1, borderColor: "#d9d5d0", gap: 12 },
+  card: { marginTop: 14, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8df", gap: 5 },
   heading: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 },
-  title: { color: "#12382d", fontSize: 16, fontWeight: "700" },
-  link: { color: "#204d42", fontSize: 14, fontWeight: "600" },
-  message: { color: "#12382d", fontSize: 16, lineHeight: 24 }, muted: { color: "#536761" },
+  title: { color: "#12382d", fontSize: 11, fontWeight: "700" },
+  link: { color: "#204d42", fontSize: 11, fontWeight: "600" },
+  message: { color: "#12382d", fontSize: 13, lineHeight: 19 }, muted: { color: "#536761" },
   input: { minHeight: 110, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#8a9d94", padding: 12, color: "#12382d", fontSize: 16, lineHeight: 24 },
   counter: { textAlign: "right", fontSize: 12, color: "#536761" },
   actions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 10 },
