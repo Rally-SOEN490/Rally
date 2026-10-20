@@ -12,7 +12,7 @@ jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
 const user = { email: "sam@example.com", emailVerified: true } as User;
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = { id: "1", displayName: "Sam Lee", bio: null, profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));

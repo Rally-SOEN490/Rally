@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 import type { User } from "firebase/auth";
-import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser } from "@/lib/api";
+import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser, updateMyProfile } from "@/lib/api";
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = { id: "1", displayName: "Sam Lee", bio: null, profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 
 // Pretends the API answered with this status and JSON body.
 const respond = (status: number, body?: object) =>
@@ -70,6 +70,22 @@ describe("getMyAccount", () => {
     await expect(getMyAccount(user)).rejects.toMatchObject({
       status: 0,
       message: "Can't reach the Rally server. Check your internet connection and try again.",
+    });
+  });
+});
+
+describe("updateMyProfile", () => {
+  it("sends the display name and bio with a PATCH request", async () => {
+    respond(200, { ...account, displayName: "Sam Lee", bio: "Beach player" });
+
+    await expect(updateMyProfile(user, "Sam Lee", "Beach player")).resolves.toMatchObject({
+      displayName: "Sam Lee",
+      bio: "Beach player",
+    });
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: "Sam Lee", bio: "Beach player" }),
     });
   });
 });

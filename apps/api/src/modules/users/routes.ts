@@ -2,18 +2,23 @@
 // SPDX-License-Identifier: MIT
 
 import type { FastifyPluginAsync } from "fastify";
+import { fileTypeFromBuffer } from "file-type";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import type { Database } from "../../db.ts";
+import type { ProfilePhotoStorage } from "./photo-storage.ts";
+import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository } from "./repository.ts";
 import { createUserService } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
+type UpdateProfileBody = { displayName: string; bio: string };
 
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
   verifyIdToken: VerifyIdToken;
-}> = async (app, { db, verifyIdToken }) => {
-  const users = createUserService(createUserRepository(db));
+  photos?: ProfilePhotoStorage;
+}> = async (app, { db, verifyIdToken, photos }) => {
+  const users = createUserService(createUserRepository(db), photos);
 
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));
@@ -44,6 +49,49 @@ export const userRoutes: FastifyPluginAsync<{
 
   app.get("/me", async (request, reply) => {
     const user = await users.getCurrent(request.firebaseUid);
+    return user ?? reply.code(404).send({ message: "No Rally account found." });
+  });
+
+  app.patch<{ Body: UpdateProfileBody }>(
+    "/me",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["displayName", "bio"],
+          additionalProperties: false,
+          properties: {
+            displayName: {
+              type: "string",
+              maxLength: 100,
+              pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
+            },
+            bio: { type: "string", maxLength: 300 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await users.updateCurrent(
+        request.firebaseUid,
+        request.body.displayName,
+        request.body.bio,
+      );
+      return user ?? reply.code(404).send({ message: "No Rally account found." });
+    },
+  );
+
+  app.post("/me/photo", async (request, reply) => {
+    if (!photos)
+      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
+    const file = await request.file({ limits: { files: 1, fileSize: profilePhotoMaxBytes } });
+    if (!file)
+      return reply.code(400).send({ message: "Choose a profile photo to upload." });
+    const body = await file.toBuffer();
+    const detected = await fileTypeFromBuffer(body);
+    if (!detected || !profilePhotoTypes.includes(detected.mime))
+      return reply.code(400).send({ message: "Use a JPEG, PNG, or WebP image." });
+    const user = await users.uploadPhoto(request.firebaseUid, body);
     return user ?? reply.code(404).send({ message: "No Rally account found." });
   });
 

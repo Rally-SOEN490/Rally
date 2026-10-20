@@ -87,6 +87,13 @@ export const createUserRepository = (db: Database) => {
       });
     },
 
+    updateByFirebaseUid: (firebaseUid: string, data: {
+      displayName?: string;
+      bio?: string | null;
+      profilePhotoKey?: string | null;
+    }) =>
+      db.user.update({ where: { firebaseUid }, data }),
+
     // Does nothing if the user is already gone, so retrying a deletion is safe.
     deleteByFirebaseUid: (firebaseUid: string) =>
       db.user.deleteMany({ where: { firebaseUid } }),

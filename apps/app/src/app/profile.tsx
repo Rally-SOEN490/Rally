@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   Image,
   Modal,
@@ -6,10 +7,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  apiErrorMessage,
+  BIO_MAX_LENGTH,
+  NAME_MAX_LENGTH,
+  updateMyProfile,
+  uploadMyProfilePhoto,
+} from "@/lib/api";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
@@ -40,10 +49,74 @@ const tierColors = {
 
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
-  const { account } = useSession();
+  const { user, account, setAccount } = useSession();
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
+  const [editing, setEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(account?.displayName ?? "");
+  const [bio, setBio] = useState(account?.bio ?? "");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoMimeType, setPhotoMimeType] = useState<string | null>(null);
+
+  const openEditor = () => {
+    setDisplayName(account?.displayName ?? "");
+    setBio(account?.bio ?? "");
+    setPhotoUri(null);
+    setPhotoMimeType(null);
+    setSaveError("");
+    setEditing(true);
+  };
+
+  const choosePhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+      setSaveError("Choose a photo smaller than 5 MB.");
+      return;
+    }
+    if (asset.mimeType && !["image/jpeg", "image/png", "image/webp"].includes(asset.mimeType)) {
+      setSaveError("Use a JPEG, PNG, or WebP image.");
+      return;
+    }
+    setPhotoUri(asset.uri);
+    setPhotoMimeType(asset.mimeType ?? null);
+    setSaveError("");
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    if (!displayName.trim()) {
+      setSaveError("Please enter a display name.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError("");
+    try {
+      let updated = await updateMyProfile(user, displayName.trim(), bio);
+      setAccount(updated);
+      if (photoUri) updated = await uploadMyProfilePhoto(user, {
+        uri: photoUri,
+        mimeType: photoMimeType,
+      });
+      setAccount(updated);
+      setEditing(false);
+    } catch (error) {
+      setSaveError(apiErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -61,10 +134,25 @@ export default function Profile() {
 
         <View style={styles.avatarSection}>
           <View style={styles.avatarBadge}>
-            <Text style={styles.avatarText}>M</Text>
+            {account?.profilePhotoUrl ? (
+              <Image source={{ uri: account.profilePhotoUrl }} style={styles.profilePhoto} />
+            ) : (
+              <Text style={styles.avatarText}>{account?.displayName?.[0]?.toUpperCase() ?? "?"}</Text>
+            )}
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
+          <Text style={styles.playerBio}>
+            {account?.bio || "Add a short bio to introduce yourself."}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile"
+            onPress={openEditor}
+            style={styles.editProfileButton}
+          >
+            <Text style={styles.editProfileButtonText}>Edit profile</Text>
+          </Pressable>
         </View>
 
         <View style={styles.teamBanner}>
@@ -169,6 +257,88 @@ export default function Profile() {
       </ScrollView>
 
       <Modal
+        visible={editing}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditing(false)}
+      >
+        <View style={styles.editorBackdrop}>
+          <View style={styles.profileEditor}>
+            <Text style={styles.editorTitle}>Edit profile</Text>
+            <View style={styles.photoEditorRow}>
+              <View style={styles.photoPreview}>
+                {photoUri || account?.profilePhotoUrl ? (
+                  <Image
+                    source={{ uri: photoUri ?? account?.profilePhotoUrl ?? undefined }}
+                    style={styles.profilePhoto}
+                  />
+                ) : (
+                  <Text style={styles.photoPreviewInitial}>
+                    {displayName[0]?.toUpperCase() ?? "?"}
+                  </Text>
+                )}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Change profile photo"
+                onPress={choosePhoto}
+                disabled={saving}
+                style={styles.choosePhotoButton}
+              >
+                <Text style={styles.choosePhotoButtonText}>
+                  {photoUri ? "Choose another photo" : "Change photo"}
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={styles.editorLabel}>Display name</Text>
+            <TextInput
+              accessibilityLabel="Display name"
+              maxLength={NAME_MAX_LENGTH}
+              value={displayName}
+              onChangeText={setDisplayName}
+              style={styles.editorInput}
+              returnKeyType="next"
+            />
+            <Text style={styles.editorLabel}>Bio</Text>
+            <TextInput
+              accessibilityLabel="Bio"
+              maxLength={BIO_MAX_LENGTH}
+              multiline
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Tell other players about yourself"
+              placeholderTextColor="#78857f"
+              style={[styles.editorInput, styles.bioInput]}
+              textAlignVertical="top"
+            />
+            <Text style={styles.bioCharacterCount}>
+              {bio.length}/{BIO_MAX_LENGTH}
+            </Text>
+            {!!saveError && <Text style={styles.editorError}>{saveError}</Text>}
+            <View style={styles.editorActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setEditing(false)}
+                disabled={saving}
+                style={styles.cancelEditButton}
+              >
+                <Text style={styles.cancelEditButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save profile"
+                onPress={saveProfile}
+                disabled={saving}
+                style={styles.saveEditButton}
+              >
+                <Text style={styles.saveEditButtonText}>{saving ? "Saving..." : "Save"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={selectedBadge !== null}
         transparent
         animationType="fade"
@@ -271,6 +441,43 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#12382d",
   },
+  profilePhoto: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 100,
+  },
+  photoEditorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 18,
+  },
+  photoPreview: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    overflow: "hidden",
+    backgroundColor: "#d5d9d1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoPreviewInitial: {
+    color: "#12382d",
+    fontSize: 30,
+    fontWeight: "700",
+  },
+  choosePhotoButton: {
+    borderWidth: 1,
+    borderColor: "#9aa8a1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  choosePhotoButtonText: {
+    color: "#12382d",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   playerName: {
     marginTop: 12,
     fontSize: 28,
@@ -281,6 +488,105 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 15,
     color: "#536761",
+  },
+  playerBio: {
+    maxWidth: 320,
+    marginTop: 12,
+    color: "#344b43",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  editProfileButton: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#9aa8a1",
+    borderRadius: 8,
+  },
+  editProfileButtonText: {
+    color: "#12382d",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  editorBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(18, 56, 45, 0.45)",
+    padding: 20,
+  },
+  profileEditor: {
+    width: "100%",
+    maxWidth: 440,
+    alignSelf: "center",
+    backgroundColor: "#f7f4f1",
+    borderRadius: 12,
+    padding: 20,
+  },
+  editorTitle: {
+    color: "#12382d",
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 18,
+  },
+  editorLabel: {
+    color: "#344b43",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  editorInput: {
+    minHeight: 44,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#b8c0ba",
+    borderRadius: 8,
+    color: "#173a30",
+    fontSize: 15,
+  },
+  bioInput: {
+    minHeight: 110,
+  },
+  bioCharacterCount: {
+    marginTop: -10,
+    marginBottom: 12,
+    color: "#536761",
+    fontSize: 12,
+    textAlign: "right",
+  },
+  editorError: {
+    marginBottom: 12,
+    color: "#a12f25",
+    fontSize: 13,
+  },
+  editorActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 4,
+  },
+  cancelEditButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  cancelEditButtonText: {
+    color: "#344b43",
+    fontWeight: "700",
+  },
+  saveEditButton: {
+    minWidth: 82,
+    alignItems: "center",
+    backgroundColor: "#12382d",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  saveEditButtonText: {
+    color: "#f7f4f1",
+    fontWeight: "700",
   },
   teamBanner: {
     backgroundColor: "#12382d",
