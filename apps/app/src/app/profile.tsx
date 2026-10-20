@@ -111,7 +111,7 @@ export default function Profile() {
           <Text style={styles.emptyText}>{profileCopy.noInterests}</Text>
         </View>
 
-        {user && account && <TournamentResults key={user.uid} user={user} />}
+        {user && account && <TournamentResults key={`results/${user.uid}`} user={user} />}
       </ScrollView>
 
       <Modal
