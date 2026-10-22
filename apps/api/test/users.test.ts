@@ -124,6 +124,94 @@ describe("GET /users/me", () => {
     expect(response.statusCode).toBe(404);
   });
 
+  describe("gender settings", () => {
+    test("reads and updates only the logged-in user's gender", async () => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      const initial = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+      });
+      expect(initial.statusCode).toBe(200);
+      expect(initial.json()).toEqual({ gender: null });
+
+      const update = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "female" },
+      });
+      expect(update.statusCode).toBe(200);
+      expect(update.json()).toEqual({ gender: "female" });
+
+      const profile = await app.inject({
+        method: "GET",
+        url: "/users/me",
+        headers: authHeader("alice"),
+      });
+      expect(profile.json()).not.toHaveProperty("gender");
+
+      const bobGender = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("bob"),
+      });
+      expect(bobGender.json()).toEqual({ gender: null });
+    });
+
+    test("returns 404 when the logged-in user has no account", async () => {
+      const read = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+      });
+      const update = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "female" },
+      });
+
+      expect(read.statusCode).toBe(404);
+      expect(update.statusCode).toBe(404);
+    });
+
+    test.each(["other", 1])("rejects unsupported gender %s", async (gender) => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    test("allows clearing gender", async () => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+      await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "male" },
+      });
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: null },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ gender: null });
+    });
+  });
+
   test("returns the logged-in user, not someone else", async () => {
     const alice = (await register("alice", { displayName: "Alice", ageConfirmed: true })).json();
     await register("bob", { displayName: "Bob", ageConfirmed: true });

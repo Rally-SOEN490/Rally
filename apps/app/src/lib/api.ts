@@ -24,6 +24,7 @@ export type RallyUser = {
   }[];
 };
 
+export type Gender = "male" | "female";
 export type ProfileChanges = { lookingForTeam: boolean };
 
 // The longest name the API accepts.
@@ -85,3 +86,11 @@ export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<Ra
 export const deleteMyAccount = async (user: User): Promise<void> => {
   await request(user, "DELETE", "/users/me");
 };
+
+export const getMyGender = (user: User): Promise<{ gender: Gender | null }> =>
+  request(user, "GET", "/users/me/gender");
+
+export const saveMyGender = (
+  user: User,
+  gender: Gender | null,
+): Promise<{ gender: Gender | null }> => request(user, "PATCH", "/users/me/gender", { gender });

@@ -98,6 +98,23 @@ export const createUserRepository = (db: Database) => {
     // Does nothing if the user is already gone, so retrying a deletion is safe.
     deleteByFirebaseUid: (firebaseUid: string) =>
       db.user.deleteMany({ where: { firebaseUid } }),
+
+    getGender: async (firebaseUid: string) => {
+      const user = await db.user.findUnique({
+        where: { firebaseUid },
+        select: { gender: true },
+      });
+      return user?.gender ?? null;
+    },
+
+    setGender: async (firebaseUid: string, gender: string | null) => {
+      const user = await db.user.update({
+        where: { firebaseUid },
+        data: { gender },
+        select: { gender: true },
+      });
+      return user.gender;
+    },
   };
 };
 
