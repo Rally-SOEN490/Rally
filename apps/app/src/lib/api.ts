@@ -18,6 +18,9 @@ export type RallyUser = {
     description: string;
     imageUrl: string | null;
     image: string;
+    availableTiers?: string[];
+    isComplete?: boolean;
+    nextTierThreshold?: number | null;
     receivedCount: number;
     awardedAt: string;
   }[];

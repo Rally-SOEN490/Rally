@@ -27,6 +27,8 @@ export type Session = {
   reloadAccount: () => void;
   // Stores the account once the app has created it.
   setAccount: (account: RallyUser) => void;
+  selectedBadgeKeys: string[];
+  toggleBadgeSelection: (key: string) => void;
 };
 
 // An account (or error) together with the user and attempt it was loaded for,
@@ -41,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
   const [loaded, setLoaded] = useState<LoadedAccount>();
   const [attempt, setAttempt] = useState(0);
+  const [selectedBadgeKeys, setSelectedBadgeKeys] = useState<string[]>([]);
 
   useEffect(
     () =>
@@ -71,6 +74,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const current = loaded?.key === key ? loaded : undefined;
 
+  useEffect(() => {
+    const account = current?.account;
+    if (!account) return;
+    setSelectedBadgeKeys((keys) => {
+      const availableKeys = new Set(account.badges.map((badge) => badge.key));
+      const validKeys = keys.filter((badgeKey) => availableKeys.has(badgeKey));
+      if (validKeys.length > 0) return validKeys.slice(0, 4);
+      return account.badges
+        .slice()
+        .sort(
+          (left, right) =>
+            right.receivedCount - left.receivedCount ||
+            left.key.localeCompare(right.key),
+        )
+        .slice(0, 4)
+        .map((badge) => badge.key);
+    });
+  }, [current?.account]);
+
   const refresh = async () => {
     await auth.currentUser?.reload();
     // reload() updates the same User object, so pass a new state object to re-render.
@@ -79,6 +101,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const setAccount = (account: RallyUser) => {
     if (key) setLoaded({ key, account });
+  };
+
+  const toggleBadgeSelection = (badgeKey: string) => {
+    setSelectedBadgeKeys((keys) => {
+      if (keys.includes(badgeKey)) return keys.filter((key) => key !== badgeKey);
+      if (keys.length >= 4) return keys;
+      return [...keys, badgeKey];
+    });
   };
 
   return (
@@ -90,6 +120,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         accountError: current?.error,
         reloadAccount: () => setAttempt((count) => count + 1),
         setAccount,
+        selectedBadgeKeys,
+        toggleBadgeSelection,
       }}
     >
       {children}
