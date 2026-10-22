@@ -13,5 +13,7 @@ export const fakeSession = (overrides: Partial<Session> = {}): Session => ({
   accountError: undefined,
   reloadAccount: jest.fn(),
   setAccount: jest.fn(),
+  selectedBadgeKeys: [],
+  toggleBadgeSelection: jest.fn(),
   ...overrides,
 });

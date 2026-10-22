@@ -40,9 +40,19 @@ const tierColors = {
   Gold: "#d4a72c",
 } as const;
 
+const getBadgeProgress = (receivedCount: number, nextTierThreshold?: number | null) => {
+  const safeCount = Math.max(0, receivedCount);
+  const target = nextTierThreshold ?? (Math.floor(safeCount / 10) + 1) * 10;
+
+  return {
+    target,
+    percentage: Math.min(safeCount / target, 1),
+  };
+};
+
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
-  const { user, account, setAccount } = useSession();
+  const { user, account, setAccount, selectedBadgeKeys } = useSession();
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
@@ -149,50 +159,81 @@ export default function Profile() {
         </View>
 
         <View style={styles.awardsSection}>
-          <Text style={styles.sectionTitle}>Awards</Text>
-          <ScrollView
-            horizontal
-            accessible
-            accessibilityLabel="Scrollable awards"
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.awardsRow}
-          >
+          <View style={styles.awardsHeader}>
+            <Text style={styles.sectionTitle}>Awards</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View more awards"
+              onPress={() => router.push("/awards")}
+            >
+              <Text style={styles.linkText}>View more</Text>
+            </Pressable>
+          </View>
+          <View accessible accessibilityLabel="Awards" style={styles.awardsRow}>
             {[...(account?.badges ?? [])]
               .sort(
                 (left, right) =>
                   right.receivedCount - left.receivedCount ||
                   left.key.localeCompare(right.key),
               )
-              .map((badge) => (
-              <Pressable
-                key={badge.key}
-                accessibilityRole="button"
-                accessibilityLabel={`${badge.name} badge`}
-                onPress={() => setSelectedBadge(badge)}
-                style={styles.awardBadge}
-              >
-                <View style={styles.awardImageWrapper}>
-                  {badge.tier === "Gold" && (
-                    <>
-                      <Text style={[styles.goldStar, styles.goldStarTop]}>✦</Text>
-                      <Text style={[styles.goldStar, styles.goldStarRight]}>✦</Text>
-                      <Text style={[styles.goldStar, styles.goldStarBottom]}>✦</Text>
-                      <Text style={[styles.goldStar, styles.goldStarLeft]}>✦</Text>
-                    </>
-                  )}
-                  <Image
-                    accessibilityLabel={`${badge.name} badge image`}
-                    source={badgeImages[badge.image as keyof typeof badgeImages]}
-                    style={[
-                      styles.awardImage,
-                      { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.awardName}>{badge.name}</Text>
-              </Pressable>
-              ))}
-          </ScrollView>
+              .filter((badge) =>
+                selectedBadgeKeys.length > 0
+                  ? selectedBadgeKeys.includes(badge.key)
+                  : true,
+              )
+              .slice(0, 4)
+              .map((badge) => {
+                const progress = badge.isComplete
+                  ? null
+                  : getBadgeProgress(badge.receivedCount, badge.nextTierThreshold);
+
+                return (
+                  <Pressable
+                    key={badge.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${badge.name} badge`}
+                    onPress={() => setSelectedBadge(badge)}
+                    style={styles.awardBadge}
+                  >
+                    <View style={styles.awardImageWrapper}>
+                      {badge.tier === "Gold" && (
+                        <>
+                          <Text style={[styles.goldStar, styles.goldStarTop]}>✦</Text>
+                          <Text style={[styles.goldStar, styles.goldStarRight]}>✦</Text>
+                          <Text style={[styles.goldStar, styles.goldStarBottom]}>✦</Text>
+                          <Text style={[styles.goldStar, styles.goldStarLeft]}>✦</Text>
+                        </>
+                      )}
+                      <Image
+                        accessibilityLabel={`${badge.name} badge image`}
+                        source={badgeImages[badge.image as keyof typeof badgeImages]}
+                        style={[
+                          styles.awardImage,
+                          { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.awardName}>{badge.name}</Text>
+                    {progress && (
+                      <>
+                        <View
+                          accessible
+                          accessibilityLabel={`${badge.name} progress`}
+                          style={styles.progressTrack}
+                        >
+                          <View
+                            style={[styles.progressFill, { width: `${progress.percentage * 100}%` }]}
+                          />
+                        </View>
+                        <Text style={styles.progressText}>
+                          {badge.receivedCount}/{progress.target}
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                );
+              })}
+          </View>
         </View>
 
         <View style={styles.tagSection}>
@@ -469,6 +510,11 @@ const styles = StyleSheet.create({
   awardsSection: {
     marginTop: 24,
   },
+  awardsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
@@ -476,18 +522,13 @@ const styles = StyleSheet.create({
   },
   awardsRow: {
     flexDirection: "row",
-    gap: 12,
+    justifyContent: "space-evenly",
     marginTop: 12,
-    paddingRight: 4,
+    width: "100%",
   },
   awardBadge: {
     width: 72,
-    minHeight: 82,
-    borderRadius: 16,
-    backgroundColor: "#dfe9e4",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
   },
   awardImage: {
     width: 34,
@@ -525,6 +566,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 5,
     textAlign: "center",
+  },
+  progressTrack: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d9d5d0",
+    marginTop: 7,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: "#b47a2a",
+  },
+  progressText: {
+    color: "#536761",
+    fontSize: 9,
+    marginTop: 3,
   },
   modalBackdrop: {
     flex: 1,

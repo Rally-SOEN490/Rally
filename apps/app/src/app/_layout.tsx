@@ -56,6 +56,7 @@ function RootNavigator() {
       <Stack.Protected guard={hasAccount}>
         <Stack.Screen name="home" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
       </Stack.Protected>
     </Stack>

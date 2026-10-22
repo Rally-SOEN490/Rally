@@ -25,6 +25,12 @@ describe("POST /users/me", () => {
       name: "Champion",
       receivedCount: 1,
     }));
+    expect(response.json().badges).toContainEqual(expect.objectContaining({
+      key: "streak",
+      availableTiers: ["Bronze"],
+      isComplete: false,
+      nextTierThreshold: null,
+    }));
     expect(response.json().badges).toHaveLength(12);
     expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
