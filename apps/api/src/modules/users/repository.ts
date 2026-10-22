@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -10,7 +15,10 @@ export type NewUser = {
   ageConfirmedAt: Date;
 };
 
-export type ProfileChanges = { lookingForTeam: boolean };
+export type ProfileChanges = {
+  lookingForTeam?: boolean;
+  shownBadgeKeys?: string[];
+};
 
 const autoAwardedBadgeKeys = badgeCatalog
   .filter((badge) => badge.autoAward)

@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -13,5 +18,7 @@ export const fakeSession = (overrides: Partial<Session> = {}): Session => ({
   accountError: undefined,
   reloadAccount: jest.fn(),
   setAccount: jest.fn(),
+  selectedBadgeKeys: [],
+  toggleBadgeSelection: jest.fn(),
   ...overrides,
 });

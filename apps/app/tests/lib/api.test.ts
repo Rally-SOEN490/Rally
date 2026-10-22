@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -99,6 +104,21 @@ describe("updateMyAccount", () => {
       method: "PATCH",
       headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
       body: JSON.stringify({ lookingForTeam: true }),
+    });
+  });
+
+  it("sends the selected shown badges", async () => {
+    respond(200, { ...account, shownBadgeKeys: ["champion", "winner"] });
+
+    await expect(
+      updateMyAccount(user, { shownBadgeKeys: ["champion", "winner"] }),
+    ).resolves.toMatchObject({
+      shownBadgeKeys: ["champion", "winner"],
+    });
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ shownBadgeKeys: ["champion", "winner"] }),
     });
   });
 

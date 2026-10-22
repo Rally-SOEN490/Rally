@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -61,6 +66,16 @@ const account = {
       receivedCount: 17,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
+    {
+      key: "defender",
+      name: "Defender",
+      tier: "Bronze",
+      description: "Placeholder defensive effort medal",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 16,
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
   ],
 };
 
@@ -95,10 +110,28 @@ it("shows badges saved on the Rally account", async () => {
   expect(screen.getByText("Competitor")).toBeOnTheScreen();
 });
 
-it("places badges in a horizontal scroll area", async () => {
+it("caps the awards section at four badges without horizontal scrolling", async () => {
   await render(<Profile />);
 
-  expect(screen.getByLabelText("Scrollable awards")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Awards")).toBeOnTheScreen();
+  expect(screen.queryByLabelText("Scrollable awards")).not.toBeOnTheScreen();
+  expect(screen.getAllByRole("button", { name: /badge$/ })).toHaveLength(4);
+  expect(screen.queryByLabelText("Defender badge")).not.toBeOnTheScreen();
+});
+
+it("opens the awards page from View more", async () => {
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "View more awards" }));
+
+  expect(router.push).toHaveBeenCalledWith("/awards");
+});
+
+it("shows progress for each badge", async () => {
+  await render(<Profile />);
+
+  expect(screen.getByLabelText("Champion progress")).toBeOnTheScreen();
+  expect(screen.getByText("25/30")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Competitor progress")).toBeOnTheScreen();
 });
 
 it("uses the badge tier color for each image border", async () => {

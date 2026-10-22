@@ -1,14 +1,20 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
 import type { ProfileChanges, UserRepository } from "./repository.ts";
-import { getBadgeTier } from "../badges/catalog.ts";
+import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
   id: string;
   displayName: string;
   lookingForTeam: boolean;
+  shownBadgeKeys: string[];
   createdAt: string;
   badges: Array<{
     key: string;
@@ -17,6 +23,9 @@ export type UserResponse = {
     description: string;
     imageUrl: string | null;
     image: string;
+    availableTiers: string[];
+    isComplete: boolean;
+    nextTierThreshold: number | null;
     receivedCount: number;
     awardedAt: string;
   }>;
@@ -30,6 +39,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   lookingForTeam: user.lookingForTeam,
+  shownBadgeKeys: [...user.shownBadgeKeys],
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
@@ -37,16 +47,37 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
         right.receivedCount - left.receivedCount ||
         left.badgeType.key.localeCompare(right.badgeType.key),
     )
-    .map(({ badgeType, receivedCount, awardedAt }) => ({
-    key: badgeType.key,
-    name: badgeType.name,
-    tier: getBadgeTier(badgeType.tier, receivedCount),
-    description: badgeType.description,
-    imageUrl: badgeType.imageUrl,
-    image: badgeType.imageUrl ?? "badge-gold-placeholder",
-    receivedCount,
-    awardedAt: awardedAt.toISOString(),
-    })),
+    .map(({ badgeType, receivedCount, awardedAt }) => {
+      const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
+      const availableTiers = definition?.availableTiers ?? ["Bronze"];
+      const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
+      const tier = getBadgeTier(
+        badgeType.tier,
+        receivedCount,
+        availableTiers,
+        tierThresholds,
+      );
+      const completion = getBadgeCompletion(
+        badgeType.tier as "Bronze" | "Silver" | "Gold",
+        tier,
+        availableTiers,
+        tierThresholds,
+        receivedCount,
+      );
+
+      return {
+        key: badgeType.key,
+        name: badgeType.name,
+        tier,
+        description: badgeType.description,
+        imageUrl: badgeType.imageUrl,
+        image: badgeType.imageUrl ?? "badge-gold-placeholder",
+        availableTiers: [...availableTiers],
+        ...completion,
+        receivedCount,
+        awardedAt: awardedAt.toISOString(),
+      };
+    }),
 });
 
 export const createUserService = (users: UserRepository) => ({

@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -24,6 +29,7 @@ model User {
   // When the person confirmed at sign-up that they are 14 or older.
   ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
   lookingForTeam Boolean  @default(false) @map("looking_for_team")
+  shownBadgeKeys String[] @default([]) @map("shown_badges")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]

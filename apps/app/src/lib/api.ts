@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -11,6 +16,7 @@ export type RallyUser = {
   id: string;
   displayName: string;
   lookingForTeam: boolean;
+  shownBadgeKeys?: string[];
   createdAt: string;
   badges: {
     key: string;
@@ -19,13 +25,18 @@ export type RallyUser = {
     description: string;
     imageUrl: string | null;
     image: string;
+    availableTiers?: string[];
+    isComplete?: boolean;
+    nextTierThreshold?: number | null;
     receivedCount: number;
     awardedAt: string;
   }[];
 };
 
 export type Gender = "male" | "female";
-export type ProfileChanges = { lookingForTeam: boolean };
+export type ProfileChanges =
+  | { lookingForTeam: boolean }
+  | { shownBadgeKeys: string[] };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;

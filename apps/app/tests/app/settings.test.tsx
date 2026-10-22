@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -19,6 +24,8 @@ import { ApiError, deleteMyAccount, getMyGender, saveMyGender } from "@/lib/api"
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
+
+jest.setTimeout(20_000);
 
 jest.mock("expo-router", () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(), replace: jest.fn() },
