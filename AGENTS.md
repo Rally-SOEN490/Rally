@@ -123,6 +123,8 @@ If repository and Wiki naming instructions disagree, identify the inconsistency 
 
 Include the required AI-use acknowledgment in issues, commits, and pull requests.
 
+Follow `CONTRIBUTING.md` for source-file and feature/fix PR AI-contribution declarations. Preserve individual commits and authors with merge commits; do not squash.
+
 Never invent stakeholder approval, completed deployments, or test results.
 
 A request to prepare code or documentation does not automatically authorize publishing, pushing, merging, or deploying it.

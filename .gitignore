@@ -14,11 +14,3 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
-
-# Signed administrative records may contain personal information.
-admin/*.pdf
-admin/*.png
-admin/*.jpg
-admin/*.jpeg
-admin/*.tif
-admin/*.tiff
