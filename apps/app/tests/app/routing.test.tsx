@@ -8,14 +8,20 @@ import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { Text } from "react-native";
 import RootLayout from "@/app/_layout";
 import Index from "@/app/index";
-import { ApiError, getMyAccount } from "@/lib/api";
+import { ApiError, getMyAccount, type RallyUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
 jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn(), signOut: jest.fn() }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
 
-const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  lookingForTeam: false,
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [],
+};
 
 let reportUser: (user: User | null) => void;
 
@@ -80,6 +86,7 @@ it.each([
   ["a verified user away from Login", "/login", verified, "Home screen"],
   ["a verified user away from Sign up", "/sign-up", verified, "Home screen"],
   ["a signed-out user away from Verify email", "/verify-email", signedOut, "Login screen"],
+  ["a signed-out user away from Profile", "/profile", signedOut, "Login screen"],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -155,6 +162,45 @@ describe("the Rally account", () => {
     await act(async () => reportUser(verified));
 
     expect(await screen.findByText("Home screen")).toBeOnTheScreen();
+  });
+
+  describe("when the app is reloaded", () => {
+    it.each([
+      ["/home", "Home screen"],
+      ["/profile", "Profile screen"],
+      ["/settings", "Settings screen"],
+    ])("stays on %s", async (url, expected) => {
+      await renderApp(url);
+      await act(async () => reportUser(verified));
+
+      expect(await screen.findByText(expected)).toBeOnTheScreen();
+    });
+
+    it("waits for a slow account, then stays on the screen", async () => {
+      let finishLoading!: (loaded: RallyUser) => void;
+      jest
+        .mocked(getMyAccount)
+        .mockReturnValue(new Promise((resolve) => (finishLoading = resolve)));
+      await renderApp("/profile");
+      await act(async () => reportUser(verified));
+
+      for (const name of [...allScreens, "Profile screen"])
+        expect(screen.queryByText(name)).not.toBeOnTheScreen();
+
+      await act(async () => finishLoading(account));
+
+      expect(await screen.findByText("Profile screen")).toBeOnTheScreen();
+    });
+
+    it("explains the problem when the account can't be loaded", async () => {
+      jest
+        .mocked(getMyAccount)
+        .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
+      await renderApp("/profile");
+      await act(async () => reportUser(verified));
+
+      expect(await screen.findByText("We can't load your account")).toBeOnTheScreen();
+    });
   });
 
   it.each([

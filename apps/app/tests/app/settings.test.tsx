@@ -20,7 +20,9 @@ import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
-jest.mock("expo-router", () => ({ router: { back: jest.fn(), replace: jest.fn() } }));
+jest.mock("expo-router", () => ({
+  router: { back: jest.fn(), canGoBack: jest.fn(), replace: jest.fn() },
+}));
 jest.mock("firebase/auth", () => ({
   deleteUser: jest.fn(),
   EmailAuthProvider: { credential: jest.fn(() => "the-credential") },
@@ -85,10 +87,20 @@ it("shows the user's own email", async () => {
 }, 30000);
 
 it("goes back from the back button", async () => {
+  jest.mocked(router.canGoBack).mockReturnValue(true);
   await render(<Settings />);
   await userEvent.press(screen.getByRole("button", { name: "Back" }));
 
   expect(router.back).toHaveBeenCalled();
+});
+
+it("goes to Profile from the back button when there's nothing to go back to", async () => {
+  jest.mocked(router.canGoBack).mockReturnValue(false);
+  await render(<Settings />);
+  await userEvent.press(screen.getByRole("button", { name: "Back" }));
+
+  expect(router.back).not.toHaveBeenCalled();
+  expect(router.replace).toHaveBeenCalledWith("/profile");
 });
 
 describe("preferences", () => {

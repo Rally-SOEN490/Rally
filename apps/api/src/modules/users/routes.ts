@@ -11,6 +11,8 @@ import type { Gender } from "./service.ts";
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
 
+const noAccount = { message: "No Rally account found." };
+
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
   verifyIdToken: VerifyIdToken;
@@ -46,7 +48,7 @@ export const userRoutes: FastifyPluginAsync<{
 
   app.get("/me", async (request, reply) => {
     const user = await users.getCurrent(request.firebaseUid);
-    return user ?? reply.code(404).send({ message: "No Rally account found." });
+    return user ?? reply.code(404).send(noAccount);
   });
 
   app.patch<{ Body: ProfileChanges }>(
@@ -56,8 +58,10 @@ export const userRoutes: FastifyPluginAsync<{
         body: {
           type: "object",
           required: ["lookingForTeam"],
+          // additionalProperties: false would make Fastify drop other fields instead of rejecting them.
           propertyNames: { const: "lookingForTeam" },
           properties: {
+            // type: "boolean" would let Fastify turn "true" or 1 into true.
             lookingForTeam: { enum: [true, false] },
           },
         },
@@ -65,7 +69,7 @@ export const userRoutes: FastifyPluginAsync<{
     },
     async (request, reply) => {
       const user = await users.update(request.firebaseUid, request.body);
-      return user ?? reply.code(404).send({ message: "No Rally account found." });
+      return user ?? reply.code(404).send(noAccount);
     },
   );
 
