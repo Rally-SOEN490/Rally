@@ -7,10 +7,12 @@
 // Usage, from anywhere in the repository:
 //   node .agents/skills/ai-checklist/scripts/check.mjs [--base <ref>] [--pr <number> | --pr-body <file> [--branch <name>]] [--json]
 //   node .agents/skills/ai-checklist/scripts/check.mjs --all [--json]
+//   node .agents/skills/ai-checklist/scripts/check.mjs --body-only (--pr <number> | --pr-body <file> [--branch <name>]) [--json]
 //
 // The default mode checks files changed since the merge base with origin/main (including
 // uncommitted and untracked files) and the branch's commits. --all checks every tracked
-// source file and reports declaration coverage. Exits with 1 when an error is found.
+// source file and reports declaration coverage. --body-only checks only a pull request description.
+// Exits with 1 when an error is found.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -44,12 +46,13 @@ const error = (message) => ({ severity: "error", message });
 const warning = (message) => ({ severity: "warning", message });
 
 function parseArgs(argv) {
-  const options = { base: null, pr: null, prBody: null, branch: null, all: false, json: false, help: false };
+  const options = { base: null, pr: null, prBody: null, branch: null, all: false, bodyOnly: false, json: false, help: false };
   const valueOptions = { "--base": "base", "--pr": "pr", "--pr-body": "prBody", "--branch": "branch" };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--all") options.all = true;
     else if (arg === "--json") options.json = true;
+    else if (arg === "--body-only") options.bodyOnly = true;
     else if (arg === "--help" || arg === "-h") options.help = true;
     else if (valueOptions[arg] && argv[index + 1]) options[valueOptions[arg]] = argv[++index];
     else throw new Error(`Unknown or incomplete option: ${arg}`);
@@ -197,6 +200,11 @@ function checkPullRequest(pullRequest, files) {
 }
 
 function collect(options) {
+  if (options.bodyOnly) {
+    const pullRequest = readPullRequest(options);
+    if (!pullRequest) throw new Error("--body-only needs --pr <number> or --pr-body <file>.");
+    return { mode: "body", files: [], commits: [], pullRequest: { label: pullRequest.label, problems: checkPullRequest(pullRequest, []) } };
+  }
   if (options.all) {
     const files = lines(run("git", ["ls-files"])).filter(isApplicable).sort().map(checkFile);
     return { mode: "all", files, commits: [], pullRequest: null };
@@ -242,10 +250,12 @@ function printFiles(result) {
 function printReport(result) {
   if (result.mode === "branch") {
     console.log(`AI checklist for ${result.branch || "HEAD"} against ${result.base} (merge base ${result.mergeBase})`);
-  } else {
+  } else if (result.mode === "all") {
     console.log("AI checklist for every tracked source file");
+  } else {
+    console.log("AI checklist for a pull request description");
   }
-  printFiles(result);
+  if (result.mode !== "body") printFiles(result);
   if (result.mode === "branch") {
     console.log(`\nCommits: ${result.commits.length}`);
     for (const commit of result.commits) {
@@ -263,7 +273,7 @@ function printReport(result) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
-    console.log(readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(3, 13).join("\n"));
+    console.log(readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(3, 15).join("\n"));
     return 0;
   }
   process.chdir(run("git", ["rev-parse", "--show-toplevel"]));

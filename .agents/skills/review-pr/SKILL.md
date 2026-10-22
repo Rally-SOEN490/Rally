@@ -25,7 +25,7 @@ gh api repos/Rally-SOEN490/Rally/pulls/<n>/comments --paginate
 git fetch origin pull/<n>/head && git show <headRefOid>:<path>
 ```
 
-With no number, use the PR for the current branch (`gh pr view --json number`). Read:
+With no number, use the PR for the current branch (`gh pr view --json number`). For CI, conflicts, the linked issue, and existing reviews in one report, run `node .agents/skills/pr-status/scripts/pr-status.mjs <n>`. Read:
 
 - The linked issue (`closingIssuesReferences`, or search for the `RALLY-<n>` in the title), especially its acceptance criteria.
 - `AGENTS.md`, `CONTRIBUTING.md`, and any `AGENTS.md` in the folders the PR changes, such as `apps/app/AGENTS.md`.
