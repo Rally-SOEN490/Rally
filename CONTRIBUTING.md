@@ -33,16 +33,19 @@ Every applicable source file written or modified by the team needs a declaration
 
 These are good-faith estimates of implementation that originated from AI. Student edits do not erase that origin. Minor autocomplete and syntax suggestions are not substantial AI-generated implementation. Generated files, vendored code, dependencies, and generated migrations are excluded. Source-file and feature/fix PR declarations are required even when the level is `No substantial AI-generated code`. Identify substantially AI-assisted source files in the PR and describe how their behavior was verified.
 
-Maintain `AI_USAGE.md` or an equivalent clearly identified section. List the tools and all substantive AI-assisted features. For at least half of those features, describe AI's contribution in no more than two paragraphs, link the relevant PRs, and include test or substantive-review evidence. Record problems, corrections, and rejected suggestions when they occurred. Keep file, PR, and project-level declarations consistent; do not guess another contributor's AI usage.
+Maintain [AI_USAGE.md](AI_USAGE.md). List the tools and all substantive AI-assisted features. For at least half of those features, describe AI's contribution in no more than two paragraphs, link the relevant PRs, and include test or substantive-review evidence. Record problems, corrections, and rejected suggestions when they occurred. Keep file, PR, and project-level declarations consistent; do not guess another contributor's AI usage.
 
 See [Code Quality Rubric §8](docs/course/soen-490/CODE-QUALITY.md#8-responsible-use-of-ai-generated-code) for the detailed checks, coverage thresholds, and exclusions.
 
+The `ai-checklist` agent skill in [.agents/skills](.agents/skills/ai-checklist/SKILL.md) checks a branch against these rules and helps fill in missing declarations.
+
 ## Source-file license notice
 
-Add this notice at the top of each new source file, using the comment syntax of its language:
+Start each source file with the license notice, followed by its AI-contribution declaration, using the comment syntax of its language:
 
-```text
-Copyright (c) 2026 Rally. All rights reserved.
+```ts
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: Below 50% AI-generated
 ```
 
-Put the source-file AI-contribution declaration near this notice, using the file's comment syntax. Preserve third-party license notices.
+Write the level exactly as one of the three levels above so the declaration can be checked automatically. When you edit a file that still has the older `Rally contributors` MIT notice, replace it with this notice. Preserve third-party license notices.
