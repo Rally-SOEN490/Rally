@@ -161,6 +161,23 @@ describe("GET /users/me", () => {
       expect(bobGender.json()).toEqual({ gender: null });
     });
 
+    test("returns 404 when the logged-in user has no account", async () => {
+      const read = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+      });
+      const update = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "female" },
+      });
+
+      expect(read.statusCode).toBe(404);
+      expect(update.statusCode).toBe(404);
+    });
+
     test.each(["other", 1])("rejects unsupported gender %s", async (gender) => {
       await register("alice", { displayName: "Alice", ageConfirmed: true });
 
