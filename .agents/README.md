@@ -10,6 +10,9 @@ Shared repository instructions live in [AGENTS.md](../AGENTS.md). Codex, GitHub 
 | --- | --- |
 | [ai-checklist](skills/ai-checklist/SKILL.md) | Check a branch, its commits, and its pull request against the AI-use rules, and fill in missing declarations |
 | [review-pr](skills/review-pr/SKILL.md) | Review a pull request against Rally's rules before commenting |
+| [prepare-pr](skills/prepare-pr/SKILL.md) | Run the pull request CI checks locally in parallel and draft the pull request |
+| [pr-status](skills/pr-status/SKILL.md) | See what blocks a pull request: CI, conflicts, description, linked issue, and reviews |
+| [merge-pr](skills/merge-pr/SKILL.md) | Merge a ready pull request and follow up on its issue. Runs only when called explicitly |
 
 Codex reads skills from `.agents/skills/`. Claude Code reads them from `.claude/skills/`, which contains links to the folders here. On Windows, enable symbolic links in Git (`git config core.symlinks true` with Developer Mode on) before cloning, or the links check out as plain files.
 
@@ -18,6 +21,8 @@ To add a skill, create `skills/<name>/SKILL.md` with `name` and `description` fr
 ```bash
 ln -s ../../.agents/skills/<name> .claude/skills/<name>
 ```
+
+The skills' scripts can also run on their own, for example `node .agents/skills/prepare-pr/scripts/local-ci.mjs` or `node .agents/skills/pr-status/scripts/pr-status.mjs <number>`.
 
 ## Personal files
 
