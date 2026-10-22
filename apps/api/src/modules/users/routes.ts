@@ -4,12 +4,14 @@
 import type { FastifyPluginAsync } from "fastify";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import type { Database } from "../../db.ts";
-import { createUserRepository } from "./repository.ts";
+import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
 import type { Gender } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
+
+const noAccount = { message: "No Rally account found." };
 
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
@@ -46,14 +48,36 @@ export const userRoutes: FastifyPluginAsync<{
 
   app.get("/me", async (request, reply) => {
     const user = await users.getCurrent(request.firebaseUid);
-    return user ?? reply.code(404).send({ message: "No Rally account found." });
+    return user ?? reply.code(404).send(noAccount);
   });
+
+  app.patch<{ Body: ProfileChanges }>(
+    "/me",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["lookingForTeam"],
+          // additionalProperties: false would make Fastify drop other fields instead of rejecting them.
+          propertyNames: { const: "lookingForTeam" },
+          properties: {
+            // type: "boolean" would let Fastify turn "true" or 1 into true.
+            lookingForTeam: { enum: [true, false] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await users.update(request.firebaseUid, request.body);
+      return user ?? reply.code(404).send(noAccount);
+    },
+  );
 
   app.get("/me/gender", async (request, reply) => {
     const gender = await users.getGender(request.firebaseUid);
     if (gender === null) {
       const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send({ message: "No Rally account found." });
+      if (!account) return reply.code(404).send(noAccount);
     }
     return { gender };
   });
@@ -73,7 +97,7 @@ export const userRoutes: FastifyPluginAsync<{
     },
     async (request, reply) => {
       const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send({ message: "No Rally account found." });
+      if (!account) return reply.code(404).send(noAccount);
       return { gender: await users.setGender(request.firebaseUid, request.body.gender) };
     },
   );
