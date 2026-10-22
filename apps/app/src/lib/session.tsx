@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 

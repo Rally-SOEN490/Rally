@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 import { router } from "expo-router";
 import {
   ActivityIndicator,

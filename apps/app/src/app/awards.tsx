@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 import { router } from "expo-router";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
