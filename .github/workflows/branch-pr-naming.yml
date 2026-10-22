@@ -16,10 +16,9 @@ jobs:
         env:
           BRANCH: ${{ github.head_ref }}
         run: |
-          standard_pattern='^(feature|bug|doc)/RALLY-[0-9]+$'
-          copilot_pattern='^[0-9]+-rally-[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$'
-          if [[ ! "$BRANCH" =~ $standard_pattern && ! "$BRANCH" =~ $copilot_pattern ]]; then
-            echo "::error title=Invalid branch name::'$BRANCH' does not match an accepted branch format. Use feature/, bug/ or doc/ followed by the ticket ID (e.g. feature/RALLY-1024), or issue branch format like 50-rally-28-short-description."
+          pattern='^(feature|bug|doc)/RALLY-[0-9]+$'
+          if [[ ! "$BRANCH" =~ $pattern ]]; then
+            echo "::error title=Invalid branch name::'$BRANCH' does not match <prefix>/<ticket-ID>. Use feature/, bug/ or doc/ followed by the ticket ID, e.g. feature/RALLY-1024"
             exit 1
           fi
           echo "Branch name '$BRANCH' is valid."
