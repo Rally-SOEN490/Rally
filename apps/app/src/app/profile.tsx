@@ -56,6 +56,7 @@ export default function Profile() {
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
+  const hasSavedShownBadges = account?.shownBadgeKeys !== undefined;
   const lookingForTeam = account?.lookingForTeam ?? false;
   // The switch shows this right away; the badge waits for the server.
   const [savingValue, setSavingValue] = useState<boolean>();
@@ -177,9 +178,7 @@ export default function Profile() {
                   left.key.localeCompare(right.key),
               )
               .filter((badge) =>
-                selectedBadgeKeys.length > 0
-                  ? selectedBadgeKeys.includes(badge.key)
-                  : true,
+                hasSavedShownBadges ? selectedBadgeKeys.includes(badge.key) : true,
               )
               .slice(0, 4)
               .map((badge) => {

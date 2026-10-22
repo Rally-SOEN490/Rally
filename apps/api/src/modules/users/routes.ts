@@ -57,12 +57,17 @@ export const userRoutes: FastifyPluginAsync<{
       schema: {
         body: {
           type: "object",
-          required: ["lookingForTeam"],
-          // additionalProperties: false would make Fastify drop other fields instead of rejecting them.
-          propertyNames: { const: "lookingForTeam" },
+          additionalProperties: false,
+          propertyNames: { enum: ["lookingForTeam", "shownBadgeKeys"] },
+          anyOf: [{ required: ["lookingForTeam"] }, { required: ["shownBadgeKeys"] }],
           properties: {
-            // type: "boolean" would let Fastify turn "true" or 1 into true.
             lookingForTeam: { enum: [true, false] },
+            shownBadgeKeys: {
+              type: "array",
+              maxItems: 4,
+              uniqueItems: true,
+              items: { type: "string", minLength: 1 },
+            },
           },
         },
       },

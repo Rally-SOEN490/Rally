@@ -9,6 +9,7 @@ export type UserResponse = {
   id: string;
   displayName: string;
   lookingForTeam: boolean;
+  shownBadgeKeys: string[];
   createdAt: string;
   badges: Array<{
     key: string;
@@ -33,6 +34,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   lookingForTeam: user.lookingForTeam,
+  shownBadgeKeys: [...user.shownBadgeKeys],
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(

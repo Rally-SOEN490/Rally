@@ -50,6 +50,7 @@ describe("POST /users/me", () => {
       "displayName",
       "id",
       "lookingForTeam",
+      "shownBadgeKeys",
     ]);
   });
 
@@ -380,6 +381,29 @@ describe("PATCH /users/me", () => {
 
     expect(off.statusCode).toBe(200);
     expect(off.json().lookingForTeam).toBe(false);
+  });
+
+  test("saves shown badges and returns them on later account loads", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const updated = await update("alice", { shownBadgeKeys: ["champion", "winner"] });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().shownBadgeKeys).toEqual(["champion", "winner"]);
+    expect((await getMe("alice")).json().shownBadgeKeys).toEqual(["champion", "winner"]);
+    expect(
+      (await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } })).shownBadgeKeys,
+    ).toEqual(["champion", "winner"]);
+  });
+
+  test("rejects more than four shown badges", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const response = await update("alice", {
+      shownBadgeKeys: ["champion", "winner", "podium", "competitor", "defender"],
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 
   test("saves the change, so it's still there when the profile loads again", async () => {

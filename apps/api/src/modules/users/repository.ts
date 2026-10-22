@@ -10,7 +10,10 @@ export type NewUser = {
   ageConfirmedAt: Date;
 };
 
-export type ProfileChanges = { lookingForTeam: boolean };
+export type ProfileChanges = {
+  lookingForTeam?: boolean;
+  shownBadgeKeys?: string[];
+};
 
 const autoAwardedBadgeKeys = badgeCatalog
   .filter((badge) => badge.autoAward)

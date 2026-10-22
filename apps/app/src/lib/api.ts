@@ -11,6 +11,7 @@ export type RallyUser = {
   id: string;
   displayName: string;
   lookingForTeam: boolean;
+  shownBadgeKeys?: string[];
   createdAt: string;
   badges: {
     key: string;
@@ -28,7 +29,9 @@ export type RallyUser = {
 };
 
 export type Gender = "male" | "female";
-export type ProfileChanges = { lookingForTeam: boolean };
+export type ProfileChanges =
+  | { lookingForTeam: boolean }
+  | { shownBadgeKeys: string[] };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;

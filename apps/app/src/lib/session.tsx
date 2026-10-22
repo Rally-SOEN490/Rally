@@ -9,7 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiErrorMessage, getMyAccount, type RallyUser } from "@/lib/api";
+import {
+  apiErrorMessage,
+  getMyAccount,
+  updateMyAccount,
+  type RallyUser,
+} from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
 export type Session = {
@@ -28,7 +33,7 @@ export type Session = {
   // Stores the account once the app has created it.
   setAccount: (account: RallyUser) => void;
   selectedBadgeKeys: string[];
-  toggleBadgeSelection: (key: string) => void;
+  toggleBadgeSelection: (key: string) => Promise<void>;
 };
 
 // An account (or error) together with the user and attempt it was loaded for,
@@ -79,6 +84,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!account) return;
     setSelectedBadgeKeys((keys) => {
       const availableKeys = new Set(account.badges.map((badge) => badge.key));
+      if (account.shownBadgeKeys && account.shownBadgeKeys.length > 0) {
+        return account.shownBadgeKeys
+          .filter((badgeKey) => availableKeys.has(badgeKey))
+          .slice(0, 4);
+      }
       const validKeys = keys.filter((badgeKey) => availableKeys.has(badgeKey));
       if (validKeys.length > 0) return validKeys.slice(0, 4);
       return account.badges
@@ -103,12 +113,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (key) setLoaded({ key, account });
   };
 
-  const toggleBadgeSelection = (badgeKey: string) => {
-    setSelectedBadgeKeys((keys) => {
-      if (keys.includes(badgeKey)) return keys.filter((key) => key !== badgeKey);
-      if (keys.length >= 4) return keys;
-      return [...keys, badgeKey];
-    });
+  const toggleBadgeSelection = async (badgeKey: string) => {
+    if (!user || !current?.account) return;
+    const nextKeys = selectedBadgeKeys.includes(badgeKey)
+      ? selectedBadgeKeys.filter((key) => key !== badgeKey)
+      : selectedBadgeKeys.length >= 4
+        ? selectedBadgeKeys
+        : [...selectedBadgeKeys, badgeKey];
+    if (nextKeys === selectedBadgeKeys) return;
+
+    setSelectedBadgeKeys(nextKeys);
+    try {
+      setAccount(await updateMyAccount(user, { shownBadgeKeys: nextKeys }));
+    } catch (error) {
+      setSelectedBadgeKeys(selectedBadgeKeys);
+      throw error;
+    }
   };
 
   return (
