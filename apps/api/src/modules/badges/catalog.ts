@@ -3,6 +3,11 @@
 
 export const badgeTiers = ["Bronze", "Silver", "Gold"] as const;
 export type BadgeTier = (typeof badgeTiers)[number];
+const defaultTierThresholds: Partial<Record<BadgeTier, number>> = {
+  Bronze: 0,
+  Silver: 10,
+  Gold: 20,
+};
 
 export type BadgeDefinition = {
   key: string;
@@ -48,11 +53,7 @@ export const getBadgeTier = (
   baseTier: string,
   receivedCount: number,
   availableTiers: readonly BadgeTier[] = badgeTiers,
-  tierThresholds: Partial<Record<BadgeTier, number>> = {
-    Bronze: 0,
-    Silver: 10,
-    Gold: 20,
-  },
+  tierThresholds: Partial<Record<BadgeTier, number>> = defaultTierThresholds,
 ): BadgeTier => {
   const normalizedBaseTier =
     availableTiers.find((tier) => tier.toLowerCase() === baseTier.toLowerCase()) ??

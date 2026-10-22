@@ -126,7 +126,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       setAccount(await updateMyAccount(user, { shownBadgeKeys: nextKeys }));
     } catch (error) {
-      setSelectedBadgeKeys(selectedBadgeKeys);
+      setSelectedBadgeKeys(() => selectedBadgeKeys);
       throw error;
     }
   };
