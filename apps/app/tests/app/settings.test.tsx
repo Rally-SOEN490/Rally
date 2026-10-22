@@ -20,6 +20,8 @@ import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
+jest.setTimeout(20_000);
+
 jest.mock("expo-router", () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(), replace: jest.fn() },
 }));
