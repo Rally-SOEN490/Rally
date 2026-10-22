@@ -1,0 +1,3 @@
+# Codex only runs this skill when it is called explicitly, because merging changes main for everyone.
+policy:
+  allow_implicit_invocation: false
