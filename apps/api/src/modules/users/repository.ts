@@ -10,8 +10,6 @@ export type NewUser = {
   ageConfirmedAt: Date;
 };
 
-export type ProfileChanges = { lookingForTeam: boolean };
-
 const autoAwardedBadgeKeys = badgeCatalog
   .filter((badge) => badge.autoAward)
   .map((badge) => badge.key);
@@ -87,12 +85,6 @@ export const createUserRepository = (db: Database) => {
         where: { id: savedUser.id },
         include: includeBadges,
       });
-    },
-
-    updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
-      const { count } = await db.user.updateMany({ where: { firebaseUid }, data: changes });
-      if (!count) return null;
-      return db.user.findUnique({ where: { firebaseUid }, include: includeBadges });
     },
 
     // Does nothing if the user is already gone, so retrying a deletion is safe.

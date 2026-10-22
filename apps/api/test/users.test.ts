@@ -38,13 +38,7 @@ describe("POST /users/me", () => {
   test("does not send back the Firebase ID", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
-    expect(Object.keys(response.json()).sort()).toEqual([
-      "badges",
-      "createdAt",
-      "displayName",
-      "id",
-      "lookingForTeam",
-    ]);
+    expect(Object.keys(response.json()).sort()).toEqual(["badges", "createdAt", "displayName", "id"]);
   });
 
   test("is safe to retry and keeps the first record", async () => {

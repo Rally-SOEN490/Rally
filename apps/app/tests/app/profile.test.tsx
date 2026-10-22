@@ -15,7 +15,6 @@ const user = { email: "sam@example.com", displayName: "Old Firebase name" } as U
 const account = {
   id: "1",
   displayName: "Sam Lee",
-  lookingForTeam: false,
   createdAt: "2026-10-17T12:00:00.000Z",
   badges: [
     {

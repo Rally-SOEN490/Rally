@@ -5,13 +5,7 @@ import type { User } from "firebase/auth";
 import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser } from "@/lib/api";
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
-const account = {
-  id: "1",
-  displayName: "Sam Lee",
-  lookingForTeam: false,
-  createdAt: "2026-10-17T12:00:00.000Z",
-  badges: [],
-};
+const account = { id: "1", displayName: "Sam Lee", createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 
 // Pretends the API answered with this status and JSON body.
 const respond = (status: number, body?: object) =>
