@@ -79,14 +79,14 @@ Run `npm run test:coverage` in either folder to see which lines the tests cover.
 ## Project planning
 
 - [GitHub Project board](https://github.com/orgs/Rally-SOEN490/projects/1)
-- [Project documentation](docs/wiki/Home.md)
-- [Meeting minutes](docs/wiki/Meeting-Minutes.md)
-- [Risks](docs/wiki/Risks.md)
+- [Project documentation](https://github.com/Rally-SOEN490/Rally/wiki)
+- [Meeting minutes](https://github.com/Rally-SOEN490/Rally/wiki/Meeting-Minutes)
+- [Risks](https://github.com/Rally-SOEN490/Rally/wiki/Risks)
 
 ## Course records
 
-Administrative forms belong in `admin/`. Do not commit documents containing student IDs, signatures, addresses, or other personal information until the instructor confirms an approved storage method.
+The [SOEN 490 reference](docs/course/soen-490/README.md) records the project requirements, deadlines, and instruction conflicts. Keep signed administrative forms and other personal records outside Git.
 
 ## License
 
-This project uses the MIT License. See [LICENSE](LICENSE).
+This project uses a proprietary license. See [LICENSE](LICENSE).
