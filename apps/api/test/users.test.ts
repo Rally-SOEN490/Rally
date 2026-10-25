@@ -19,6 +19,56 @@ afterAll(async () => {
 const register = (uid: string, body: object) =>
   app.inject({ method: "POST", url: "/users/me", headers: authHeader(uid), payload: body });
 
+describe("GET /users", () => {
+  test("returns every other user alphabetically with only directory fields", async () => {
+    await register("zoe", { displayName: "Zoe", ageConfirmed: true });
+    await register("self", { displayName: "Mira", ageConfirmed: true });
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await app.inject({
+      method: "PATCH",
+      url: "/users/me/gender",
+      headers: authHeader("alice"),
+      payload: { gender: "female" },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/users",
+      headers: authHeader("self"),
+    });
+    const users = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual([
+      "Alice",
+      "Zoe",
+    ]);
+    for (const user of users) {
+      expect(Object.keys(user).sort()).toEqual([
+        "badges",
+        "createdAt",
+        "displayName",
+        "id",
+        "lookingForTeam",
+      ]);
+    }
+    expect(users[0].badges).toEqual(
+      (await app.inject({
+        method: "GET",
+        url: "/users/me",
+        headers: authHeader("alice"),
+      })).json().badges,
+    );
+  });
+
+  test("rejects a request without a token", async () => {
+    const response = await app.inject({ method: "GET", url: "/users" });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+});
+
 describe("POST /users/me", () => {
   test("saves the logged-in user", async () => {
     const response = await register("alice", { displayName: " Alice ", ageConfirmed: true });

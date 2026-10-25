@@ -33,6 +33,11 @@ export type RallyUser = {
   }[];
 };
 
+export type RallyPlayer = Pick<
+  RallyUser,
+  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+>;
+
 export type Gender = "male" | "female";
 export type ProfileChanges =
   | { lookingForTeam: boolean }
@@ -89,6 +94,9 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   });
+
+export const getPlayers = (user: User): Promise<RallyPlayer[]> =>
+  request(user, "GET", "/users");
 
 export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
   request(user, "PATCH", "/users/me", changes);

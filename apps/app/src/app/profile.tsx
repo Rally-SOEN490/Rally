@@ -316,6 +316,7 @@ export default function Profile() {
             style={[styles.navItem, item.active && styles.navItemActive]}
             onPress={() => {
               if (item.label === "Home") router.replace("/home");
+              if (item.label === "Search") router.replace("/search");
             }}
             accessibilityRole="button"
             accessibilityLabel={item.label}
