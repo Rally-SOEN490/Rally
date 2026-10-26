@@ -1,6 +1,9 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-
 import { colors, radii } from '@/constants/rallyTheme';
 
 export type SearchMode = 'tournaments' | 'players';

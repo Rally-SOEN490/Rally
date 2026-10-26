@@ -1,6 +1,7 @@
-// Copyright (c) 2026 Rally. All rights reserved.
-// AI contribution: 50% or more AI-generated
-
+/*
+AI declaration:
+50% or more AI-generated
+*/
 import { router, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -34,9 +35,11 @@ const MOCK_TOURNAMENTS = [
 
 type SearchTab = (typeof TABS)[number]["value"];
 
+let lastSelectedTab: SearchTab = "tournaments";
+
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<SearchTab>("tournaments");
+  const [tab, setTab] = useState<SearchTab>(lastSelectedTab);
   const [players, setPlayers] = useState<RallyPlayer[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<string>();
@@ -73,6 +76,10 @@ export default function SearchScreen() {
   const visiblePlayers = players.filter((player) =>
     player.displayName.toLocaleLowerCase().includes(normalizedQuery),
   );
+  const selectTab = (nextTab: SearchTab) => {
+    lastSelectedTab = nextTab;
+    setTab(nextTab);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -84,7 +91,7 @@ export default function SearchScreen() {
 
         <View style={styles.controls}>
           <SearchBar value={query} onChangeText={setQuery} mode={tab} />
-          <SegmentedToggle options={TABS} selected={tab} onChange={setTab} />
+          <SegmentedToggle options={TABS} selected={tab} onChange={selectTab} />
         </View>
 
         {tab === "tournaments" && (

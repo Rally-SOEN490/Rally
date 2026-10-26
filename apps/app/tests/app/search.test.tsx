@@ -3,13 +3,12 @@ AI declaration:
 50% or more AI-generated
 */
 
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
-
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import SearchScreen from "@/app/search";
-import { getPlayers } from "@/lib/api";
+import { SearchBar } from "@/components/searchBar";
+import { ApiError, getPlayers } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
@@ -37,6 +36,35 @@ const players = [
     badges: [],
   },
 ];
+
+it("uses the tournament placeholder by default and forwards input changes", async () => {
+  const onChangeText = jest.fn();
+
+  await render(<SearchBar value="" onChangeText={onChangeText} />);
+
+  const input = screen.getByPlaceholderText("Search for events, venue, organizer");
+  await userEvent.type(input, "Cup");
+
+  expect(onChangeText).toHaveBeenCalledWith("C");
+});
+
+it("uses the player placeholder and invokes the optional filter action", async () => {
+  const onPressFilter = jest.fn();
+
+  await render(
+    <SearchBar
+      value=""
+      onChangeText={jest.fn()}
+      mode="players"
+      onPressFilter={onPressFilter}
+    />,
+  );
+
+  expect(screen.getByPlaceholderText("Search for name, level")).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
+
+  expect(onPressFilter).toHaveBeenCalledTimes(1);
+});
 
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user }));
@@ -80,8 +108,21 @@ it("shows an empty result message when no players match", async () => {
   expect(screen.getByText("No matching players.")).toBeOnTheScreen();
 });
 
-it("shows and searches mock tournament names", async () => {
+it("shows the API error when loading players fails", async () => {
+  jest.mocked(getPlayers).mockRejectedValue(new ApiError(503, "Directory unavailable"));
+
   await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+
+  expect(await screen.findByText("Directory unavailable")).toBeOnTheScreen();
+});
+
+it("shows and searches mock tournament names", async () => {
+  jest.mocked(getPlayers).mockResolvedValue(players);
+
+  await render(<SearchScreen />);
+  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
 
   expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
   expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
@@ -93,4 +134,30 @@ it("shows and searches mock tournament names", async () => {
 
   expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
   expect(screen.queryByText("Montreal Spring Open")).not.toBeOnTheScreen();
+});
+
+it("navigates to the profile from the You tab", async () => {
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("button", { name: "You" }));
+
+  expect(router.replace).toHaveBeenCalledWith("/profile");
+});
+
+it("remembers the selected tab after leaving and reopening Search", async () => {
+  jest.mocked(getPlayers).mockResolvedValue(players);
+
+  const firstVisit = await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
+  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
+  firstVisit.unmount();
+
+  jest.mocked(getPlayers).mockClear();
+  const secondVisit = await render(<SearchScreen />);
+  await waitFor(() => expect(getPlayers).toHaveBeenCalledWith(user));
+  expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
+  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
+
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
+  secondVisit.unmount();
 });

@@ -1,5 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
 import { Image, StyleSheet, Text, View } from 'react-native';
-
 import { colors, radii } from '@/constants/rallyTheme';
 
 type Props = {
@@ -18,7 +21,6 @@ export function SearchBanner({
         style={styles.ball}
         resizeMode="contain"
       />
-
       <Text style={styles.brand}>RALLY</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>

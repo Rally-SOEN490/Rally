@@ -1,6 +1,3 @@
-// Copyright (c) 2026 Rally. All rights reserved.
-// AI contribution: Below 50% AI-generated
-
 export const colors = {
   background: '#ECEBE6',
   forest: '#2B4030',

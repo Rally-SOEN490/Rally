@@ -1,5 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
 import { colors, radii } from '@/constants/rallyTheme';
 
 type Props<T extends string> = {

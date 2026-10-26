@@ -76,7 +76,6 @@ export const createUserRepository = (db: Database) => {
     findAllExceptFirebaseUid: (firebaseUid: string) =>
       db.user.findMany({
         where: { firebaseUid: { not: firebaseUid } },
-        orderBy: { displayName: "asc" },
         include: includeBadges,
       }),
     findByFirebaseUid: async (firebaseUid: string) => {

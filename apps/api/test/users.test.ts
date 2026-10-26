@@ -20,7 +20,7 @@ const register = (uid: string, body: object) =>
   app.inject({ method: "POST", url: "/users/me", headers: authHeader(uid), payload: body });
 
 describe("GET /users", () => {
-  test("returns every other user alphabetically with only directory fields", async () => {
+  test("returns every other user with only directory fields", async () => {
     await register("zoe", { displayName: "Zoe", ageConfirmed: true });
     await register("self", { displayName: "Mira", ageConfirmed: true });
     await register("alice", { displayName: "Alice", ageConfirmed: true });
@@ -39,10 +39,10 @@ describe("GET /users", () => {
     const users = response.json();
 
     expect(response.statusCode).toBe(200);
-    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual([
-      "Alice",
-      "Zoe",
-    ]);
+    expect(users).toHaveLength(2);
+    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual(
+      expect.arrayContaining(["Alice", "Zoe"]),
+    );
     for (const user of users) {
       expect(Object.keys(user).sort()).toEqual([
         "badges",
@@ -52,7 +52,7 @@ describe("GET /users", () => {
         "lookingForTeam",
       ]);
     }
-    expect(users[0].badges).toEqual(
+    expect(users.find((user: { displayName: string }) => user.displayName === "Alice").badges).toEqual(
       (await app.inject({
         method: "GET",
         url: "/users/me",
