@@ -1,9 +1,13 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
-import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from "@testing-library/react-native";
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import SearchScreen from "@/app/search";
@@ -11,6 +15,14 @@ import { SearchBar } from "@/components/searchBar";
 import { ApiError, getPlayers } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
+
+jest.mock("@/lib/search-fonts", () => ({
+  useSearchFonts: () => ({
+    regular: "InterRegular",
+    medium: "InterMedium",
+    semibold: "InterSemiBold",
+  }),
+}));
 
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
@@ -42,7 +54,9 @@ it("uses the tournament placeholder by default and forwards input changes", asyn
 
   await render(<SearchBar value="" onChangeText={onChangeText} />);
 
-  const input = screen.getByPlaceholderText("Search for events, venue, organizer");
+  const input = screen.getByPlaceholderText(
+    "Search for events, venue, organizer",
+  );
   await userEvent.type(input, "Cup");
 
   expect(onChangeText).toHaveBeenCalledWith("C");
@@ -60,7 +74,7 @@ it("uses the player placeholder and invokes the optional filter action", async (
     />,
   );
 
-  expect(screen.getByPlaceholderText("Search for name, level")).toBeOnTheScreen();
+  expect(screen.getByPlaceholderText("Search name")).toBeOnTheScreen();
   await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
 
   expect(onPressFilter).toHaveBeenCalledTimes(1);
@@ -90,7 +104,7 @@ it("filters player names using the search bar", async () => {
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Alex Kim");
-  const searchInput = screen.getByPlaceholderText("Search for name, level");
+  const searchInput = screen.getByPlaceholderText("Search name");
   await userEvent.type(searchInput, "sam");
 
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
@@ -103,13 +117,15 @@ it("shows an empty result message when no players match", async () => {
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Alex Kim");
-  await userEvent.type(screen.getByPlaceholderText("Search for name, level"), "Taylor");
+  await userEvent.type(screen.getByPlaceholderText("Search name"), "Taylor");
 
-  expect(screen.getByText("No matching players.")).toBeOnTheScreen();
+  expect(screen.getByText("No matching players")).toBeOnTheScreen();
 });
 
 it("shows the API error when loading players fails", async () => {
-  jest.mocked(getPlayers).mockRejectedValue(new ApiError(503, "Directory unavailable"));
+  jest
+    .mocked(getPlayers)
+    .mockRejectedValue(new ApiError(503, "Directory unavailable"));
 
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
@@ -121,7 +137,9 @@ it("shows and searches mock tournament names", async () => {
   jest.mocked(getPlayers).mockResolvedValue(players);
 
   await render(<SearchScreen />);
-  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
+  await waitFor(() =>
+    expect(screen.queryByText("Loading players…")).not.toBeOnTheScreen(),
+  );
   await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
 
   expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
@@ -149,15 +167,76 @@ it("remembers the selected tab after leaving and reopening Search", async () => 
   const firstVisit = await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
-  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
-  firstVisit.unmount();
+  await waitFor(() =>
+    expect(screen.queryByText("Loading players…")).not.toBeOnTheScreen(),
+  );
+  await firstVisit.unmount();
 
   jest.mocked(getPlayers).mockClear();
   const secondVisit = await render(<SearchScreen />);
   await waitFor(() => expect(getPlayers).toHaveBeenCalledWith(user));
   expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
-  await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
+  await waitFor(() =>
+    expect(screen.queryByText("Loading players…")).not.toBeOnTheScreen(),
+  );
 
   await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
-  secondVisit.unmount();
+  await secondVisit.unmount();
+});
+
+it("preserves the name query when retrying a failed directory request", async () => {
+  jest
+    .mocked(getPlayers)
+    .mockRejectedValueOnce(new ApiError(503, "Directory unavailable"))
+    .mockResolvedValueOnce(players);
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  await screen.findByText("Directory unavailable");
+  await userEvent.type(screen.getByPlaceholderText("Search name"), "SAM");
+  await userEvent.press(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByText("Sam Lee")).toBeOnTheScreen();
+  expect(screen.queryByText("Alex Kim")).not.toBeOnTheScreen();
+  expect(screen.getByPlaceholderText("Search name")).toHaveDisplayValue("SAM");
+  expect(getPlayers).toHaveBeenCalledTimes(2);
+});
+
+it("clears an unmatched name without reloading the directory", async () => {
+  jest.mocked(getPlayers).mockResolvedValue(players);
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  await screen.findByText("Alex Kim");
+  await userEvent.type(screen.getByPlaceholderText("Search name"), "Nobody");
+  await userEvent.press(screen.getByRole("button", { name: "Clear search" }));
+  expect(screen.getByText("Alex Kim")).toBeOnTheScreen();
+  expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
+  expect(getPlayers).toHaveBeenCalledTimes(1);
+});
+
+it("shows the empty directory separately from an unmatched search", async () => {
+  jest.mocked(getPlayers).mockResolvedValue([]);
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  expect(await screen.findByText("No players yet")).toBeOnTheScreen();
+  expect(screen.queryByText("No matching players")).not.toBeOnTheScreen();
+  expect(
+    screen.getByRole("button", { name: "Filters are coming soon" }),
+  ).toBeDisabled();
+});
+
+it("shows loading until the player directory request finishes", async () => {
+  let finish!: (value: typeof players) => void;
+  jest.mocked(getPlayers).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  expect(screen.getByText("Loading players…")).toBeOnTheScreen();
+  expect(screen.queryByText("No players yet")).not.toBeOnTheScreen();
+  await act(async () => {
+    finish(players);
+  });
+  expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
+  expect(screen.queryByText("Loading players…")).not.toBeOnTheScreen();
 });
