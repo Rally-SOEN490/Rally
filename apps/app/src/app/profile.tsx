@@ -571,6 +571,7 @@ const styles = StyleSheet.create({
   thoughtBubbleButton: {
     alignItems: "center",
     marginBottom: 3,
+    transform: [{ translateX: 16 }],
   },
   avatarBadge: {
     width: 108,
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
   thoughtBubbleTail: {
     position: "absolute",
     bottom: -10,
-    left: 28,
+    left: 42,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   thoughtBubbleTailDot: {
     position: "absolute",
     bottom: -21,
-    left: 20,
+    left: 34,
     width: 13,
     height: 13,
     borderRadius: 7,
