@@ -276,7 +276,7 @@ export default function Settings() {
             onPress={() => setEditing("email")}
           >
             <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
+              <View style={[styles.iconBadge, styles.socialIconBadge]}>
                 <Text style={styles.iconText}>✉️</Text>
               </View>
               <View style={styles.rowTextStack}>
@@ -289,7 +289,7 @@ export default function Settings() {
 
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
+              <View style={[styles.iconBadge, styles.socialIconBadge]}>
                 <Text style={styles.iconText}>🔒</Text>
               </View>
               <View style={styles.rowTextStack}>
@@ -346,7 +346,7 @@ export default function Settings() {
           <Text style={styles.sectionTitle}>Social media</Text>
           <Text style={styles.privacyNote}>Optional links shown on your public profile.</Text>
           <View style={styles.socialInputRow}>
-            <View style={styles.iconBadge}>
+            <View style={[styles.iconBadge, styles.socialIconBadge]}>
               <Text style={styles.iconText}>◎</Text>
             </View>
             <TextInput
@@ -360,18 +360,18 @@ export default function Settings() {
               style={styles.socialInput}
               value={instagramUrl}
             />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save Instagram link"
+              disabled={instagramSaving}
+              onPress={saveInstagram}
+              style={[styles.socialSaveButton, instagramSaving && styles.disabledButton]}
+            >
+              <Text style={styles.socialSaveText}>{instagramSaving ? "Saving…" : "Save link"}</Text>
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Save Instagram link"
-            disabled={instagramSaving}
-            onPress={saveInstagram}
-            style={[styles.socialSaveButton, instagramSaving && styles.disabledButton]}
-          >
-            <Text style={styles.socialSaveText}>{instagramSaving ? "Saving…" : "Save link"}</Text>
-          </Pressable>
           <View style={[styles.socialInputRow, styles.socialInputRowSpaced]}>
-            <View style={styles.iconBadge}>
+            <View style={[styles.iconBadge, styles.socialIconBadge]}>
               <Text style={styles.facebookMark}>f</Text>
             </View>
             <TextInput
@@ -385,16 +385,16 @@ export default function Settings() {
               style={styles.socialInput}
               value={facebookUrl}
             />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save Facebook link"
+              disabled={facebookSaving}
+              onPress={saveFacebook}
+              style={[styles.socialSaveButton, facebookSaving && styles.disabledButton]}
+            >
+              <Text style={styles.socialSaveText}>{facebookSaving ? "Saving…" : "Save link"}</Text>
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Save Facebook link"
-            disabled={facebookSaving}
-            onPress={saveFacebook}
-            style={[styles.socialSaveButton, facebookSaving && styles.disabledButton]}
-          >
-            <Text style={styles.socialSaveText}>{facebookSaving ? "Saving…" : "Save Facebook"}</Text>
-          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -756,36 +756,54 @@ const styles = StyleSheet.create({
   socialInputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f5f2",
     borderWidth: 1,
-    borderColor: "#d9d5d0",
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    borderColor: "#dfe5df",
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    minHeight: 52,
+    gap: 2,
+    shadowColor: "#12382d",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 1,
   },
   socialInput: {
     flex: 1,
+    minWidth: 0,
     color: "#12382d",
-    paddingVertical: 11,
-    fontSize: 14,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    fontSize: 12,
+  },
+  socialIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    marginRight: 0,
   },
   socialInputRowSpaced: {
-    marginTop: 10,
+    marginTop: 12,
   },
   facebookMark: {
-    color: "#1877f2",
+    color: "#1d5c4d",
     fontSize: 22,
     fontWeight: "800",
   },
   socialSaveButton: {
-    alignSelf: "flex-end",
     backgroundColor: "#12382d",
-    borderRadius: 10,
-    marginTop: 10,
-    paddingHorizontal: 14,
+    borderRadius: 9,
+    marginLeft: 8,
+    minWidth: 74,
+    alignItems: "center",
+    paddingHorizontal: 9,
     paddingVertical: 9,
   },
   socialSaveText: {
     color: "#f5f3ef",
+    fontSize: 12,
     fontWeight: "700",
   },
   disabledButton: {
