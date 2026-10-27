@@ -53,6 +53,9 @@ describe("POST /users/me", () => {
       "instagramUrl",
       "lookingForTeam",
       "shownBadgeKeys",
+      "thoughtGif",
+      "thoughtSong",
+      "thoughtText",
     ]);
   });
 
@@ -399,6 +402,29 @@ describe("PATCH /users/me", () => {
     expect(updated.statusCode).toBe(200);
     expect(updated.json().facebookUrl).toBe("https://facebook.com/alice");
     expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
+  });
+
+  test("saves and clears a public profile thought", async () => {
+    const updated = await update("alice", {
+      thoughtText: "Bring good energy.",
+      thoughtSong: "https://music.example.com/song",
+      thoughtGif: "https://media.example.com/gif.gif",
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({
+      thoughtText: "Bring good energy.",
+      thoughtSong: "https://music.example.com/song",
+      thoughtGif: "https://media.example.com/gif.gif",
+    });
+    expect((await getMe("alice")).json().thoughtText).toBe("Bring good energy.");
+
+    const cleared = await update("alice", {
+      thoughtText: null,
+      thoughtSong: null,
+      thoughtGif: null,
+    });
+    expect(cleared.json().thoughtText).toBeNull();
   });
 
   test.each([

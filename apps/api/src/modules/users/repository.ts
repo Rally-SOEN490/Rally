@@ -15,6 +15,9 @@ export type ProfileChanges = {
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;
   facebookUrl?: string | null;
+  thoughtText?: string | null;
+  thoughtSong?: string | null;
+  thoughtGif?: string | null;
 };
 
 const autoAwardedBadgeKeys = badgeCatalog

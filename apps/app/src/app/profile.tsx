@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import * as Linking from "expo-linking";
@@ -80,6 +81,70 @@ export default function Profile() {
   const [savingValue, setSavingValue] = useState<boolean>();
   const [saveError, setSaveError] = useState("");
   const saving = savingValue !== undefined;
+  const [thoughtEditorVisible, setThoughtEditorVisible] = useState(false);
+  const [thoughtText, setThoughtText] = useState(account?.thoughtText ?? "");
+  const [thoughtSong, setThoughtSong] = useState(account?.thoughtSong ?? "");
+  const [thoughtGif, setThoughtGif] = useState(account?.thoughtGif ?? "");
+  const [thoughtSaving, setThoughtSaving] = useState(false);
+  const [thoughtError, setThoughtError] = useState("");
+
+  const openThoughtEditor = () => {
+    setThoughtText(account?.thoughtText ?? "");
+    setThoughtSong(account?.thoughtSong ?? "");
+    setThoughtGif(account?.thoughtGif ?? "");
+    setThoughtError("");
+    setThoughtEditorVisible(true);
+  };
+
+  const saveThought = async () => {
+    if (!user) return;
+    const text = thoughtText.trim();
+    const song = thoughtSong.trim();
+    const gif = thoughtGif.trim();
+    if (!text && !song && !gif) {
+      setThoughtError("Add a thought, song, or GIF before sharing.");
+      return;
+    }
+    setThoughtSaving(true);
+    setThoughtError("");
+    try {
+      setAccount(await updateMyAccount(user, {
+        thoughtText: text || null,
+        thoughtSong: song || null,
+        thoughtGif: gif || null,
+      }));
+      setThoughtEditorVisible(false);
+    } catch (error) {
+      setThoughtError(apiErrorMessage(error));
+    } finally {
+      setThoughtSaving(false);
+    }
+  };
+
+  const deleteThought = async () => {
+    if (!user) return;
+    setThoughtSaving(true);
+    setThoughtError("");
+    try {
+      setAccount(await updateMyAccount(user, {
+        thoughtText: null,
+        thoughtSong: null,
+        thoughtGif: null,
+      }));
+      setThoughtEditorVisible(false);
+    } catch (error) {
+      setThoughtError(apiErrorMessage(error));
+    } finally {
+      setThoughtSaving(false);
+    }
+  };
+
+  const openProfilePictureEditor = () => {
+    Alert.alert(
+      "Edit profile picture",
+      "Profile picture selection will be available here.",
+    );
+  };
 
   const changeLookingForTeam = async (value: boolean) => {
     if (!user) return;
@@ -109,9 +174,52 @@ export default function Profile() {
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatarBadge}>
-            <Text style={styles.avatarText}>M</Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={account?.thoughtText ? "Edit thought" : "Add a thought"}
+            onPress={openThoughtEditor}
+            style={styles.thoughtBubbleButton}
+          >
+            <View style={styles.thoughtBubble}>
+              <Text numberOfLines={3} style={styles.thoughtBubbleText}>
+                {account?.thoughtText ||
+                  (account?.thoughtSong ? "Listening now" : account?.thoughtGif ? "Shared a GIF" : "Your thought")}
+              </Text>
+              {!!account?.thoughtSong && (
+                <Text
+                  accessibilityRole="link"
+                  onPress={() => Linking.openURL(account.thoughtSong!).catch(() => {
+                    Alert.alert("Unable to open song", "Please try opening the song link again.");
+                  })}
+                  style={styles.thoughtBubbleMeta}
+                >
+                  ♫ Song
+                </Text>
+              )}
+              {!!account?.thoughtGif && (
+                <Image
+                  accessibilityLabel="Shared GIF"
+                  source={{ uri: account.thoughtGif }}
+                  style={styles.thoughtGif}
+                />
+              )}
+              <View style={styles.thoughtBubbleTail} />
+              <View style={styles.thoughtBubbleTailDot} />
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile picture"
+            onPress={openProfilePictureEditor}
+            style={styles.avatarWithThought}
+          >
+            <View style={styles.avatarBadge}>
+              <Text style={styles.avatarText}>M</Text>
+            </View>
+            <View style={styles.profilePictureEditBadge}>
+              <Text style={styles.profilePictureEditText}>✎</Text>
+            </View>
+          </Pressable>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
           <View style={styles.socialLinks}>
@@ -356,6 +464,81 @@ export default function Profile() {
         </Pressable>
       </Modal>
 
+      <Modal
+        visible={thoughtEditorVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setThoughtEditorVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setThoughtEditorVisible(false)}>
+          <Pressable style={styles.thoughtEditor} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.thoughtEditorTitle}>
+              {account?.thoughtText || account?.thoughtSong || account?.thoughtGif
+                ? "Edit your thought"
+                : "Share a thought"}
+            </Text>
+            <Text style={styles.thoughtEditorHint}>This appears publicly on your profile.</Text>
+            <TextInput
+              accessibilityLabel="Thought"
+              maxLength={180}
+              multiline
+              onChangeText={setThoughtText}
+              placeholder="Your thoughts go here..."
+              placeholderTextColor="#8a9690"
+              style={styles.thoughtInput}
+              value={thoughtText}
+            />
+            <TextInput
+              accessibilityLabel="Song link"
+              autoCapitalize="none"
+              onChangeText={setThoughtSong}
+              placeholder="Add a song link (optional)"
+              placeholderTextColor="#8a9690"
+              style={styles.thoughtLinkInput}
+              value={thoughtSong}
+            />
+            <TextInput
+              accessibilityLabel="GIF link"
+              autoCapitalize="none"
+              onChangeText={setThoughtGif}
+              placeholder="Add a GIF link (optional)"
+              placeholderTextColor="#8a9690"
+              style={styles.thoughtLinkInput}
+              value={thoughtGif}
+            />
+            {!!thoughtError && (
+              <Text accessibilityRole="alert" style={styles.saveError}>{thoughtError}</Text>
+            )}
+            <View style={styles.thoughtActions}>
+              {(account?.thoughtText || account?.thoughtSong || account?.thoughtGif) && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete thought"
+                  disabled={thoughtSaving}
+                  onPress={deleteThought}
+                  style={styles.deleteThoughtButton}
+                >
+                  <Text style={styles.deleteThoughtText}>Delete</Text>
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share thought"
+                disabled={thoughtSaving}
+                onPress={saveThought}
+                style={styles.shareThoughtButton}
+              >
+                {thoughtSaving ? (
+                  <ActivityIndicator color="#f7f4f1" />
+                ) : (
+                  <Text style={styles.shareThoughtText}>Share</Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={styles.navBar}>
         {[
           { label: "Home" },
@@ -413,6 +596,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  avatarWithThought: {
+    alignItems: "center",
+    position: "relative",
+  },
+  thoughtBubbleButton: {
+    alignItems: "center",
+    marginBottom: 3,
+  },
   avatarBadge: {
     width: 108,
     height: 108,
@@ -427,6 +618,79 @@ const styles = StyleSheet.create({
     fontSize: 52,
     fontWeight: "700",
     color: "#12382d",
+  },
+  thoughtBubble: {
+    maxWidth: 260,
+    minWidth: 162,
+    minHeight: 50,
+    paddingHorizontal: 19,
+    paddingVertical: 13,
+    borderRadius: 26,
+    backgroundColor: "#f8f8f6",
+    shadowColor: "#12382d",
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  thoughtBubbleText: {
+    color: "#68706c",
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  thoughtBubbleMeta: {
+    color: "#1d5c4d",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  thoughtBubbleTail: {
+    position: "absolute",
+    bottom: -10,
+    left: 28,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#f8f8f6",
+    transform: [{ rotate: "28deg" }],
+  },
+  thoughtBubbleTailDot: {
+    position: "absolute",
+    bottom: -21,
+    left: 20,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: "#f8f8f6",
+  },
+  thoughtGif: {
+    width: 120,
+    height: 72,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  profilePictureEditBadge: {
+    position: "absolute",
+    right: -3,
+    bottom: -1,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#e8e4df",
+  },
+  profilePictureEditText: {
+    color: "#f7f4f1",
+    fontSize: 18,
+    fontWeight: "700",
   },
   playerName: {
     marginTop: 12,
@@ -743,6 +1007,72 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginTop: 14,
     textAlign: "center",
+  },
+  thoughtEditor: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#f7f4f1",
+    borderRadius: 24,
+    padding: 22,
+  },
+  thoughtEditorTitle: {
+    color: "#12382d",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  thoughtEditorHint: {
+    color: "#536761",
+    fontSize: 13,
+    marginTop: 5,
+    marginBottom: 16,
+  },
+  thoughtInput: {
+    minHeight: 92,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#cfd7d1",
+    backgroundColor: "#fff",
+    color: "#12382d",
+    fontSize: 16,
+    padding: 12,
+    textAlignVertical: "top",
+  },
+  thoughtLinkInput: {
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#cfd7d1",
+    backgroundColor: "#fff",
+    color: "#12382d",
+    fontSize: 14,
+    padding: 12,
+  },
+  thoughtActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 18,
+  },
+  deleteThoughtButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  deleteThoughtText: {
+    color: "#c24f4b",
+    fontWeight: "700",
+  },
+  shareThoughtButton: {
+    minWidth: 90,
+    alignItems: "center",
+    backgroundColor: "#12382d",
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  shareThoughtText: {
+    color: "#f7f4f1",
+    fontWeight: "700",
   },
   closeButton: {
     backgroundColor: "#12382d",

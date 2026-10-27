@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.22",
     "expo": "~57.0.27",
+    "expo-audio": "~57.0.5",
     "expo-constants": "~57.0.21",
     "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
