@@ -411,6 +411,16 @@ describe("PATCH /users/me", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  test.each([
+    "facebook.com/alice",
+    "https://example.com/alice",
+    "javascript:alert(1)",
+  ])("rejects an invalid Facebook link: %s", async (facebookUrl) => {
+    const response = await update("alice", { facebookUrl });
+
+    expect(response.statusCode).toBe(400);
+  });
+
   test("allows removing an Instagram link", async () => {
     await update("alice", { instagramUrl: "https://www.instagram.com/alice/" });
 
@@ -418,6 +428,15 @@ describe("PATCH /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().instagramUrl).toBeNull();
+  });
+
+  test("allows removing a Facebook link", async () => {
+    await update("alice", { facebookUrl: "https://www.facebook.com/alice/" });
+
+    const response = await update("alice", { facebookUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().facebookUrl).toBeNull();
   });
 
   test("saves shown badges and returns them on later account loads", async () => {
