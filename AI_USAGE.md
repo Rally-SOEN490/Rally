@@ -43,7 +43,7 @@ Problems and rejected suggestions: <generated code that was wrong, corrected, or
 
 ### RALLY-115: Player browsing
 
-Issue: #137. Pull request: not published. This browsing-only increment depends on
+Issue: #137. Pull request: [#262](https://github.com/Rally-SOEN490/Rally/pull/262) (draft). This browsing-only increment depends on
 #256 and leaves filtering open; displaying records and styling are not counted as
 a separate substantive feature under rubric §1.
 
