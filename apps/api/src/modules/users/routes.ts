@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { FastifyPluginAsync } from "fastify";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
@@ -63,8 +58,15 @@ export const userRoutes: FastifyPluginAsync<{
         body: {
           type: "object",
           additionalProperties: false,
-          propertyNames: { enum: ["lookingForTeam", "shownBadgeKeys"] },
-          anyOf: [{ required: ["lookingForTeam"] }, { required: ["shownBadgeKeys"] }],
+          propertyNames: {
+            enum: ["lookingForTeam", "shownBadgeKeys", "instagramUrl", "facebookUrl"],
+          },
+          anyOf: [
+            { required: ["lookingForTeam"] },
+            { required: ["shownBadgeKeys"] },
+            { required: ["instagramUrl"] },
+            { required: ["facebookUrl"] },
+          ],
           properties: {
             lookingForTeam: { enum: [true, false] },
             shownBadgeKeys: {
@@ -72,6 +74,26 @@ export const userRoutes: FastifyPluginAsync<{
               maxItems: 4,
               uniqueItems: true,
               items: { type: "string", minLength: 1 },
+            },
+            instagramUrl: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 2048,
+                  pattern: "^https://(www\\.)?instagram\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
+                },
+              ],
+            },
+            facebookUrl: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 2048,
+                  pattern: "^https://(www\\.)?facebook\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
+                },
+              ],
             },
           },
         },

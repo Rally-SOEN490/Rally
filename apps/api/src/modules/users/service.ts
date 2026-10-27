@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
@@ -15,6 +10,8 @@ export type UserResponse = {
   displayName: string;
   lookingForTeam: boolean;
   shownBadgeKeys: string[];
+  instagramUrl: string | null;
+  facebookUrl: string | null;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -40,6 +37,8 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   displayName: user.displayName,
   lookingForTeam: user.lookingForTeam,
   shownBadgeKeys: [...user.shownBadgeKeys],
+  instagramUrl: user.instagramUrl,
+  facebookUrl: user.facebookUrl,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
