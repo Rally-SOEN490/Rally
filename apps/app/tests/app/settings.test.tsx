@@ -160,6 +160,54 @@ describe("preferences", () => {
       expect(alertSpy).toHaveBeenCalledWith("Unable to load gender", "Unable to load."),
     );
   });
+
+  it("saves Instagram and Facebook links", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    const savedAccount = { instagramUrl: "https://instagram.com/sam", facebookUrl: "https://facebook.com/sam" };
+    jest.mocked(updateMyAccount).mockResolvedValue(savedAccount as never);
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://instagram.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+    await userEvent.type(screen.getByLabelText("Facebook link"), "https://facebook.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Facebook link" }));
+
+    expect(updateMyAccount).toHaveBeenNthCalledWith(1, user, { instagramUrl: "https://instagram.com/sam" });
+    expect(updateMyAccount).toHaveBeenNthCalledWith(2, user, { facebookUrl: "https://facebook.com/sam" });
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Social media saved",
+      "Your Facebook link is now shown on your profile.",
+    );
+  });
+
+  it("rejects invalid social media links", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://example.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+    await userEvent.type(screen.getByLabelText("Facebook link"), "https://example.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Facebook link" }));
+
+    expect(updateMyAccount).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Invalid Facebook link",
+      "Use a link like https://facebook.com/yourusername.",
+    );
+  });
+
+  it("shows an API error when saving a social link fails", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    jest.mocked(updateMyAccount).mockRejectedValue(new ApiError(500, "Unable to save."));
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://instagram.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Unable to save Instagram", "Unable to save."),
+    );
+  });
 });
 
 describe("log out", () => {
