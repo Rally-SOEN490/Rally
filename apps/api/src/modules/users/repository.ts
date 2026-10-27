@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { Database } from "../../db.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
@@ -76,6 +71,7 @@ export const createUserRepository = (db: Database) => {
     findAllExceptFirebaseUid: (firebaseUid: string) =>
       db.user.findMany({
         where: { firebaseUid: { not: firebaseUid } },
+        orderBy: [{ displayName: "asc" }, { id: "asc" }],
         include: includeBadges,
       }),
     findByFirebaseUid: async (firebaseUid: string) => {
