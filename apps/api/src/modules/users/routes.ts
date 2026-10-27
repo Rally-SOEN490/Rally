@@ -65,8 +65,6 @@ export const userRoutes: FastifyPluginAsync<{
               "instagramUrl",
               "facebookUrl",
               "thoughtText",
-              "thoughtSong",
-              "thoughtGif",
             ],
           },
           anyOf: [
@@ -74,7 +72,7 @@ export const userRoutes: FastifyPluginAsync<{
             { required: ["shownBadgeKeys"] },
             { required: ["instagramUrl"] },
             { required: ["facebookUrl"] },
-            { required: ["thoughtText", "thoughtSong", "thoughtGif"] },
+            { required: ["thoughtText"] },
           ],
           properties: {
             lookingForTeam: { enum: [true, false] },
@@ -112,18 +110,6 @@ export const userRoutes: FastifyPluginAsync<{
                   maxLength: 180,
                   pattern: "^\\P{Cc}*$",
                 },
-              ],
-            },
-            thoughtSong: {
-              anyOf: [
-                { type: "null" },
-                { type: "string", maxLength: 2048, format: "uri" },
-              ],
-            },
-            thoughtGif: {
-              anyOf: [
-                { type: "null" },
-                { type: "string", maxLength: 2048, format: "uri" },
               ],
             },
           },

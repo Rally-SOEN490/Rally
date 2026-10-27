@@ -13,8 +13,6 @@ export type UserResponse = {
   instagramUrl: string | null;
   facebookUrl: string | null;
   thoughtText: string | null;
-  thoughtSong: string | null;
-  thoughtGif: string | null;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -43,8 +41,6 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   instagramUrl: user.instagramUrl,
   facebookUrl: user.facebookUrl,
   thoughtText: user.thoughtText,
-  thoughtSong: user.thoughtSong,
-  thoughtGif: user.thoughtGif,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(

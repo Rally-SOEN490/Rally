@@ -83,15 +83,11 @@ export default function Profile() {
   const saving = savingValue !== undefined;
   const [thoughtEditorVisible, setThoughtEditorVisible] = useState(false);
   const [thoughtText, setThoughtText] = useState(account?.thoughtText ?? "");
-  const [thoughtSong, setThoughtSong] = useState(account?.thoughtSong ?? "");
-  const [thoughtGif, setThoughtGif] = useState(account?.thoughtGif ?? "");
   const [thoughtSaving, setThoughtSaving] = useState(false);
   const [thoughtError, setThoughtError] = useState("");
 
   const openThoughtEditor = () => {
     setThoughtText(account?.thoughtText ?? "");
-    setThoughtSong(account?.thoughtSong ?? "");
-    setThoughtGif(account?.thoughtGif ?? "");
     setThoughtError("");
     setThoughtEditorVisible(true);
   };
@@ -99,10 +95,8 @@ export default function Profile() {
   const saveThought = async () => {
     if (!user) return;
     const text = thoughtText.trim();
-    const song = thoughtSong.trim();
-    const gif = thoughtGif.trim();
-    if (!text && !song && !gif) {
-      setThoughtError("Add a thought, song, or GIF before sharing.");
+    if (!text) {
+      setThoughtError("Write a thought before sharing.");
       return;
     }
     setThoughtSaving(true);
@@ -110,8 +104,6 @@ export default function Profile() {
     try {
       setAccount(await updateMyAccount(user, {
         thoughtText: text || null,
-        thoughtSong: song || null,
-        thoughtGif: gif || null,
       }));
       setThoughtEditorVisible(false);
     } catch (error) {
@@ -128,8 +120,6 @@ export default function Profile() {
     try {
       setAccount(await updateMyAccount(user, {
         thoughtText: null,
-        thoughtSong: null,
-        thoughtGif: null,
       }));
       setThoughtEditorVisible(false);
     } catch (error) {
@@ -182,27 +172,8 @@ export default function Profile() {
           >
             <View style={styles.thoughtBubble}>
               <Text numberOfLines={3} style={styles.thoughtBubbleText}>
-                {account?.thoughtText ||
-                  (account?.thoughtSong ? "Listening now" : account?.thoughtGif ? "Shared a GIF" : "Your thought")}
+                {account?.thoughtText || "Your thought"}
               </Text>
-              {!!account?.thoughtSong && (
-                <Text
-                  accessibilityRole="link"
-                  onPress={() => Linking.openURL(account.thoughtSong!).catch(() => {
-                    Alert.alert("Unable to open song", "Please try opening the song link again.");
-                  })}
-                  style={styles.thoughtBubbleMeta}
-                >
-                  ♫ Song
-                </Text>
-              )}
-              {!!account?.thoughtGif && (
-                <Image
-                  accessibilityLabel="Shared GIF"
-                  source={{ uri: account.thoughtGif }}
-                  style={styles.thoughtGif}
-                />
-              )}
               <View style={styles.thoughtBubbleTail} />
               <View style={styles.thoughtBubbleTailDot} />
             </View>
@@ -472,12 +443,26 @@ export default function Profile() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setThoughtEditorVisible(false)}>
           <Pressable style={styles.thoughtEditor} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.thoughtEditorTitle}>
-              {account?.thoughtText || account?.thoughtSong || account?.thoughtGif
-                ? "Edit your thought"
-                : "Share a thought"}
-            </Text>
-            <Text style={styles.thoughtEditorHint}>This appears publicly on your profile.</Text>
+            <View style={styles.thoughtEditorHeader}>
+              <View style={styles.thoughtEditorIcon}>
+                <Text style={styles.thoughtEditorIconText}>✦</Text>
+              </View>
+              <View style={styles.thoughtEditorHeading}>
+                <Text style={styles.thoughtEditorTitle}>
+                  {account?.thoughtText ? "Edit your thought" : "Share a thought"}
+                </Text>
+                <Text style={styles.thoughtEditorHint}>This appears publicly on your profile.</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close thought editor"
+                onPress={() => setThoughtEditorVisible(false)}
+                style={styles.thoughtEditorClose}
+              >
+                <Text style={styles.thoughtEditorCloseText}>×</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.thoughtFieldLabel}>MESSAGE</Text>
             <TextInput
               accessibilityLabel="Thought"
               maxLength={180}
@@ -488,29 +473,12 @@ export default function Profile() {
               style={styles.thoughtInput}
               value={thoughtText}
             />
-            <TextInput
-              accessibilityLabel="Song link"
-              autoCapitalize="none"
-              onChangeText={setThoughtSong}
-              placeholder="Add a song link (optional)"
-              placeholderTextColor="#8a9690"
-              style={styles.thoughtLinkInput}
-              value={thoughtSong}
-            />
-            <TextInput
-              accessibilityLabel="GIF link"
-              autoCapitalize="none"
-              onChangeText={setThoughtGif}
-              placeholder="Add a GIF link (optional)"
-              placeholderTextColor="#8a9690"
-              style={styles.thoughtLinkInput}
-              value={thoughtGif}
-            />
+            <Text style={styles.thoughtCharacterCount}>{thoughtText.length}/180</Text>
             {!!thoughtError && (
               <Text accessibilityRole="alert" style={styles.saveError}>{thoughtError}</Text>
             )}
             <View style={styles.thoughtActions}>
-              {(account?.thoughtText || account?.thoughtSong || account?.thoughtGif) && (
+              {account?.thoughtText && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Delete thought"
@@ -642,13 +610,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
   },
-  thoughtBubbleMeta: {
-    color: "#1d5c4d",
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 4,
-    textAlign: "center",
-  },
   thoughtBubbleTail: {
     position: "absolute",
     bottom: -10,
@@ -667,12 +628,6 @@ const styles = StyleSheet.create({
     height: 13,
     borderRadius: 7,
     backgroundColor: "#f8f8f6",
-  },
-  thoughtGif: {
-    width: 120,
-    height: 72,
-    borderRadius: 10,
-    marginTop: 6,
   },
   profilePictureEditBadge: {
     position: "absolute",
@@ -977,10 +932,10 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(18, 56, 45, 0.45)",
+    backgroundColor: "rgba(18, 56, 45, 0.52)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 18,
   },
   badgeDetails: {
     width: "100%",
@@ -1011,64 +966,120 @@ const styles = StyleSheet.create({
   thoughtEditor: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#f7f4f1",
+    backgroundColor: "#fbfaf8",
     borderRadius: 24,
-    padding: 22,
+    padding: 20,
+    shadowColor: "#071c15",
+    shadowOpacity: 0.2,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  thoughtEditorHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  thoughtEditorIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#dcebe4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  thoughtEditorIconText: {
+    color: "#0b5544",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  thoughtEditorHeading: {
+    flex: 1,
+  },
+  thoughtEditorClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#edf0ed",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  thoughtEditorCloseText: {
+    color: "#536761",
+    fontSize: 22,
+    fontWeight: "400",
+    lineHeight: 25,
   },
   thoughtEditorTitle: {
     color: "#12382d",
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "800",
   },
   thoughtEditorHint: {
     color: "#536761",
-    fontSize: 13,
-    marginTop: 5,
-    marginBottom: 16,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+  thoughtFieldLabel: {
+    color: "#789087",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    marginBottom: 6,
   },
   thoughtInput: {
-    minHeight: 92,
+    minHeight: 76,
+    maxHeight: 92,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#cfd7d1",
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#d4dfd9",
+    backgroundColor: "#ffffff",
     color: "#12382d",
-    fontSize: 16,
-    padding: 12,
+    fontSize: 15,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
     textAlignVertical: "top",
   },
-  thoughtLinkInput: {
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#cfd7d1",
-    backgroundColor: "#fff",
-    color: "#12382d",
-    fontSize: 14,
-    padding: 12,
+  thoughtCharacterCount: {
+    alignSelf: "flex-end",
+    color: "#97a49e",
+    fontSize: 11,
+    marginTop: 4,
+    marginBottom: 13,
   },
   thoughtActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    gap: 10,
-    marginTop: 18,
+    gap: 8,
+    marginTop: 0,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e7ebe8",
   },
   deleteThoughtButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   deleteThoughtText: {
     color: "#c24f4b",
     fontWeight: "700",
   },
   shareThoughtButton: {
-    minWidth: 90,
+    minWidth: 92,
     alignItems: "center",
     backgroundColor: "#12382d",
     borderRadius: 999,
-    paddingHorizontal: 18,
+    paddingHorizontal: 17,
     paddingVertical: 10,
+    shadowColor: "#063e31",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   shareThoughtText: {
     color: "#f7f4f1",
