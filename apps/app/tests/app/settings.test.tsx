@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { fireEvent, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -20,7 +15,7 @@ import {
 } from "firebase/auth";
 import { Alert, Platform } from "react-native";
 import Settings from "@/app/settings";
-import { ApiError, deleteMyAccount, getMyGender, saveMyGender } from "@/lib/api";
+import { ApiError, deleteMyAccount, getMyGender, saveMyGender, updateMyAccount } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
@@ -45,6 +40,7 @@ jest.mock("@/lib/api", () => ({
   deleteMyAccount: jest.fn(),
   getMyGender: jest.fn(),
   saveMyGender: jest.fn(),
+  updateMyAccount: jest.fn(),
 }));
 
 const user = { email: "sam@example.com" } as User;
@@ -57,6 +53,7 @@ beforeEach(() => {
   jest.mocked(deleteMyAccount).mockResolvedValue();
   jest.mocked(getMyGender).mockResolvedValue({ gender: null });
   jest.mocked(saveMyGender).mockImplementation(async (_user, gender) => ({ gender }));
+  jest.mocked(updateMyAccount).mockResolvedValue({} as never);
   jest.mocked(deleteUser).mockResolvedValue();
   jest.mocked(updatePassword).mockResolvedValue();
   jest.mocked(verifyBeforeUpdateEmail).mockResolvedValue();

@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { User } from "firebase/auth";
 
@@ -17,6 +12,8 @@ export type RallyUser = {
   displayName: string;
   lookingForTeam: boolean;
   shownBadgeKeys?: string[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
   createdAt: string;
   badges: {
     key: string;
@@ -36,7 +33,9 @@ export type RallyUser = {
 export type Gender = "male" | "female";
 export type ProfileChanges =
   | { lookingForTeam: boolean }
-  | { shownBadgeKeys: string[] };
+  | { shownBadgeKeys: string[] }
+  | { instagramUrl: string | null }
+  | { facebookUrl: string | null };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;

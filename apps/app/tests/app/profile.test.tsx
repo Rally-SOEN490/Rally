@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { act, fireEvent, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -93,6 +88,13 @@ it("shows the name saved in Rally's database, like Home does", async () => {
 it("opens settings from the gear button", async () => {
   await render(<Profile />);
   await userEvent.press(screen.getByRole("button", { name: "Open settings" }));
+
+  expect(router.push).toHaveBeenCalledWith("/settings");
+});
+
+it("opens settings when Facebook is not connected", async () => {
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Facebook (not connected)" }));
 
   expect(router.push).toHaveBeenCalledWith("/settings");
 });

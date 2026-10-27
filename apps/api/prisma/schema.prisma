@@ -26,6 +26,8 @@ model User {
   firebaseUid    String   @unique @map("firebase_uid")
   displayName    String   @map("display_name")
   gender         String?
+  instagramUrl   String?  @map("instagram_url")
+  facebookUrl    String?  @map("facebook_url")
   // When the person confirmed at sign-up that they are 14 or older.
   ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
   lookingForTeam Boolean  @default(false) @map("looking_for_team")

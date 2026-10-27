@@ -1,11 +1,10 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { router } from "expo-router";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -15,6 +14,7 @@ import {
   Text,
   View,
 } from "react-native";
+import * as Linking from "expo-linking";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiErrorMessage, updateMyAccount, type RallyUser } from "@/lib/api";
@@ -54,6 +54,19 @@ const getBadgeProgress = (receivedCount: number, nextTierThreshold?: number | nu
     percentage: Math.min(safeCount / target, 1),
   };
 };
+
+const InstagramLogo = () => (
+  <View style={styles.instagramLogo}>
+    <View style={styles.instagramLens} />
+    <View style={styles.instagramDot} />
+  </View>
+);
+
+const FacebookLogo = () => (
+  <View style={styles.facebookLogo}>
+    <Text style={styles.facebookLogoText}>f</Text>
+  </View>
+);
 
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
@@ -101,6 +114,46 @@ export default function Profile() {
           </View>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
+          <View style={styles.socialLinks}>
+            {[
+              {
+                name: "Instagram",
+                url: account?.instagramUrl,
+                Logo: InstagramLogo,
+              },
+              {
+                name: "Facebook",
+                url: account?.facebookUrl,
+                Logo: FacebookLogo,
+              },
+            ].map(({ name, url, Logo }) => (
+              <Pressable
+                key={name}
+                accessibilityRole={url ? "link" : "button"}
+                accessibilityLabel={`${name}${url ? " profile" : " (not connected)"}`}
+                onPress={() =>
+                  url
+                    ? Linking.openURL(url).catch(() => {
+                        Alert.alert(`Unable to open ${name}`, "Please try opening the link again.");
+                      })
+                    : router.push("/settings")
+                }
+                style={[styles.socialLink, !url && styles.socialLinkPlaceholder]}
+              >
+                <Logo />
+                <View>
+                  <Text style={styles.socialLinkText}>{name}</Text>
+                  <Text
+                    accessibilityLabel={`${name} ${url ? "connected" : "not connected"}`}
+                    testID={`${name.toLowerCase()}-status`}
+                    style={styles.socialLinkStatus}
+                  >
+                    {url ? "Connected" : "Not connected"}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
           {lookingForTeam && (
             <View testID="looking-for-team-badge" style={styles.lookingBadge}>
               <View style={styles.lookingDot} />
@@ -385,6 +438,75 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 15,
     color: "#536761",
+  },
+  socialLinks: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  socialLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 132,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderRadius: 14,
+    backgroundColor: "#f7f5f2",
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+  },
+  socialLinkPlaceholder: {
+    opacity: 0.55,
+  },
+  socialLinkText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  socialLinkStatus: {
+    color: "#687872",
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  instagramLogo: {
+    width: 25,
+    height: 25,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  instagramLens: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+  },
+  instagramDot: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d62976",
+  },
+  facebookLogo: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  facebookLogoText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+    lineHeight: 24,
   },
   lookingBadge: {
     flexDirection: "row",

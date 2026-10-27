@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { authHeader, buildTestApp, testDb } from "./helpers.ts";
@@ -53,7 +48,9 @@ describe("POST /users/me", () => {
       "badges",
       "createdAt",
       "displayName",
+      "facebookUrl",
       "id",
+      "instagramUrl",
       "lookingForTeam",
       "shownBadgeKeys",
     ]);
@@ -386,6 +383,41 @@ describe("PATCH /users/me", () => {
 
     expect(off.statusCode).toBe(200);
     expect(off.json().lookingForTeam).toBe(false);
+  });
+
+  test("saves an Instagram link and returns it on the profile", async () => {
+    const updated = await update("alice", { instagramUrl: "https://instagram.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().instagramUrl).toBe("https://instagram.com/alice");
+    expect((await getMe("alice")).json().instagramUrl).toBe("https://instagram.com/alice");
+  });
+
+  test("saves a Facebook link and returns it on the profile", async () => {
+    const updated = await update("alice", { facebookUrl: "https://facebook.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().facebookUrl).toBe("https://facebook.com/alice");
+    expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
+  });
+
+  test.each([
+    "instagram.com/alice",
+    "https://example.com/alice",
+    "javascript:alert(1)",
+  ])("rejects an invalid Instagram link: %s", async (instagramUrl) => {
+    const response = await update("alice", { instagramUrl });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("allows removing an Instagram link", async () => {
+    await update("alice", { instagramUrl: "https://www.instagram.com/alice/" });
+
+    const response = await update("alice", { instagramUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().instagramUrl).toBeNull();
   });
 
   test("saves shown badges and returns them on later account loads", async () => {

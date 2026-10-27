@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -21,7 +24,14 @@ import {
   updatePassword,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import { apiErrorMessage, deleteMyAccount, getMyGender, saveMyGender, type Gender } from "@/lib/api";
+import {
+  apiErrorMessage,
+  deleteMyAccount,
+  getMyGender,
+  updateMyAccount,
+  saveMyGender,
+  type Gender,
+} from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
@@ -50,7 +60,7 @@ const notify = (title: string, message: string) => {
 };
 
 export default function Settings() {
-  const { user } = useSession();
+  const { user, account, setAccount } = useSession();
   const [announcementToggles, setAnnouncementToggles] = useState({
     tournamentAnnouncements: true,
     joinRequests: true,
@@ -60,6 +70,10 @@ export default function Settings() {
   const [gender, setGender] = useState<Gender | null>(null);
   const [genderLoading, setGenderLoading] = useState(true);
   const [genderSaving, setGenderSaving] = useState(false);
+  const [instagramUrl, setInstagramUrl] = useState(account?.instagramUrl ?? "");
+  const [instagramSaving, setInstagramSaving] = useState(false);
+  const [facebookUrl, setFacebookUrl] = useState(account?.facebookUrl ?? "");
+  const [facebookSaving, setFacebookSaving] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
   const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
@@ -94,6 +108,44 @@ export default function Settings() {
       notify("Unable to save gender", apiErrorMessage(error));
     } finally {
       setGenderSaving(false);
+    }
+  };
+
+  const saveInstagram = async () => {
+    if (!user || instagramSaving) return;
+    const value = instagramUrl.trim();
+    if (value && !/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._-]+\/?(?:[?#].*)?$/.test(value)) {
+      notify("Invalid Instagram link", "Use a link like https://instagram.com/yourusername.");
+      return;
+    }
+
+    setInstagramSaving(true);
+    try {
+      setAccount(await updateMyAccount(user, { instagramUrl: value || null }));
+      notify("Social media saved", value ? "Your Instagram link is now shown on your profile." : "Your Instagram link was removed.");
+    } catch (error) {
+      notify("Unable to save Instagram", apiErrorMessage(error));
+    } finally {
+      setInstagramSaving(false);
+    }
+  };
+
+  const saveFacebook = async () => {
+    if (!user || facebookSaving) return;
+    const value = facebookUrl.trim();
+    if (value && !/^https:\/\/(www\.)?facebook\.com\/[A-Za-z0-9._-]+\/?(?:[?#].*)?$/.test(value)) {
+      notify("Invalid Facebook link", "Use a link like https://facebook.com/yourusername.");
+      return;
+    }
+
+    setFacebookSaving(true);
+    try {
+      setAccount(await updateMyAccount(user, { facebookUrl: value || null }));
+      notify("Social media saved", value ? "Your Facebook link is now shown on your profile." : "Your Facebook link was removed.");
+    } catch (error) {
+      notify("Unable to save Facebook", apiErrorMessage(error));
+    } finally {
+      setFacebookSaving(false);
     }
   };
 
@@ -288,6 +340,61 @@ export default function Settings() {
               <Text style={styles.clearGenderText}>Prefer not to say</Text>
             </Pressable>
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Social media</Text>
+          <Text style={styles.privacyNote}>Optional links shown on your public profile.</Text>
+          <View style={styles.socialInputRow}>
+            <View style={styles.iconBadge}>
+              <Text style={styles.iconText}>◎</Text>
+            </View>
+            <TextInput
+              accessibilityLabel="Instagram link"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onChangeText={setInstagramUrl}
+              placeholder="https://instagram.com/yourusername"
+              placeholderTextColor="#9aa39d"
+              style={styles.socialInput}
+              value={instagramUrl}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Save Instagram link"
+            disabled={instagramSaving}
+            onPress={saveInstagram}
+            style={[styles.socialSaveButton, instagramSaving && styles.disabledButton]}
+          >
+            <Text style={styles.socialSaveText}>{instagramSaving ? "Saving…" : "Save link"}</Text>
+          </Pressable>
+          <View style={[styles.socialInputRow, styles.socialInputRowSpaced]}>
+            <View style={styles.iconBadge}>
+              <Text style={styles.facebookMark}>f</Text>
+            </View>
+            <TextInput
+              accessibilityLabel="Facebook link"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onChangeText={setFacebookUrl}
+              placeholder="https://facebook.com/yourusername"
+              placeholderTextColor="#9aa39d"
+              style={styles.socialInput}
+              value={facebookUrl}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Save Facebook link"
+            disabled={facebookSaving}
+            onPress={saveFacebook}
+            style={[styles.socialSaveButton, facebookSaving && styles.disabledButton]}
+          >
+            <Text style={styles.socialSaveText}>{facebookSaving ? "Saving…" : "Save Facebook"}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -645,6 +752,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#687872",
     marginBottom: 10,
+  },
+  socialInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  socialInput: {
+    flex: 1,
+    color: "#12382d",
+    paddingVertical: 11,
+    fontSize: 14,
+  },
+  socialInputRowSpaced: {
+    marginTop: 10,
+  },
+  facebookMark: {
+    color: "#1877f2",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  socialSaveButton: {
+    alignSelf: "flex-end",
+    backgroundColor: "#12382d",
+    borderRadius: 10,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  socialSaveText: {
+    color: "#f5f3ef",
+    fontWeight: "700",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   genderOptions: {
     flexDirection: "row",
