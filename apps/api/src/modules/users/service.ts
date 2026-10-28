@@ -28,6 +28,11 @@ export type UserResponse = {
   }>;
 };
 
+export type UserDirectoryResponse = Pick<
+  UserResponse,
+  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+>;
+
 export type Gender = "male" | "female";
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
@@ -79,7 +84,21 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
     }),
 });
 
+  const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
+    const response = toResponse(user);
+    return {
+      id: response.id,
+      displayName: response.displayName,
+      lookingForTeam: response.lookingForTeam,
+      createdAt: response.createdAt,
+      badges: response.badges,
+    };
+  };
+
 export const createUserService = (users: UserRepository) => ({
+    getDirectory: async (firebaseUid: string) =>
+      (await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse),
+
   // The route only accepts the request if the person confirmed their age.
   register: async (firebaseUid: string, displayName: string) =>
     toResponse(

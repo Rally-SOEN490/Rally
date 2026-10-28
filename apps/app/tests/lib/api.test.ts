@@ -12,6 +12,7 @@ import {
   apiErrorMessage,
   deleteMyAccount,
   getMyAccount,
+  getPlayers,
   saveNewUser,
   updateMyAccount,
 } from "@/lib/api";
@@ -88,6 +89,20 @@ describe("getMyAccount", () => {
     await expect(getMyAccount(user)).rejects.toMatchObject({
       status: 0,
       message: "Can't reach the Rally server. Check your internet connection and try again.",
+    });
+  });
+});
+
+describe("getPlayers", () => {
+  it("loads the player array with the signed-in user's token", async () => {
+    const players = [account];
+    respond(200, players);
+
+    await expect(getPlayers(user)).resolves.toEqual(players);
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users", {
+      method: "GET",
+      headers: { Authorization: "Bearer the-token" },
+      body: undefined,
     });
   });
 });
