@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { sendEmailVerification, signOut, type User } from "firebase/auth";
@@ -30,7 +29,9 @@ beforeEach(() => {
 
 it("tells the user where the link was sent", async () => {
   await renderVerifyEmail();
-  expect(screen.getByText("We sent a link to sam@example.com. Click it, then come back here.")).toBeOnTheScreen();
+  expect(
+    screen.getByText("We sent a link to sam@example.com. Click it, then come back here."),
+  ).toBeOnTheScreen();
 });
 
 describe("I've verified my email", () => {
@@ -82,7 +83,9 @@ describe("Resend email", () => {
     await pressResend();
 
     expect(sendEmailVerification).toHaveBeenCalledWith(user);
-    await waitFor(() => expect(alert).toHaveBeenCalledWith("We sent you a new verification email."));
+    await waitFor(() =>
+      expect(alert).toHaveBeenCalledWith("We sent you a new verification email."),
+    );
   });
 
   it("shows a friendly message when too many emails were sent", async () => {

@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";

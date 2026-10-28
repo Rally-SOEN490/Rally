@@ -71,9 +71,7 @@ const FacebookLogo = () => (
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
-  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
-    null,
-  );
+  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(null);
   const hasSavedShownBadges = account?.shownBadgeKeys !== undefined;
   const lookingForTeam = account?.lookingForTeam ?? false;
   // The switch shows this right away; the badge waits for the server.
@@ -166,9 +164,7 @@ export default function Profile() {
           <View style={styles.lookingRow}>
             <View style={styles.lookingTextStack}>
               <Text style={styles.lookingTitle}>Looking for a team</Text>
-              <Text style={styles.lookingHint}>
-                Captains will see a badge on your profile.
-              </Text>
+              <Text style={styles.lookingHint}>Captains will see a badge on your profile.</Text>
             </View>
             {saving && (
               <ActivityIndicator
@@ -232,8 +228,7 @@ export default function Profile() {
             {[...(account?.badges ?? [])]
               .sort(
                 (left, right) =>
-                  right.receivedCount - left.receivedCount ||
-                  left.key.localeCompare(right.key),
+                  right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
               )
               .filter((badge) =>
                 hasSavedShownBadges ? selectedBadgeKeys.includes(badge.key) : true,
@@ -279,7 +274,10 @@ export default function Profile() {
                           style={styles.progressTrack}
                         >
                           <View
-                            style={[styles.progressFill, { width: `${progress.percentage * 100}%` }]}
+                            style={[
+                              styles.progressFill,
+                              { width: `${progress.percentage * 100}%` },
+                            ]}
                           />
                         </View>
                         <Text style={styles.progressText}>
@@ -331,19 +329,11 @@ export default function Profile() {
         animationType="fade"
         onRequestClose={() => setSelectedBadge(null)}
       >
-        <Pressable
-          onPress={() => setSelectedBadge(null)}
-          style={styles.modalBackdrop}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={styles.badgeDetails}
-          >
+        <Pressable onPress={() => setSelectedBadge(null)} style={styles.modalBackdrop}>
+          <Pressable onPress={(event) => event.stopPropagation()} style={styles.badgeDetails}>
             <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
             <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
-            <Text style={styles.badgeDetailsDescription}>
-              {selectedBadge?.description}
-            </Text>
+            <Text style={styles.badgeDetailsDescription}>{selectedBadge?.description}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close badge details"
@@ -375,9 +365,19 @@ export default function Profile() {
             accessibilityLabel={item.label}
           >
             <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
+              {item.label === "Home"
+                ? "⌂"
+                : item.label === "Events"
+                  ? "◫"
+                  : item.label === "Search"
+                    ? "⌕"
+                    : item.label === "Notifications"
+                      ? "◔"
+                      : "◉"}
             </Text>
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>{item.label}</Text>
+            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
+              {item.label}
+            </Text>
           </Pressable>
         ))}
       </View>

@@ -1,17 +1,12 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 import { useState } from "react";
-import {
-  AuthScreen,
-  Button,
-  Checkbox,
-  Field,
-  Footer,
-  SocialLogin,
-} from "@/components/auth";
+import { AuthScreen, Button, Checkbox, Field, Footer, SocialLogin } from "@/components/auth";
 import { NAME_MAX_LENGTH, saveNewUser } from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
@@ -27,8 +22,7 @@ export default function SignUp() {
   const signUp = () => {
     if (!name.trim()) return alert("Please enter your name.");
     if (password !== confirmPassword) return alert("Passwords don't match");
-    if (!isOldEnough)
-      return alert("You must be 14 or older to create a Rally account.");
+    if (!isOldEnough) return alert("You must be 14 or older to create a Rally account.");
     createUserWithEmailAndPassword(auth, email, password)
       .then(({ user }) =>
         Promise.all([
@@ -45,7 +39,12 @@ export default function SignUp() {
 
   return (
     <AuthScreen greeting="Welcome to Rally" title="Sign up">
-      <Field icon="person" placeholder="Full Name" maxLength={NAME_MAX_LENGTH} onChangeText={setName} />
+      <Field
+        icon="person"
+        placeholder="Full Name"
+        maxLength={NAME_MAX_LENGTH}
+        onChangeText={setName}
+      />
       <Field
         icon="mail"
         placeholder="E-mail address"
@@ -53,12 +52,7 @@ export default function SignUp() {
         autoCapitalize="none"
         onChangeText={setEmail}
       />
-      <Field
-        icon="lock"
-        placeholder="Password"
-        secureTextEntry
-        onChangeText={setPassword}
-      />
+      <Field icon="lock" placeholder="Password" secureTextEntry onChangeText={setPassword} />
       <Field
         icon="lock"
         placeholder="Confirm Password"

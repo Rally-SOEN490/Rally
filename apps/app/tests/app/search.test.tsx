@@ -1,7 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -52,12 +50,7 @@ it("uses the player placeholder and invokes the optional filter action", async (
   const onPressFilter = jest.fn();
 
   await render(
-    <SearchBar
-      value=""
-      onChangeText={jest.fn()}
-      mode="players"
-      onPressFilter={onPressFilter}
-    />,
+    <SearchBar value="" onChangeText={jest.fn()} mode="players" onPressFilter={onPressFilter} />,
   );
 
   expect(screen.getByPlaceholderText("Search for name, level")).toBeOnTheScreen();

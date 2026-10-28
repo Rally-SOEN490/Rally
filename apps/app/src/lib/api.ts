@@ -75,7 +75,10 @@ const request = async (
     },
     body: body && JSON.stringify(body),
   }).catch(() => {
-    throw new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again.");
+    throw new ApiError(
+      0,
+      "Can't reach the Rally server. Check your internet connection and try again.",
+    );
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
@@ -94,8 +97,7 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     throw e;
   });
 
-export const getPlayers = (user: User): Promise<RallyPlayer[]> =>
-  request(user, "GET", "/users");
+export const getPlayers = (user: User): Promise<RallyPlayer[]> => request(user, "GET", "/users");
 
 export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
   request(user, "PATCH", "/users/me", changes);

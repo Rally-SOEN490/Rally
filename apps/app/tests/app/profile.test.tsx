@@ -103,9 +103,9 @@ it("opens settings when Facebook is not connected", async () => {
 it("opens a connected Facebook profile", async () => {
   const { openURL } = jest.requireMock("expo-linking") as { openURL: jest.Mock };
   const facebookUrl = "https://facebook.com/sam";
-  jest.mocked(useSession).mockReturnValue(
-    fakeSession({ user, account: { ...account, facebookUrl } }),
-  );
+  jest
+    .mocked(useSession)
+    .mockReturnValue(fakeSession({ user, account: { ...account, facebookUrl } }));
   openURL.mockResolvedValue(undefined);
 
   await render(<Profile />);
