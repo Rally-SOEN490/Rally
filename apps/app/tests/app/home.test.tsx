@@ -55,9 +55,16 @@ it("opens the profile from the You tab", async () => {
   expect(router.push).toHaveBeenCalledWith("/profile");
 });
 
-it("ignores the tabs that aren't built yet", async () => {
+it("opens Search without replacing the Home history entry", async () => {
   await render(<Home />);
-  await userEvent.press(screen.getByRole("button", { name: "Events" }));
+  await userEvent.press(screen.getByRole("button", { name: "Search" }));
+
+  expect(router.push).toHaveBeenCalledWith("/search");
+});
+
+it.each(["Home", "Events", "Notifications"])("does not navigate from the %s tab", async (tab) => {
+  await render(<Home />);
+  await userEvent.press(screen.getByRole("button", { name: tab }));
 
   expect(router.push).not.toHaveBeenCalled();
 });

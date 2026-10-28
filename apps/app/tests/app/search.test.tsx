@@ -136,6 +136,20 @@ it("navigates to the profile from the You tab", async () => {
   expect(router.replace).toHaveBeenCalledWith("/profile");
 });
 
+it("replaces Search with Home", async () => {
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("button", { name: "Home" }));
+
+  expect(router.replace).toHaveBeenCalledWith("/home");
+});
+
+it.each(["Search", "Events", "Notifications"])("does not navigate from the %s tab", async (tab) => {
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("button", { name: tab }));
+
+  expect(router.replace).not.toHaveBeenCalled();
+});
+
 it("remembers the selected tab after leaving and reopening Search", async () => {
   jest.mocked(getPlayers).mockResolvedValue(players);
 
