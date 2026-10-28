@@ -150,7 +150,7 @@ it("remembers the selected tab after leaving and reopening Search", async () => 
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
   await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
-  firstVisit.unmount();
+  await firstVisit.unmount();
 
   jest.mocked(getPlayers).mockClear();
   const secondVisit = await render(<SearchScreen />);
@@ -159,5 +159,5 @@ it("remembers the selected tab after leaving and reopening Search", async () => 
   await waitFor(() => expect(screen.queryByText("Loading players...")).not.toBeOnTheScreen());
 
   await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
-  secondVisit.unmount();
+  await secondVisit.unmount();
 });
