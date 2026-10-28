@@ -22,6 +22,20 @@ export const userRoutes: FastifyPluginAsync<{
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));
 
+  app.get(
+    "/",
+    {
+      schema: {
+        querystring: {
+          type: "object",
+          additionalProperties: false,
+          properties: {},
+        },
+      },
+    },
+    (request) => users.getDirectory(request.firebaseUid),
+  );
+
   // Saves the logged-in person in Rally's database. The app calls this right after sign-up.
   app.post<{ Body: RegisterBody }>(
     "/me",

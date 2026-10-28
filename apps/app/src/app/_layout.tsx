@@ -63,6 +63,7 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="search" />
       </Stack.Protected>
     </Stack>
   );

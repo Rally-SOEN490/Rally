@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session";
 const navItems: { label: string; active: boolean; action?: Href }[] = [
   { label: "Home", active: true },
   { label: "Events", active: false },
-  { label: "Search", active: false },
+  { label: "Search", active: false, action: "/search"},
   { label: "Notifications", active: false },
   { label: "You", active: false, action: "/profile" },
 ];
