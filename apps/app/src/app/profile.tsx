@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   thoughtBubbleTail: {
     position: "absolute",
     bottom: -10,
-    left: 42,
+    left: 30,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   thoughtBubbleTailDot: {
     position: "absolute",
     bottom: -21,
-    left: 34,
+    left: 46,
     width: 13,
     height: 13,
     borderRadius: 7,
