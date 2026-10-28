@@ -12,6 +12,7 @@ import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
+jest.mock("expo-linking", () => ({ openURL: jest.fn() }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), updateMyAccount: jest.fn() }));
 
@@ -98,6 +99,20 @@ it("opens settings when Facebook is not connected", async () => {
   await userEvent.press(screen.getByRole("button", { name: "Facebook (not connected)" }));
 
   expect(router.push).toHaveBeenCalledWith("/settings");
+});
+
+it("opens a connected Facebook profile", async () => {
+  const { openURL } = jest.requireMock("expo-linking") as { openURL: jest.Mock };
+  const facebookUrl = "https://facebook.com/sam";
+  jest.mocked(useSession).mockReturnValue(
+    fakeSession({ user, account: { ...account, facebookUrl } }),
+  );
+  openURL.mockResolvedValue(undefined);
+
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("link", { name: "Facebook profile" }));
+
+  expect(openURL).toHaveBeenCalledWith(facebookUrl);
 });
 
 it("shows badges saved on the Rally account", async () => {
