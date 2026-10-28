@@ -3,11 +3,13 @@
 
 import type { ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
+import type { ProfilePhotoStorage } from "./photo-storage.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
   id: string;
   displayName: string;
+  profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys: string[];
   instagramUrl: string | null;
@@ -42,9 +44,10 @@ export type Gender = "male" | "female";
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
 
-const toResponse = (user: UserWithBadges): UserResponse => ({
+const toResponse = async (user: UserWithBadges, photos?: ProfilePhotoStorage): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
+  profilePhotoUrl: user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
   lookingForTeam: user.lookingForTeam,
   shownBadgeKeys: [...user.shownBadgeKeys],
   instagramUrl: user.instagramUrl,
@@ -94,20 +97,20 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
     }),
 });
 
-  const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
-    const response = toResponse(user);
-    return {
-      id: response.id,
-      displayName: response.displayName,
-      lookingForTeam: response.lookingForTeam,
-      createdAt: response.createdAt,
-      badges: response.badges,
-    };
+const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryResponse> => {
+  const response = await toResponse(user);
+  return {
+    id: response.id,
+    displayName: response.displayName,
+    lookingForTeam: response.lookingForTeam,
+    createdAt: response.createdAt,
+    badges: response.badges,
   };
+};
 
-export const createUserService = (users: UserRepository) => ({
-    getDirectory: async (firebaseUid: string) =>
-      (await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse),
+export const createUserService = (users: UserRepository, photos?: ProfilePhotoStorage) => ({
+  getDirectory: async (firebaseUid: string) =>
+    Promise.all((await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse)),
 
   // The route only accepts the request if the person confirmed their age.
   register: async (firebaseUid: string, displayName: string) =>
@@ -117,16 +120,55 @@ export const createUserService = (users: UserRepository) => ({
         displayName: displayName.trim(),
         ageConfirmedAt: new Date(),
       }),
+      photos,
     ),
 
   getCurrent: async (firebaseUid: string) => {
     const user = await users.findByFirebaseUid(firebaseUid);
-    return user ? toResponse(user) : null;
+    return user ? toResponse(user, photos) : null;
+  },
+
+  updateCurrent: async (firebaseUid: string, displayName: string) => {
+    const existing = await users.findByFirebaseUid(firebaseUid);
+    if (!existing) return null;
+    await users.updateByFirebaseUid(firebaseUid, {
+      displayName: displayName.trim(),
+    });
+    const user = await users.findByFirebaseUid(firebaseUid);
+    return user ? toResponse(user, photos) : null;
+  },
+
+  uploadPhoto: async (firebaseUid: string, body: Buffer) => {
+    if (!photos) throw new Error("Profile photo uploads are not configured.");
+    const existing = await users.findByFirebaseUid(firebaseUid);
+    if (!existing) return null;
+    const key = await photos.put(firebaseUid, body);
+    await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: key });
+    if (existing.profilePhotoKey && existing.profilePhotoKey !== key)
+      await photos.delete(existing.profilePhotoKey).catch(() => undefined);
+    const updated = await users.findByFirebaseUid(firebaseUid);
+    return updated ? toResponse(updated, photos) : null;
+  },
+
+  removePhoto: async (firebaseUid: string) => {
+    if (!photos) throw new Error("Profile photo uploads are not configured.");
+    const existing = await users.findByFirebaseUid(firebaseUid);
+    if (!existing) return null;
+    if (existing.profilePhotoKey)
+      await photos.delete(existing.profilePhotoKey);
+    await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: null });
+    const updated = await users.findByFirebaseUid(firebaseUid);
+    return updated ? toResponse(updated, photos) : null;
   },
 
   update: async (firebaseUid: string, changes: ProfileChanges) => {
-    const user = await users.updateByFirebaseUid(firebaseUid, changes);
-    return user ? toResponse(user) : null;
+    const user = await users.updateByFirebaseUid(firebaseUid, {
+      ...changes,
+      ...(changes.displayName !== undefined
+        ? { displayName: changes.displayName.trim() }
+        : {}),
+    });
+    return user ? toResponse(user, photos) : null;
   },
 
   // Removes everything Rally stores about the person. Once users have teams and

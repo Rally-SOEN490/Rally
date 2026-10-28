@@ -107,6 +107,13 @@ it("goes to Profile from the back button when there's nothing to go back to", as
   expect(router.replace).toHaveBeenCalledWith("/profile");
 });
 
+it("does not show display-name controls in settings", async () => {
+  await render(<Settings />);
+
+  expect(screen.queryByRole("button", { name: "Change display name" })).not.toBeOnTheScreen();
+  expect(screen.queryByText("Display name")).not.toBeOnTheScreen();
+});
+
 describe("preferences", () => {
   it("turns the switches on and off", async () => {
     await render(<Settings />);

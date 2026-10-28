@@ -11,6 +11,8 @@ export type NewUser = {
 };
 
 export type ProfileChanges = {
+  displayName?: string;
+  profilePhotoKey?: string | null;
   lookingForTeam?: boolean;
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;

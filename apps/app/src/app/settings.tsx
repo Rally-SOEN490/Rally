@@ -158,8 +158,9 @@ export default function Settings() {
   };
 
   const handleSaveEdit = async () => {
+    if (!editing) return;
     const current = auth.currentUser;
-    if (!current?.email || !editing) return;
+    if (!current?.email) return;
     const value = newValue.trim();
 
     if (editing === "email" && value.toLowerCase() === current.email.toLowerCase()) {

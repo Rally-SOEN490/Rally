@@ -18,6 +18,7 @@ jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount
 const account = {
   id: "1",
   displayName: "Sam Lee",
+  profilePhotoUrl: null,
   lookingForTeam: false,
   createdAt: "2026-10-17T12:00:00.000Z",
   badges: [],
