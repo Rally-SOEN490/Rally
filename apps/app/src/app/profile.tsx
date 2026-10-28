@@ -40,6 +40,8 @@ const interestPositions = [
   { key: "middle", label: "Middle" },
   { key: "opposite", label: "Opposite" },
 ] as const;
+type InterestCategory = "formats" | "positions";
+type InterestOption = (typeof interestFormats)[number] | (typeof interestPositions)[number];
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -77,6 +79,41 @@ const InstagramLogo = () => (
 const FacebookLogo = () => (
   <View style={styles.facebookLogo}>
     <Text style={styles.facebookLogoText}>f</Text>
+  </View>
+);
+
+const InterestPills = ({
+  category,
+  options,
+  selectedKeys,
+  saving,
+  onToggle,
+}: {
+  category: InterestCategory;
+  options: readonly InterestOption[];
+  selectedKeys: string[];
+  saving: boolean;
+  onToggle: (category: InterestCategory, key: string) => void;
+}) => (
+  <View style={styles.tagRow}>
+    {options.map(({ key, label }) => {
+      const selected = selectedKeys.includes(key);
+      return (
+        <Pressable
+          key={key}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}${selected ? " selected" : ""}`}
+          accessibilityState={{ selected, disabled: saving }}
+          disabled={saving}
+          onPress={() => onToggle(category, key)}
+          style={[styles.tagPill, selected && styles.tagPillSelected]}
+        >
+          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
+            {label}
+          </Text>
+        </Pressable>
+      );
+    })}
   </View>
 );
 
@@ -167,15 +204,16 @@ export default function Profile() {
   };
 
   const toggleInterest = async (
-    category: "formats" | "positions",
+    category: InterestCategory,
     key: string,
   ) => {
     if (!user || interestSaving) return;
+    const previousSelection = interestSelection;
     const nextSelection = {
-      ...interestSelection,
-      [category]: interestSelection[category].includes(key)
-        ? interestSelection[category].filter((selectedKey) => selectedKey !== key)
-        : [...interestSelection[category], key],
+      ...previousSelection,
+      [category]: previousSelection[category].includes(key)
+        ? previousSelection[category].filter((selectedKey) => selectedKey !== key)
+        : [...previousSelection[category], key],
     };
     setInterestSelection(nextSelection);
     setInterestSaving(true);
@@ -183,7 +221,7 @@ export default function Profile() {
     try {
       setAccount(await updateMyAccount(user, { interests: nextSelection }));
     } catch (error) {
-      setInterestSelection(interestSelection);
+      setInterestSelection(previousSelection);
       setInterestError(apiErrorMessage(error));
     } finally {
       setInterestSaving(false);
@@ -416,47 +454,21 @@ export default function Profile() {
         <View style={styles.tagSection}>
           <Text style={styles.sectionTitle}>Interested in</Text>
           <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
-          <View style={styles.tagRow}>
-            {interestFormats.map(({ key, label }) => {
-              const selected = interestSelection.formats.includes(key);
-              return (
-                <Pressable
-                  key={key}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label}${selected ? " selected" : ""}`}
-                  accessibilityState={{ selected, disabled: interestSaving }}
-                  disabled={interestSaving}
-                  onPress={() => toggleInterest("formats", key)}
-                  style={[styles.tagPill, selected && styles.tagPillSelected]}
-                >
-                  <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <InterestPills
+            category="formats"
+            options={interestFormats}
+            selectedKeys={interestSelection.formats}
+            saving={interestSaving}
+            onToggle={toggleInterest}
+          />
           <Text style={styles.tagGroupLabel}>POSITIONS</Text>
-          <View style={styles.tagRow}>
-            {interestPositions.map(({ key, label }) => {
-              const selected = interestSelection.positions.includes(key);
-              return (
-                <Pressable
-                  key={key}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label}${selected ? " selected" : ""}`}
-                  accessibilityState={{ selected, disabled: interestSaving }}
-                  disabled={interestSaving}
-                  onPress={() => toggleInterest("positions", key)}
-                  style={[styles.tagPill, selected && styles.tagPillSelected]}
-                >
-                  <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <InterestPills
+            category="positions"
+            options={interestPositions}
+            selectedKeys={interestSelection.positions}
+            saving={interestSaving}
+            onToggle={toggleInterest}
+          />
           {!!interestError && (
             <Text accessibilityRole="alert" style={styles.saveError}>{interestError}</Text>
           )}
