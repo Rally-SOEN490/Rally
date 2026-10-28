@@ -122,7 +122,12 @@ export default function Settings() {
     setInstagramSaving(true);
     try {
       setAccount(await updateMyAccount(user, { instagramUrl: value || null }));
-      notify("Social media saved", value ? "Your Instagram link is now shown on your profile." : "Your Instagram link was removed.");
+      notify(
+        "Social media saved",
+        value
+          ? "Your Instagram link is now shown on your profile."
+          : "Your Instagram link was removed.",
+      );
     } catch (error) {
       notify("Unable to save Instagram", apiErrorMessage(error));
     } finally {
@@ -141,7 +146,12 @@ export default function Settings() {
     setFacebookSaving(true);
     try {
       setAccount(await updateMyAccount(user, { facebookUrl: value || null }));
-      notify("Social media saved", value ? "Your Facebook link is now shown on your profile." : "Your Facebook link was removed.");
+      notify(
+        "Social media saved",
+        value
+          ? "Your Facebook link is now shown on your profile."
+          : "Your Facebook link was removed.",
+      );
     } catch (error) {
       notify("Unable to save Facebook", apiErrorMessage(error));
     } finally {
@@ -317,13 +327,21 @@ export default function Settings() {
               <Pressable
                 key={option}
                 accessibilityRole="radio"
-                accessibilityState={{ checked: gender === option, disabled: genderLoading || genderSaving }}
+                accessibilityState={{
+                  checked: gender === option,
+                  disabled: genderLoading || genderSaving,
+                }}
                 accessibilityLabel={option === "male" ? "Male" : "Female"}
                 disabled={genderLoading || genderSaving}
                 onPress={() => updateGender(option)}
                 style={[styles.genderOption, gender === option && styles.genderOptionActive]}
               >
-                <Text style={[styles.genderOptionText, gender === option && styles.genderOptionTextActive]}>
+                <Text
+                  style={[
+                    styles.genderOptionText,
+                    gender === option && styles.genderOptionTextActive,
+                  ]}
+                >
                   {option === "male" ? "Male" : "Female"}
                 </Text>
               </Pressable>
@@ -413,7 +431,10 @@ export default function Settings() {
             <Switch
               value={announcementToggles.tournamentAnnouncements}
               onValueChange={(value) =>
-                setAnnouncementToggles((current) => ({ ...current, tournamentAnnouncements: value }))
+                setAnnouncementToggles((current) => ({
+                  ...current,
+                  tournamentAnnouncements: value,
+                }))
               }
               trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
             />
@@ -454,13 +475,17 @@ export default function Settings() {
                 onPress={() => setLanguage("EN")}
                 style={[styles.languageOption, language === "EN" && styles.languageOptionActive]}
               >
-                <Text style={[styles.languageText, language === "EN" && styles.languageTextActive]}>EN</Text>
+                <Text style={[styles.languageText, language === "EN" && styles.languageTextActive]}>
+                  EN
+                </Text>
               </Pressable>
               <Pressable
                 onPress={() => setLanguage("FR")}
                 style={[styles.languageOption, language === "FR" && styles.languageOptionActive]}
               >
-                <Text style={[styles.languageText, language === "FR" && styles.languageTextActive]}>FR</Text>
+                <Text style={[styles.languageText, language === "FR" && styles.languageTextActive]}>
+                  FR
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -555,19 +580,16 @@ export default function Settings() {
                 disabled={!password || deleting}
                 style={[styles.modalDelete, (!password || deleting) && { opacity: 0.5 }]}
               >
-                <Text style={styles.modalDeleteText}>{deleting ? "Deleting…" : "Delete account"}</Text>
+                <Text style={styles.modalDeleteText}>
+                  {deleting ? "Deleting…" : "Delete account"}
+                </Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
 
-      <Modal
-        visible={editing !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={closeEdit}
-      >
+      <Modal visible={editing !== null} transparent animationType="fade" onRequestClose={closeEdit}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>

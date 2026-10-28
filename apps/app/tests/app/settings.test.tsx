@@ -115,7 +115,11 @@ describe("preferences", () => {
 
     for (const toggle of switches) await fireEvent(toggle, "valueChange", !toggle.props.value);
 
-    expect(screen.getAllByRole("switch").map((toggle) => toggle.props.value)).toEqual([false, false, true]);
+    expect(screen.getAllByRole("switch").map((toggle) => toggle.props.value)).toEqual([
+      false,
+      false,
+      true,
+    ]);
   });
 
   it("switches the language between English and French", async () => {
@@ -147,7 +151,10 @@ describe("preferences", () => {
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Unable to save gender", "Unable to save."),
     );
-    expect(screen.getByRole("radio", { name: "Female" })).not.toHaveProp("accessibilityState.checked", true);
+    expect(screen.getByRole("radio", { name: "Female" })).not.toHaveProp(
+      "accessibilityState.checked",
+      true,
+    );
   });
 
   it("shows an error when loading gender fails", async () => {
@@ -163,7 +170,10 @@ describe("preferences", () => {
 
   it("saves Instagram and Facebook links", async () => {
     const alertSpy = jest.spyOn(Alert, "alert");
-    const savedAccount = { instagramUrl: "https://instagram.com/sam", facebookUrl: "https://facebook.com/sam" };
+    const savedAccount = {
+      instagramUrl: "https://instagram.com/sam",
+      facebookUrl: "https://facebook.com/sam",
+    };
     jest.mocked(updateMyAccount).mockResolvedValue(savedAccount as never);
     await render(<Settings />);
 
@@ -172,8 +182,12 @@ describe("preferences", () => {
     await userEvent.type(screen.getByLabelText("Facebook link"), "https://facebook.com/sam");
     await userEvent.press(screen.getByRole("button", { name: "Save Facebook link" }));
 
-    expect(updateMyAccount).toHaveBeenNthCalledWith(1, user, { instagramUrl: "https://instagram.com/sam" });
-    expect(updateMyAccount).toHaveBeenNthCalledWith(2, user, { facebookUrl: "https://facebook.com/sam" });
+    expect(updateMyAccount).toHaveBeenNthCalledWith(1, user, {
+      instagramUrl: "https://instagram.com/sam",
+    });
+    expect(updateMyAccount).toHaveBeenNthCalledWith(2, user, {
+      facebookUrl: "https://facebook.com/sam",
+    });
     expect(alertSpy).toHaveBeenCalledWith(
       "Social media saved",
       "Your Facebook link is now shown on your profile.",
@@ -274,7 +288,9 @@ describe("change e-mail", () => {
   });
 
   it("shows a friendly message and keeps the form open when the password is wrong", async () => {
-    jest.mocked(reauthenticateWithCredential).mockRejectedValue({ code: "auth/invalid-credential" });
+    jest
+      .mocked(reauthenticateWithCredential)
+      .mockRejectedValue({ code: "auth/invalid-credential" });
     await render(<Settings />);
     await openEmailForm();
     await typeInto("Current password", "wrong");
@@ -422,7 +438,9 @@ describe("delete account", () => {
   });
 
   it("deletes nothing when the password is wrong", async () => {
-    jest.mocked(reauthenticateWithCredential).mockRejectedValue({ code: "auth/invalid-credential" });
+    jest
+      .mocked(reauthenticateWithCredential)
+      .mockRejectedValue({ code: "auth/invalid-credential" });
     await render(<Settings />);
     await openPasswordPrompt("wrong");
     await confirmDeletion();
@@ -433,14 +451,19 @@ describe("delete account", () => {
   });
 
   it("keeps the Firebase login when Rally's data can't be deleted", async () => {
-    jest.mocked(deleteMyAccount).mockRejectedValue(new ApiError(0, "Can't reach the Rally server."));
+    jest
+      .mocked(deleteMyAccount)
+      .mockRejectedValue(new ApiError(0, "Can't reach the Rally server."));
     const alertSpy = answerConfirmation("Yes, delete my account");
     await render(<Settings />);
     await openPasswordPrompt();
     await confirmDeletion();
 
     await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith("Unable to delete account", "Can't reach the Rally server."),
+      expect(alertSpy).toHaveBeenCalledWith(
+        "Unable to delete account",
+        "Can't reach the Rally server.",
+      ),
     );
     expect(deleteUser).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();

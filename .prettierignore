@@ -1,0 +1,18 @@
+# Dependencies, generated code, and build output.
+**/node_modules/
+**/package-lock.json
+**/dist/
+**/build/
+**/coverage/
+**/.expo/
+**/expo-env.d.ts
+apps/api/src/generated/
+apps/app/ios/
+apps/app/android/
+# Generated Icon Composer bundle.
+apps/app/assets/expo.icon/
+
+# Local configuration and secrets.
+**/.env
+**/.env.*
+!**/.env.example

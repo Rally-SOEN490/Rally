@@ -104,9 +104,9 @@ it("opens settings when Facebook is not connected", async () => {
 it("opens a connected Facebook profile", async () => {
   const { openURL } = jest.requireMock("expo-linking") as { openURL: jest.Mock };
   const facebookUrl = "https://facebook.com/sam";
-  jest.mocked(useSession).mockReturnValue(
-    fakeSession({ user, account: { ...account, facebookUrl } }),
-  );
+  jest
+    .mocked(useSession)
+    .mockReturnValue(fakeSession({ user, account: { ...account, facebookUrl } }));
   openURL.mockResolvedValue(undefined);
 
   await render(<Profile />);
@@ -290,9 +290,9 @@ describe("Profile thought", () => {
 
   it("shows a server error when saving fails", async () => {
     showAccount(account);
-    jest.mocked(updateMyAccount).mockRejectedValueOnce(
-      new ApiError(0, "Can't reach the Rally server."),
-    );
+    jest
+      .mocked(updateMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     await render(<Profile />);
 
     await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
@@ -318,9 +318,9 @@ describe("Profile thought", () => {
 
   it("shows an error when deleting a message fails", async () => {
     showAccount({ ...account, thoughtText: "Old message" });
-    jest.mocked(updateMyAccount).mockRejectedValueOnce(
-      new ApiError(0, "Can't reach the Rally server."),
-    );
+    jest
+      .mocked(updateMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     await render(<Profile />);
 
     await userEvent.press(screen.getByRole("button", { name: "Edit thought" }));
@@ -445,17 +445,21 @@ describe("Profile interests", () => {
     });
     await render(<Profile />);
 
-    expect(screen.getByRole("button", { name: "Indoor 6s selected" }).props.accessibilityState)
-      .toEqual(expect.objectContaining({ selected: true }));
-    expect(screen.getByRole("button", { name: "Setter selected" }).props.accessibilityState)
-      .toEqual(expect.objectContaining({ selected: true }));
-    expect(screen.getByRole("button", { name: "Beach 2s" }).props.accessibilityState)
-      .toEqual(expect.objectContaining({ selected: false }));
+    expect(
+      screen.getByRole("button", { name: "Indoor 6s selected" }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+    expect(
+      screen.getByRole("button", { name: "Setter selected" }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole("button", { name: "Beach 2s" }).props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: false }),
+    );
   });
 
   it("saves selected and deselected interests", async () => {
     showAccount({ ...account, interests: { formats: [], positions: [] } });
-    jest.mocked(updateMyAccount)
+    jest
+      .mocked(updateMyAccount)
       .mockResolvedValueOnce({
         ...account,
         interests: { formats: ["beach-2s"], positions: [] },
@@ -485,16 +489,17 @@ describe("Profile interests", () => {
 
   it("restores the previous selection and shows an error when saving fails", async () => {
     showAccount({ ...account, interests: { formats: [], positions: [] } });
-    jest.mocked(updateMyAccount).mockRejectedValueOnce(
-      new ApiError(0, "Can't reach the Rally server."),
-    );
+    jest
+      .mocked(updateMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     await render(<Profile />);
 
     await userEvent.press(screen.getByRole("button", { name: "Libero" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
     expect(screen.getByRole("button", { name: "Libero" })).toBeOnTheScreen();
-    expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState)
-      .toEqual(expect.objectContaining({ selected: false }));
+    expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: false }),
+    );
   });
 });

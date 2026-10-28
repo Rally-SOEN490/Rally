@@ -1,12 +1,15 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+
 import { router, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BottomNavigation } from "@/components/bottomNavigation";
 import { useSession } from "@/lib/session";
 
 const navItems: { label: string; active: boolean; action?: Href }[] = [
   { label: "Home", active: true },
   { label: "Events", active: false },
-  { label: "Search", active: false, action: "/search"},
+  { label: "Search", active: false, action: "/search" },
   { label: "Notifications", active: false },
   { label: "You", active: false, action: "/profile" },
 ];
@@ -24,8 +27,16 @@ const recruitingCards = [
 ];
 
 const announcements = [
-  { title: "Fall Classic bracket released", detail: "Pool play groups are now live — check your team’s schedule", time: "2h ago" },
-  { title: "Practice times updated", detail: "Wednesday night session moved to 7:30 PM", time: "1d ago" },
+  {
+    title: "Fall Classic bracket released",
+    detail: "Pool play groups are now live — check your team’s schedule",
+    time: "2h ago",
+  },
+  {
+    title: "Practice times updated",
+    detail: "Wednesday night session moved to 7:30 PM",
+    time: "1d ago",
+  },
 ];
 
 export default function Home() {
@@ -134,27 +145,7 @@ export default function Home() {
         </View>
       </ScrollView>
 
-      <View style={styles.navBar}>
-        {navItems.map((item) => {
-          const isActive = item.active;
-          return (
-            <Pressable
-              key={item.label}
-              style={[styles.navItem, isActive && styles.navItemActive]}
-              onPress={() => {
-                if (item.action) router.push(item.action);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
-              </Text>
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <BottomNavigation items={navItems} styles={styles} onNavigate={(href) => router.push(href)} />
     </SafeAreaView>
   );
 }

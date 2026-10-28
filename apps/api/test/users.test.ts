@@ -47,12 +47,16 @@ describe("GET /users", () => {
         "lookingForTeam",
       ]);
     }
-    expect(users.find((user: { displayName: string }) => user.displayName === "Alice").badges).toEqual(
-      (await app.inject({
-        method: "GET",
-        url: "/users/me",
-        headers: authHeader("alice"),
-      })).json().badges,
+    expect(
+      users.find((user: { displayName: string }) => user.displayName === "Alice").badges,
+    ).toEqual(
+      (
+        await app.inject({
+          method: "GET",
+          url: "/users/me",
+          headers: authHeader("alice"),
+        })
+      ).json().badges,
     );
   });
 
@@ -61,7 +65,6 @@ describe("GET /users", () => {
 
     expect(response.statusCode).toBe(401);
   });
-
 });
 
 describe("POST /users/me", () => {
@@ -70,21 +73,25 @@ describe("POST /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ displayName: "Alice" });
-    expect(response.json().badges).toContainEqual(expect.objectContaining({
-      key: "champion",
-      name: "Champion",
-      receivedCount: 1,
-    }));
-    expect(response.json().badges).toContainEqual(expect.objectContaining({
-      key: "streak",
-      availableTiers: ["Bronze"],
-      isComplete: false,
-      nextTierThreshold: null,
-    }));
+    expect(response.json().badges).toContainEqual(
+      expect.objectContaining({
+        key: "champion",
+        name: "Champion",
+        receivedCount: 1,
+      }),
+    );
+    expect(response.json().badges).toContainEqual(
+      expect.objectContaining({
+        key: "streak",
+        availableTiers: ["Bronze"],
+        isComplete: false,
+        nextTierThreshold: null,
+      }),
+    );
     expect(response.json().badges).toHaveLength(12);
-    expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    expect(
+      response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount),
+    ).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
@@ -125,7 +132,9 @@ describe("POST /users/me", () => {
   test("is safe when the same sign-up arrives several times at once", async () => {
     // For example, a double tap on "Continue".
     const responses = await Promise.all(
-      Array.from({ length: 5 }, () => register("alice", { displayName: "Alice", ageConfirmed: true })),
+      Array.from({ length: 5 }, () =>
+        register("alice", { displayName: "Alice", ageConfirmed: true }),
+      ),
     );
 
     expect(responses.map((response) => response.statusCode)).toEqual([200, 200, 200, 200, 200]);
@@ -180,7 +189,11 @@ describe("POST /users/me", () => {
 
 describe("GET /users/me", () => {
   test("returns 404 before the user is saved", async () => {
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(404);
   });
@@ -277,7 +290,11 @@ describe("GET /users/me", () => {
     const alice = (await register("alice", { displayName: "Alice", ageConfirmed: true })).json();
     await register("bob", { displayName: "Bob", ageConfirmed: true });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(alice);
@@ -287,7 +304,11 @@ describe("GET /users/me", () => {
     await register("alice", { displayName: "Alice", ageConfirmed: true });
     await testDb.userBadge.deleteMany();
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().badges).toHaveLength(12);
@@ -309,7 +330,11 @@ describe("GET /users/me", () => {
       },
     });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().badges).toHaveLength(12);
@@ -347,10 +372,10 @@ describe("GET /users/me", () => {
       data: { receivedCount: 10 },
     });
     for (const [key, receivedCount] of [
-    ["champion", 25],
-    ["winner", 22],
-    ["competitor", 17],
-    ["defender", 6],
+      ["champion", 25],
+      ["winner", 22],
+      ["competitor", 17],
+      ["defender", 6],
     ] as const) {
       const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
       await testDb.userBadge.update({
@@ -362,18 +387,18 @@ describe("GET /users/me", () => {
       data: { userId: user.id, badgeTypeId: extra.id, receivedCount: 1 },
     });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
     const badges = response.json().badges;
 
     expect(response.statusCode).toBe(200);
     expect(badges).toHaveLength(13);
-    expect(badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5)).toEqual([
-      25,
-      22,
-      17,
-      10,
-      6,
-    ]);
+    expect(
+      badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5),
+    ).toEqual([25, 22, 17, 10, 6]);
     expect(badges[0]).toMatchObject({ key: "champion", receivedCount: 25, tier: "Gold" });
     expect(badges[1]).toMatchObject({ key: "winner", receivedCount: 22, tier: "Gold" });
     expect(badges.find((badge: { key: string }) => badge.key === "podium")).toMatchObject({
@@ -467,10 +492,12 @@ describe("PATCH /users/me", () => {
       positions: ["libero", "setter"],
     });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
-    expect(await testDb.userInterest.findMany({
-      where: { userId: saved.id },
-      orderBy: [{ category: "asc" }, { key: "asc" }],
-    })).toEqual([
+    expect(
+      await testDb.userInterest.findMany({
+        where: { userId: saved.id },
+        orderBy: [{ category: "asc" }, { key: "asc" }],
+      }),
+    ).toEqual([
       { userId: saved.id, category: "format", key: "beach-2s" },
       { userId: saved.id, category: "format", key: "indoor-6s" },
       { userId: saved.id, category: "position", key: "libero" },
@@ -521,25 +548,23 @@ describe("PATCH /users/me", () => {
     expect(response.json().thoughtText).toBe("First line.\nSecond line.");
   });
 
-  test.each([
-    "instagram.com/alice",
-    "https://example.com/alice",
-    "javascript:alert(1)",
-  ])("rejects an invalid Instagram link: %s", async (instagramUrl) => {
-    const response = await update("alice", { instagramUrl });
+  test.each(["instagram.com/alice", "https://example.com/alice", "javascript:alert(1)"])(
+    "rejects an invalid Instagram link: %s",
+    async (instagramUrl) => {
+      const response = await update("alice", { instagramUrl });
 
-    expect(response.statusCode).toBe(400);
-  });
+      expect(response.statusCode).toBe(400);
+    },
+  );
 
-  test.each([
-    "facebook.com/alice",
-    "https://example.com/alice",
-    "javascript:alert(1)",
-  ])("rejects an invalid Facebook link: %s", async (facebookUrl) => {
-    const response = await update("alice", { facebookUrl });
+  test.each(["facebook.com/alice", "https://example.com/alice", "javascript:alert(1)"])(
+    "rejects an invalid Facebook link: %s",
+    async (facebookUrl) => {
+      const response = await update("alice", { facebookUrl });
 
-    expect(response.statusCode).toBe(400);
-  });
+      expect(response.statusCode).toBe(400);
+    },
+  );
 
   test("allows removing an Instagram link", async () => {
     await update("alice", { instagramUrl: "https://www.instagram.com/alice/" });

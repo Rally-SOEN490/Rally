@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { screen, userEvent, waitFor } from "@testing-library/react-native";
 import { renderRouter } from "expo-router/testing-library";
@@ -26,7 +25,9 @@ jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), saveNewUser:
 const newUser = { email: "sam@example.com" } as User;
 
 beforeEach(() => {
-  jest.mocked(createUserWithEmailAndPassword).mockResolvedValue({ user: newUser } as UserCredential);
+  jest
+    .mocked(createUserWithEmailAndPassword)
+    .mockResolvedValue({ user: newUser } as UserCredential);
   jest.mocked(updateProfile).mockResolvedValue();
   jest.mocked(sendEmailVerification).mockResolvedValue();
   jest.mocked(saveNewUser).mockResolvedValue({} as RallyUser);
@@ -38,7 +39,11 @@ const renderSignUp = () =>
     { initialUrl: "/sign-up" },
   );
 
-const fillInForm = async ({ name = "Sam Lee", confirmPassword = "secret123", tickAge = true } = {}) => {
+const fillInForm = async ({
+  name = "Sam Lee",
+  confirmPassword = "secret123",
+  tickAge = true,
+} = {}) => {
   await userEvent.type(screen.getByPlaceholderText("Full Name"), name);
   await userEvent.type(screen.getByPlaceholderText("E-mail address"), "sam@example.com");
   await userEvent.type(screen.getByPlaceholderText("Password"), "secret123");
@@ -107,7 +112,9 @@ it("stops when the 14-or-older box isn't ticked", async () => {
 });
 
 it("shows a friendly message when the email is already used", async () => {
-  jest.mocked(createUserWithEmailAndPassword).mockRejectedValue({ code: "auth/email-already-in-use" });
+  jest
+    .mocked(createUserWithEmailAndPassword)
+    .mockRejectedValue({ code: "auth/email-already-in-use" });
   await renderSignUp();
   await fillInForm();
   await submit();

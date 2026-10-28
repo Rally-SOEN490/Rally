@@ -7,6 +7,24 @@ Rally, a **centralized volleyball tournament and community platform** designed t
 
 On every pull request, GitHub Actions checks the branch name and PR title and that the required repository files are present. It also runs the app and API tests (the API tests against a PostgreSQL database), type-checks the API, and sends test coverage to SonarQube Cloud.
 
+The [Code quality workflow](.github/workflows/quality.yml) runs ESLint and Prettier checks for both `apps/app` and `apps/api`, and exports the app for web with `expo export --platform web`. The existing [SonarQube workflow](.github/workflows/sonar.yml) continues to run the tests and API type check. Lint errors, formatting differences, and build failures fail CI. The rubric's size limits are warnings while existing code exceeds them: 500 lines per file, 50 lines per function (excluding blank lines and comments), and cyclomatic complexity 15. Promote these warnings to errors once the existing code complies.
+
+After installing dependencies with `npm ci` in each directory, run the same checks locally:
+
+```bash
+cd apps/app
+npm run lint           # expo lint, including tests and configuration
+npm run format:check   # Prettier check; npm run format applies formatting
+npm run build:web      # outputs dist/; needs the app's local Firebase configuration
+
+cd ../api
+npm run lint
+npm run format:check
+npm run typecheck
+```
+
+Both formatting commands use the shared root `.prettierrc.json` and `.prettierignore`; they check each app's source, tests, configuration, and documentation while excluding generated code, dependencies, and build output. CI uses explicit dummy Firebase values for the static web export, so it needs no Firebase secrets or live API. That export checks compilation and rendering; it is not a deployable production build or a live authentication test. Tests remain in SonarQube, and architecture-boundary lint rules are deferred to [#247](https://github.com/Rally-SOEN490/Rally/issues/247).
+
 ## Release demos
 
 | Release | Demo |

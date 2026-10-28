@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { expect, test } from "vitest";
 import { loadConfig } from "../src/config.ts";
@@ -31,11 +30,8 @@ test("uses port 3000 and the Expo dev server when those aren't set", () => {
   expect(config.corsOrigins).toEqual(["http://localhost:8081"]);
 });
 
-test.each(["DATABASE_URL", "FIREBASE_PROJECT_ID"])(
-  "explains how to fix a missing %s",
-  (name) => {
-    expect(() => loadConfig({ ...requiredSettings, [name]: "" })).toThrow(
-      `${name} is missing. Copy .env.example to .env and fill it in.`,
-    );
-  },
-);
+test.each(["DATABASE_URL", "FIREBASE_PROJECT_ID"])("explains how to fix a missing %s", (name) => {
+  expect(() => loadConfig({ ...requiredSettings, [name]: "" })).toThrow(
+    `${name} is missing. Copy .env.example to .env and fill it in.`,
+  );
+});

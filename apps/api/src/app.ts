@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import cors from "@fastify/cors";
 import Fastify, { type FastifyError } from "fastify";
@@ -17,12 +16,7 @@ export type AppOptions = {
 };
 
 // Builds the API without starting it, so tests can send it requests with app.inject().
-export const buildApp = async ({
-  db,
-  verifyIdToken,
-  corsOrigins,
-  logger = false,
-}: AppOptions) => {
+export const buildApp = async ({ db, verifyIdToken, corsOrigins, logger = false }: AppOptions) => {
   const app = Fastify({ logger });
   // Browsers only send the request methods listed here.
   await app.register(cors, { origin: corsOrigins, methods: ["GET", "POST", "PATCH", "DELETE"] });
@@ -36,9 +30,7 @@ export const buildApp = async ({
     const statusCode = error.statusCode ?? 500;
     if (statusCode < 500) return reply.code(statusCode).send({ message: error.message });
     request.log.error(error);
-    return reply
-      .code(500)
-      .send({ message: "Something went wrong on our side. Please try again." });
+    return reply.code(500).send({ message: "Something went wrong on our side. Please try again." });
   });
 
   await app.register(healthRoutes, { db });

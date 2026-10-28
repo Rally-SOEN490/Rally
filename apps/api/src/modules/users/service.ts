@@ -52,7 +52,9 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   thoughtText: user.thoughtText,
   interests: {
     formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
-    positions: user.interests.filter(({ category }) => category === "position").map(({ key }) => key),
+    positions: user.interests
+      .filter(({ category }) => category === "position")
+      .map(({ key }) => key),
   },
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
@@ -65,12 +67,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
       const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
       const availableTiers = definition?.availableTiers ?? ["Bronze"];
       const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
-      const tier = getBadgeTier(
-        badgeType.tier,
-        receivedCount,
-        availableTiers,
-        tierThresholds,
-      );
+      const tier = getBadgeTier(badgeType.tier, receivedCount, availableTiers, tierThresholds);
       const completion = getBadgeCompletion(
         badgeType.tier as "Bronze" | "Silver" | "Gold",
         tier,
@@ -94,20 +91,20 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
     }),
 });
 
-  const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
-    const response = toResponse(user);
-    return {
-      id: response.id,
-      displayName: response.displayName,
-      lookingForTeam: response.lookingForTeam,
-      createdAt: response.createdAt,
-      badges: response.badges,
-    };
+const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
+  const response = toResponse(user);
+  return {
+    id: response.id,
+    displayName: response.displayName,
+    lookingForTeam: response.lookingForTeam,
+    createdAt: response.createdAt,
+    badges: response.badges,
   };
+};
 
 export const createUserService = (users: UserRepository) => ({
-    getDirectory: async (firebaseUid: string) =>
-      (await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse),
+  getDirectory: async (firebaseUid: string) =>
+    (await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse),
 
   // The route only accepts the request if the person confirmed their age.
   register: async (firebaseUid: string, displayName: string) =>

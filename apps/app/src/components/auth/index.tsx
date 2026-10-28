@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+
 import { Link } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView } from "expo-symbols";
@@ -41,20 +43,12 @@ export const AuthScreen = ({
     style={styles.screen}
     imageStyle={styles.backgroundImage}
   >
-    <ScrollView
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <StatusBar style="light" />
       <View style={styles.logo}>
-        <SymbolView
-          name={icons.ball}
-          size={30}
-          tintColor={yellow}
-          style={styles.center}
-        />
+        <SymbolView name={icons.ball} size={30} tintColor={yellow} style={styles.center} />
       </View>
-      <Text style={styles.hero}>It's time to</Text>
+      <Text style={styles.hero}>{"It's time to"}</Text>
       <Text style={[styles.hero, styles.highlight]}>Rally Up</Text>
       <View style={styles.card}>
         {!!greeting && <Text style={styles.muted}>{greeting}</Text>}
@@ -72,24 +66,13 @@ export const Field = ({
   ...props
 }: TextInputProps & { icon: keyof typeof icons; right?: ReactNode }) => (
   <View style={styles.field}>
-    <SymbolView
-      name={icons[icon]}
-      size={18}
-      tintColor="#888"
-      style={styles.center}
-    />
+    <SymbolView name={icons[icon]} size={18} tintColor="#888" style={styles.center} />
     <TextInput style={styles.input} placeholderTextColor="#888" {...props} />
     {right}
   </View>
 );
 
-export const Button = ({
-  title,
-  onPress,
-}: {
-  title: string;
-  onPress?: () => void;
-}) => (
+export const Button = ({ title, onPress }: { title: string; onPress?: () => void }) => (
   <Pressable role="button" style={styles.button} onPress={onPress}>
     <Text style={styles.buttonText}>{title}</Text>
   </Pressable>
@@ -112,12 +95,7 @@ export const Checkbox = ({
   >
     <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
       {checked && (
-        <SymbolView
-          name={icons.check}
-          size={14}
-          tintColor={yellow}
-          style={styles.center}
-        />
+        <SymbolView name={icons.check} size={14} tintColor={yellow} style={styles.center} />
       )}
     </View>
     <Text style={styles.checkboxLabel}>{label}</Text>

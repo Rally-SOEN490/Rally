@@ -1,11 +1,11 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { router, type Href } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BottomNavigation } from "@/components/bottomNavigation";
 
 import { SearchBanner } from "@/components/searchBanner";
 import { SearchBar } from "@/components/searchBar";
@@ -49,6 +49,9 @@ export default function SearchScreen() {
     if (tab !== "players" || !user) return;
 
     let isCurrent = true;
+    // Reset the prior user's/tab's results as this cancellable request starts.
+    // Keep this existing loading lifecycle here rather than refactor search in a CI change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayers([]);
     setPlayersError(undefined);
     setPlayersLoading(true);
@@ -83,10 +86,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <SearchBanner />
 
         <View style={styles.controls}>
@@ -121,27 +121,11 @@ export default function SearchScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.navBar}>
-        {navItems.map((item) => {
-          const isActive = item.active;
-          return (
-            <Pressable
-              key={item.label}
-              style={[styles.navItem, isActive && styles.navItemActive]}
-              onPress={() => {
-                if (item.action) router.replace(item.action);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
-              </Text>
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <BottomNavigation
+        items={navItems}
+        styles={styles}
+        onNavigate={(href) => router.replace(href)}
+      />
     </SafeAreaView>
   );
 }

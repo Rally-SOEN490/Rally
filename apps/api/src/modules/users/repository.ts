@@ -37,10 +37,7 @@ export const createUserRepository = (db: Database) => {
   const includeBadges = {
     interests: true,
     badges: {
-      orderBy: [
-        { receivedCount: "desc" as const },
-        { badgeType: { key: "asc" as const } },
-      ],
+      orderBy: [{ receivedCount: "desc" as const }, { badgeType: { key: "asc" as const } }],
       include: { badgeType: true },
     },
   };
@@ -103,7 +100,9 @@ export const createUserRepository = (db: Database) => {
       // skipDuplicates lets PostgreSQL ignore the insert if the user already
       // exists ("ON CONFLICT DO NOTHING"), instead of failing with an error.
       await db.user.createMany({ data: [user], skipDuplicates: true });
-      const savedUser = await db.user.findUniqueOrThrow({ where: { firebaseUid: user.firebaseUid } });
+      const savedUser = await db.user.findUniqueOrThrow({
+        where: { firebaseUid: user.firebaseUid },
+      });
       await assignAutoAwardedBadges(savedUser.id);
       return db.user.findUniqueOrThrow({
         where: { id: savedUser.id },
@@ -139,8 +138,7 @@ export const createUserRepository = (db: Database) => {
     },
 
     // Does nothing if the user is already gone, so retrying a deletion is safe.
-    deleteByFirebaseUid: (firebaseUid: string) =>
-      db.user.deleteMany({ where: { firebaseUid } }),
+    deleteByFirebaseUid: (firebaseUid: string) => db.user.deleteMany({ where: { firebaseUid } }),
 
     getGender: async (firebaseUid: string) => {
       const user = await db.user.findUnique({

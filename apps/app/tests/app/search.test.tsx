@@ -1,7 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -52,12 +50,7 @@ it("uses the player placeholder and invokes the optional filter action", async (
   const onPressFilter = jest.fn();
 
   await render(
-    <SearchBar
-      value=""
-      onChangeText={jest.fn()}
-      mode="players"
-      onPressFilter={onPressFilter}
-    />,
+    <SearchBar value="" onChangeText={jest.fn()} mode="players" onPressFilter={onPressFilter} />,
   );
 
   expect(screen.getByPlaceholderText("Search for name, level")).toBeOnTheScreen();
@@ -141,6 +134,20 @@ it("navigates to the profile from the You tab", async () => {
   await userEvent.press(screen.getByRole("button", { name: "You" }));
 
   expect(router.replace).toHaveBeenCalledWith("/profile");
+});
+
+it("replaces Search with Home", async () => {
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("button", { name: "Home" }));
+
+  expect(router.replace).toHaveBeenCalledWith("/home");
+});
+
+it.each(["Search", "Events", "Notifications"])("does not navigate from the %s tab", async (tab) => {
+  await render(<SearchScreen />);
+  await userEvent.press(screen.getByRole("button", { name: tab }));
+
+  expect(router.replace).not.toHaveBeenCalled();
 });
 
 it("remembers the selected tab after leaving and reopening Search", async () => {

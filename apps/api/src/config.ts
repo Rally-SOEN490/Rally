@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 export type Config = {
   databaseUrl: string;
@@ -12,8 +11,7 @@ export type Config = {
 export const loadConfig = (env: NodeJS.ProcessEnv): Config => {
   const required = (name: string) => {
     const value = env[name];
-    if (!value)
-      throw new Error(`${name} is missing. Copy .env.example to .env and fill it in.`);
+    if (!value) throw new Error(`${name} is missing. Copy .env.example to .env and fill it in.`);
     return value;
   };
 
