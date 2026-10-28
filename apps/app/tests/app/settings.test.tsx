@@ -33,7 +33,10 @@ jest.mock("firebase/auth", () => ({
 }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
-jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), deleteMyAccount: jest.fn() }));
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"),
+  deleteMyAccount: jest.fn(),
+}));
 
 const user = { email: "sam@example.com" } as User;
 
@@ -94,6 +97,13 @@ it("goes to Profile from the back button when there's nothing to go back to", as
 
   expect(router.back).not.toHaveBeenCalled();
   expect(router.replace).toHaveBeenCalledWith("/profile");
+});
+
+it("does not show display-name controls in settings", async () => {
+  await render(<Settings />);
+
+  expect(screen.queryByRole("button", { name: "Change display name" })).not.toBeOnTheScreen();
+  expect(screen.queryByText("Display name")).not.toBeOnTheScreen();
 });
 
 describe("preferences", () => {

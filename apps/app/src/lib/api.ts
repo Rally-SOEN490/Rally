@@ -11,7 +11,6 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export type RallyUser = {
   id: string;
   displayName: string;
-  bio: string | null;
   profilePhotoUrl: string | null;
   createdAt: string;
   badges: {
@@ -28,7 +27,6 @@ export type RallyUser = {
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
-export const BIO_MAX_LENGTH = 300;
 
 // The API refused the request or couldn't be reached. `message` can be shown to the user.
 export class ApiError extends Error {
@@ -79,11 +77,10 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     throw e;
   });
 
-export const updateMyProfile = (
+export const updateMyDisplayName = (
   user: User,
   displayName: string,
-  bio: string,
-): Promise<RallyUser> => request(user, "PATCH", "/users/me", { displayName, bio });
+): Promise<RallyUser> => request(user, "PATCH", "/users/me", { displayName });
 
 export const uploadMyProfilePhoto = async (
   user: User,
@@ -117,6 +114,9 @@ export const uploadMyProfilePhoto = async (
     throw new ApiError(response.status, data.message ?? "Something went wrong. Please try again.");
   return data;
 };
+
+export const removeMyProfilePhoto = (user: User): Promise<RallyUser> =>
+  request(user, "DELETE", "/users/me/photo");
 
 // Deletes the person's Rally data. Safe to call again if it was already deleted.
 export const deleteMyAccount = async (user: User): Promise<void> => {

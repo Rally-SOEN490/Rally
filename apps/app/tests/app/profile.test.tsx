@@ -5,7 +5,7 @@ import { render, screen, userEvent, waitFor } from "@testing-library/react-nativ
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import Profile from "@/app/profile";
-import { updateMyProfile, uploadMyProfilePhoto } from "@/lib/api";
+import { removeMyProfilePhoto, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
@@ -16,7 +16,7 @@ jest.mock("expo-image-picker", () => ({
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
-  updateMyProfile: jest.fn(),
+  removeMyProfilePhoto: jest.fn(),
   uploadMyProfilePhoto: jest.fn(),
 }));
 
@@ -24,7 +24,6 @@ const user = { email: "sam@example.com", displayName: "Old Firebase name" } as U
 const account = {
   id: "1",
   displayName: "Sam Lee",
-  bio: "Beach volleyball player",
   profilePhotoUrl: null,
   createdAt: "2026-10-17T12:00:00.000Z",
   badges: [
@@ -73,7 +72,7 @@ const account = {
 
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
-  jest.mocked(updateMyProfile).mockResolvedValue(account);
+  jest.mocked(removeMyProfilePhoto).mockResolvedValue({ ...account, profilePhotoUrl: null });
   jest.mocked(uploadMyProfilePhoto).mockResolvedValue(account);
 });
 
@@ -91,48 +90,23 @@ it("opens settings from the gear button", async () => {
   expect(router.push).toHaveBeenCalledWith("/settings");
 });
 
-it("shows the saved bio below the player's position and team", async () => {
+it("does not show bio or profile editing controls", async () => {
   await render(<Profile />);
 
   expect(screen.getByText("Outside hitter • Sunbirds")).toBeOnTheScreen();
-  expect(screen.getByText("Beach volleyball player")).toBeOnTheScreen();
+  expect(screen.queryByText("Beach volleyball player")).not.toBeOnTheScreen();
+  expect(screen.queryByRole("button", { name: "Edit profile" })).not.toBeOnTheScreen();
 });
 
-it("edits and saves the display name and bio on the profile", async () => {
-  const updatedAccount = { ...account, displayName: "Sammy Lee", bio: "Competitive beach player" };
-  const setAccount = jest.fn();
-  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account, setAccount }));
-  jest.mocked(updateMyProfile).mockResolvedValue(updatedAccount);
+it("offers an inline profile photo picker", async () => {
   await render(<Profile />);
-
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
-  const nameInput = screen.getByLabelText("Display name");
-  const bioInput = screen.getByLabelText("Bio");
-  expect(nameInput).toHaveProp("maxLength", 100);
-  expect(bioInput).toHaveProp("maxLength", 300);
-  await userEvent.clear(nameInput);
-  await userEvent.type(nameInput, "Sammy Lee");
-  await userEvent.clear(bioInput);
-  await userEvent.type(bioInput, "Competitive beach player");
-  expect(screen.getByText("24/300")).toBeOnTheScreen();
-  await userEvent.press(screen.getByRole("button", { name: "Save profile" }));
-
-  expect(updateMyProfile).toHaveBeenCalledWith(user, "Sammy Lee", "Competitive beach player");
-  expect(setAccount).toHaveBeenCalledWith(updatedAccount);
-  await waitFor(() => expect(screen.queryByLabelText("Bio")).not.toBeOnTheScreen());
-});
-
-it("offers a profile photo picker in the editor", async () => {
-  await render(<Profile />);
-
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
 
   expect(screen.getByRole("button", { name: "Change profile photo" })).toBeOnTheScreen();
 });
 
-it("previews and uploads a selected profile photo", async () => {
+it("uploads a selected profile photo immediately", async () => {
   const ImagePicker = require("expo-image-picker");
-  const photoAccount = { ...account, profilePhotoUrl: "https://signed.example/avatar.png" };
+  const photoAccount = { ...account, profilePhotoUrl: null };
   jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
     canceled: false,
     assets: [{ uri: "blob:avatar", mimeType: "image/png", fileSize: 128 }],
@@ -142,14 +116,12 @@ it("previews and uploads a selected profile photo", async () => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account, setAccount }));
   await render(<Profile />);
 
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
   await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
   expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({
     mediaTypes: ["images"],
     allowsEditing: true,
     aspect: [1, 1],
   }));
-  await userEvent.press(screen.getByRole("button", { name: "Save profile" }));
 
   expect(uploadMyProfilePhoto).toHaveBeenCalledWith(user, { uri: "blob:avatar", mimeType: "image/png" });
   expect(setAccount).toHaveBeenCalledWith(photoAccount);
@@ -162,7 +134,6 @@ it("rejects a selected photo larger than 5 MB", async () => {
     assets: [{ uri: "blob:large", mimeType: "image/png", fileSize: 5 * 1024 * 1024 + 1 }],
   });
   await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
   await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
 
   expect(screen.getByText("Choose a photo smaller than 5 MB.")).toBeOnTheScreen();
@@ -175,13 +146,12 @@ it("rejects unsupported selected photo types", async () => {
     assets: [{ uri: "blob:gif", mimeType: "image/gif", fileSize: 128 }],
   });
   await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
   await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
 
   expect(screen.getByText("Use a JPEG, PNG, or WebP image.")).toBeOnTheScreen();
 });
 
-it("keeps the editor open and shows an upload error", async () => {
+it("shows an upload error", async () => {
   const ImagePicker = require("expo-image-picker");
   jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
     canceled: false,
@@ -189,12 +159,50 @@ it("keeps the editor open and shows an upload error", async () => {
   });
   jest.mocked(uploadMyProfilePhoto).mockRejectedValueOnce(new Error("Upload failed"));
   await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Edit profile" }));
   await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
-  await userEvent.press(screen.getByRole("button", { name: "Save profile" }));
 
   expect(await screen.findByText("Something went wrong. Please try again.")).toBeOnTheScreen();
-  expect(screen.getByLabelText("Bio")).toBeOnTheScreen();
+});
+
+it("offers update and remove actions for an existing profile photo", async () => {
+  const photoAccount = { ...account, profilePhotoUrl: "https://signed.example/avatar.png" };
+  const setAccount = jest.fn();
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account: photoAccount, setAccount }));
+  jest.mocked(removeMyProfilePhoto).mockResolvedValue({ ...photoAccount, profilePhotoUrl: null });
+  await render(<Profile />);
+
+  await userEvent.press(screen.getByRole("button", { name: "Profile photo options" }));
+  expect(screen.getByRole("button", { name: "Update photo" })).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Remove photo" }));
+
+  await waitFor(() => expect(removeMyProfilePhoto).toHaveBeenCalledWith(user));
+  expect(setAccount).toHaveBeenCalledWith({ ...photoAccount, profilePhotoUrl: null });
+  expect(screen.queryByRole("button", { name: "Update photo" })).not.toBeOnTheScreen();
+});
+
+it("opens the photo picker from the update action", async () => {
+  const ImagePicker = require("expo-image-picker");
+  const photoAccount = { ...account, profilePhotoUrl: "https://signed.example/avatar.png" };
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account: photoAccount }));
+  await render(<Profile />);
+
+  await userEvent.press(screen.getByRole("button", { name: "Profile photo options" }));
+  await userEvent.press(screen.getByRole("button", { name: "Update photo" }));
+
+  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+});
+
+it("keeps the photo actions available and shows an error when removal fails", async () => {
+  const photoAccount = { ...account, profilePhotoUrl: "https://signed.example/avatar.png" };
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account: photoAccount }));
+  jest.mocked(removeMyProfilePhoto).mockRejectedValueOnce(new Error("Remove failed"));
+  await render(<Profile />);
+
+  await userEvent.press(screen.getByRole("button", { name: "Profile photo options" }));
+  await userEvent.press(screen.getByRole("button", { name: "Remove photo" }));
+
+  expect(await screen.findByText("Something went wrong. Please try again.")).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Update photo" })).toBeOnTheScreen();
 });
 
 it("shows badges saved on the Rally account", async () => {

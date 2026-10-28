@@ -7,16 +7,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   apiErrorMessage,
-  BIO_MAX_LENGTH,
-  NAME_MAX_LENGTH,
-  updateMyProfile,
+  removeMyProfilePhoto,
   uploadMyProfilePhoto,
 } from "@/lib/api";
 import type { RallyUser } from "@/lib/api";
@@ -53,64 +50,52 @@ export default function Profile() {
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
     null,
   );
-  const [editing, setEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(account?.displayName ?? "");
-  const [bio, setBio] = useState(account?.bio ?? "");
+  const [photoActionsVisible, setPhotoActionsVisible] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [photoMimeType, setPhotoMimeType] = useState<string | null>(null);
-
-  const openEditor = () => {
-    setDisplayName(account?.displayName ?? "");
-    setBio(account?.bio ?? "");
-    setPhotoUri(null);
-    setPhotoMimeType(null);
-    setSaveError("");
-    setEditing(true);
-  };
 
   const choosePhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      setSaveError("Choose a photo smaller than 5 MB.");
-      return;
-    }
-    if (asset.mimeType && !["image/jpeg", "image/png", "image/webp"].includes(asset.mimeType)) {
-      setSaveError("Use a JPEG, PNG, or WebP image.");
-      return;
-    }
-    setPhotoUri(asset.uri);
-    setPhotoMimeType(asset.mimeType ?? null);
+    if (!user || saving) return;
+    setPhotoActionsVisible(false);
     setSaveError("");
+    setSaving(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        setSaveError("Choose a photo smaller than 5 MB.");
+        return;
+      }
+      if (asset.mimeType && !["image/jpeg", "image/png", "image/webp"].includes(asset.mimeType)) {
+        setSaveError("Use a JPEG, PNG, or WebP image.");
+        return;
+      }
+
+      setAccount(await uploadMyProfilePhoto(user, {
+        uri: asset.uri,
+        mimeType: asset.mimeType ?? null,
+      }));
+    } catch (error) {
+      setSaveError(apiErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const saveProfile = async () => {
-    if (!user) return;
-    if (!displayName.trim()) {
-      setSaveError("Please enter a display name.");
-      return;
-    }
-
-    setSaving(true);
+  const deletePhoto = async () => {
+    if (!user || saving) return;
     setSaveError("");
+    setSaving(true);
     try {
-      let updated = await updateMyProfile(user, displayName.trim(), bio);
-      setAccount(updated);
-      if (photoUri) updated = await uploadMyProfilePhoto(user, {
-        uri: photoUri,
-        mimeType: photoMimeType,
-      });
-      setAccount(updated);
-      setEditing(false);
+      setAccount(await removeMyProfilePhoto(user));
+      setPhotoActionsVisible(false);
     } catch (error) {
       setSaveError(apiErrorMessage(error));
     } finally {
@@ -133,26 +118,40 @@ export default function Profile() {
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatarBadge}>
-            {account?.profilePhotoUrl ? (
-              <Image source={{ uri: account.profilePhotoUrl }} style={styles.profilePhoto} />
-            ) : (
-              <Text style={styles.avatarText}>{account?.displayName?.[0]?.toUpperCase() ?? "?"}</Text>
-            )}
-          </View>
-          <Text style={styles.playerName}>{account?.displayName}</Text>
-          <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
-          <Text style={styles.playerBio}>
-            {account?.bio || "Add a short bio to introduce yourself."}
-          </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Edit profile"
-            onPress={openEditor}
-            style={styles.editProfileButton}
+            accessibilityLabel={account?.profilePhotoUrl ? "Profile photo options" : "Change profile photo"}
+            onPress={() => {
+              if (account?.profilePhotoUrl) setPhotoActionsVisible(true);
+              else void choosePhoto();
+            }}
+            disabled={saving}
+            style={styles.avatarPicker}
           >
-            <Text style={styles.editProfileButtonText}>Edit profile</Text>
+            <View
+              style={[
+                styles.avatarBadge,
+                account?.profilePhotoUrl ? styles.avatarBadgeWithPhoto : styles.avatarBadgeEmpty,
+              ]}
+            >
+              {account?.profilePhotoUrl ? (
+                <Image source={{ uri: account.profilePhotoUrl }} style={styles.profilePhoto} />
+              ) : (
+                <View style={styles.avatarSilhouette}>
+                  <View style={styles.avatarHead} />
+                  <View style={styles.avatarBody} />
+                </View>
+              )}
+            </View>
+            <View style={styles.photoActionBadge}>
+              <Text style={styles.photoActionIcon}>
+                {account?.profilePhotoUrl ? "✎" : "📷"}
+              </Text>
+            </View>
           </Pressable>
+          {!photoActionsVisible && !!saveError && <Text style={styles.photoError}>{saveError}</Text>}
+          <Text style={styles.playerName}>{account?.displayName}</Text>
+          <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
         </View>
 
         <View style={styles.teamBanner}>
@@ -257,83 +256,45 @@ export default function Profile() {
       </ScrollView>
 
       <Modal
-        visible={editing}
+        visible={photoActionsVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setEditing(false)}
+        animationType="fade"
+        onRequestClose={() => setPhotoActionsVisible(false)}
       >
-        <View style={styles.editorBackdrop}>
-          <View style={styles.profileEditor}>
-            <Text style={styles.editorTitle}>Edit profile</Text>
-            <View style={styles.photoEditorRow}>
-              <View style={styles.photoPreview}>
-                {photoUri || account?.profilePhotoUrl ? (
-                  <Image
-                    source={{ uri: photoUri ?? account?.profilePhotoUrl ?? undefined }}
-                    style={styles.profilePhoto}
-                  />
-                ) : (
-                  <Text style={styles.photoPreviewInitial}>
-                    {displayName[0]?.toUpperCase() ?? "?"}
-                  </Text>
-                )}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Change profile photo"
-                onPress={choosePhoto}
-                disabled={saving}
-                style={styles.choosePhotoButton}
-              >
-                <Text style={styles.choosePhotoButtonText}>
-                  {photoUri ? "Choose another photo" : "Change photo"}
-                </Text>
-              </Pressable>
-            </View>
-            <Text style={styles.editorLabel}>Display name</Text>
-            <TextInput
-              accessibilityLabel="Display name"
-              maxLength={NAME_MAX_LENGTH}
-              value={displayName}
-              onChangeText={setDisplayName}
-              style={styles.editorInput}
-              returnKeyType="next"
-            />
-            <Text style={styles.editorLabel}>Bio</Text>
-            <TextInput
-              accessibilityLabel="Bio"
-              maxLength={BIO_MAX_LENGTH}
-              multiline
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Tell other players about yourself"
-              placeholderTextColor="#78857f"
-              style={[styles.editorInput, styles.bioInput]}
-              textAlignVertical="top"
-            />
-            <Text style={styles.bioCharacterCount}>
-              {bio.length}/{BIO_MAX_LENGTH}
-            </Text>
-            {!!saveError && <Text style={styles.editorError}>{saveError}</Text>}
-            <View style={styles.editorActions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setEditing(false)}
-                disabled={saving}
-                style={styles.cancelEditButton}
-              >
-                <Text style={styles.cancelEditButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Save profile"
-                onPress={saveProfile}
-                disabled={saving}
-                style={styles.saveEditButton}
-              >
-                <Text style={styles.saveEditButtonText}>{saving ? "Saving..." : "Save"}</Text>
-              </Pressable>
-            </View>
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close profile photo options"
+            onPress={() => setPhotoActionsVisible(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.photoActions}>
+            <Text style={styles.photoActionsTitle}>Profile photo</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void choosePhoto()}
+              disabled={saving}
+              style={styles.photoActionButton}
+            >
+              <Text style={styles.photoActionButtonText}>Update photo</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void deletePhoto()}
+              disabled={saving}
+              style={styles.removePhotoButton}
+            >
+              <Text style={styles.removePhotoButtonText}>{saving ? "Removing..." : "Remove photo"}</Text>
+            </Pressable>
+            {!!saveError && <Text style={styles.photoError}>{saveError}</Text>}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setPhotoActionsVisible(false)}
+              disabled={saving}
+              style={styles.cancelPhotoAction}
+            >
+              <Text style={styles.cancelPhotoActionText}>Cancel</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -344,14 +305,14 @@ export default function Profile() {
         animationType="fade"
         onRequestClose={() => setSelectedBadge(null)}
       >
-        <Pressable
-          onPress={() => setSelectedBadge(null)}
-          style={styles.modalBackdrop}
-        >
+        <View style={styles.modalBackdrop}>
           <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={styles.badgeDetails}
-          >
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss badge details"
+            onPress={() => setSelectedBadge(null)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.badgeDetails}>
             <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
             <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
             <Text style={styles.badgeDetailsDescription}>
@@ -365,8 +326,8 @@ export default function Profile() {
             >
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <View style={styles.navBar}>
@@ -427,14 +388,68 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avatarBadge: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: "#d5d9d1",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    overflow: "hidden",
+  },
+  avatarPicker: {
+    width: 88,
+    height: 88,
+  },
+  avatarBadgeEmpty: {
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#a9b6ae",
+  },
+  avatarBadgeWithPhoto: {
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+  },
+  avatarSilhouette: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  avatarHead: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: "#a4aea8",
+  },
+  avatarBody: {
+    width: 34,
+    height: 17,
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
+    backgroundColor: "#a4aea8",
+  },
+  photoActionBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: 1,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    borderWidth: 2,
     borderColor: "#f7f4f1",
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoActionIcon: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  photoError: {
+    marginTop: 8,
+    color: "#a12f25",
+    fontSize: 13,
+    textAlign: "center",
   },
   avatarText: {
     fontSize: 52,
@@ -445,38 +460,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 100,
-  },
-  photoEditorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    marginBottom: 18,
-  },
-  photoPreview: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    overflow: "hidden",
-    backgroundColor: "#d5d9d1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoPreviewInitial: {
-    color: "#12382d",
-    fontSize: 30,
-    fontWeight: "700",
-  },
-  choosePhotoButton: {
-    borderWidth: 1,
-    borderColor: "#9aa8a1",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  choosePhotoButtonText: {
-    color: "#12382d",
-    fontSize: 13,
-    fontWeight: "700",
   },
   playerName: {
     marginTop: 12,
@@ -489,103 +472,48 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#536761",
   },
-  playerBio: {
-    maxWidth: 320,
-    marginTop: 12,
-    color: "#344b43",
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  editProfileButton: {
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#9aa8a1",
-    borderRadius: 8,
-  },
-  editProfileButtonText: {
-    color: "#12382d",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  editorBackdrop: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(18, 56, 45, 0.45)",
-    padding: 20,
-  },
-  profileEditor: {
+  photoActions: {
     width: "100%",
-    maxWidth: 440,
-    alignSelf: "center",
+    maxWidth: 340,
     backgroundColor: "#f7f4f1",
-    borderRadius: 12,
+    borderRadius: 18,
     padding: 20,
   },
-  editorTitle: {
+  photoActionsTitle: {
     color: "#12382d",
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
-    marginBottom: 18,
+    marginBottom: 12,
   },
-  editorLabel: {
-    color: "#344b43",
-    fontSize: 14,
+  photoActionButton: {
+    backgroundColor: "#12382d",
+    borderRadius: 12,
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  photoActionButtonText: {
+    color: "#f7f4f1",
     fontWeight: "700",
-    marginBottom: 6,
   },
-  editorInput: {
-    minHeight: 44,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: "#b8c0ba",
-    borderRadius: 8,
-    color: "#173a30",
-    fontSize: 15,
+  removePhotoButton: {
+    backgroundColor: "#fbe9e7",
+    borderRadius: 12,
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
   },
-  bioInput: {
-    minHeight: 110,
-  },
-  bioCharacterCount: {
-    marginTop: -10,
-    marginBottom: 12,
-    color: "#536761",
-    fontSize: 12,
-    textAlign: "right",
-  },
-  editorError: {
-    marginBottom: 12,
+  removePhotoButtonText: {
     color: "#a12f25",
-    fontSize: 13,
+    fontWeight: "700",
   },
-  editorActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
+  cancelPhotoAction: {
+    alignItems: "center",
+    paddingVertical: 12,
     marginTop: 4,
   },
-  cancelEditButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  cancelEditButtonText: {
-    color: "#344b43",
-    fontWeight: "700",
-  },
-  saveEditButton: {
-    minWidth: 82,
-    alignItems: "center",
-    backgroundColor: "#12382d",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  saveEditButtonText: {
-    color: "#f7f4f1",
+  cancelPhotoActionText: {
+    color: "#536761",
     fontWeight: "700",
   },
   teamBanner: {

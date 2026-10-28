@@ -15,7 +15,7 @@ jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), saveNewUser: jest.fn() }));
 
 const user = { email: "sam@example.com", emailVerified: true, displayName: "Sam Lee" } as User;
-const account = { id: "1", displayName: "Sam Lee", bio: null, profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = { id: "1", displayName: "Sam Lee", profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 const setAccount = jest.fn();
 
 const renderFinishSetup = (signedInUser: User | null = user) => {

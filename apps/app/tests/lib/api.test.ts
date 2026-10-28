@@ -2,12 +2,21 @@
 // SPDX-License-Identifier: MIT
 
 import type { User } from "firebase/auth";
-import { ApiError, apiErrorMessage, deleteMyAccount, getMyAccount, saveNewUser, updateMyProfile, uploadMyProfilePhoto } from "@/lib/api";
+import {
+  ApiError,
+  apiErrorMessage,
+  deleteMyAccount,
+  getMyAccount,
+  removeMyProfilePhoto,
+  saveNewUser,
+  updateMyDisplayName,
+  uploadMyProfilePhoto,
+} from "@/lib/api";
 
 jest.mock("react-native", () => ({ Platform: { OS: "web" } }));
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
-const account = { id: "1", displayName: "Sam Lee", bio: null, profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = { id: "1", displayName: "Sam Lee", profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
 
 // Pretends the API answered with this status and JSON body.
 const respond = (status: number, body?: object) =>
@@ -76,18 +85,17 @@ describe("getMyAccount", () => {
   });
 });
 
-describe("updateMyProfile", () => {
-  it("sends the display name and bio with a PATCH request", async () => {
-    respond(200, { ...account, displayName: "Sam Lee", bio: "Beach player" });
+describe("updateMyDisplayName", () => {
+  it("sends the display name with a PATCH request", async () => {
+    respond(200, { ...account, displayName: "Sam Lee" });
 
-    await expect(updateMyProfile(user, "Sam Lee", "Beach player")).resolves.toMatchObject({
+    await expect(updateMyDisplayName(user, "Sam Lee")).resolves.toMatchObject({
       displayName: "Sam Lee",
-      bio: "Beach player",
     });
     expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
       method: "PATCH",
       headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: "Sam Lee", bio: "Beach player" }),
+      body: JSON.stringify({ displayName: "Sam Lee" }),
     });
   });
 });
@@ -145,6 +153,20 @@ describe("uploadMyProfilePhoto", () => {
     await expect(uploadMyProfilePhoto(user, { uri: "blob:photo" })).rejects.toEqual(
       new ApiError(400, "Use a JPEG, PNG, or WebP image."),
     );
+  });
+});
+
+describe("removeMyProfilePhoto", () => {
+  it("removes the profile photo with the user's token", async () => {
+    const updatedAccount = { ...account, profilePhotoUrl: null };
+    respond(200, updatedAccount);
+
+    await expect(removeMyProfilePhoto(user)).resolves.toEqual(updatedAccount);
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me/photo", {
+      method: "DELETE",
+      headers: { Authorization: "Bearer the-token" },
+      body: undefined,
+    });
   });
 });
 
