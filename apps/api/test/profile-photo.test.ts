@@ -86,6 +86,55 @@ test("deletes the old photo after replacing it", async () => {
   expect(photos.delete).toHaveBeenCalledWith("profile-photos/alice/old.png");
 });
 
+test("removes the current photo from the account and storage", async () => {
+  await register();
+  await testDb.user.update({
+    where: { firebaseUid: "alice" },
+    data: { profilePhotoKey: "profile-photos/alice/old.png" },
+  });
+
+  const response = await app.inject({
+    method: "DELETE",
+    url: "/users/me/photo",
+    headers: authHeader("alice"),
+  });
+
+  expect(response.statusCode).toBe(200);
+  expect(response.json().profilePhotoUrl).toBeNull();
+  expect(photos.delete).toHaveBeenCalledWith("profile-photos/alice/old.png");
+  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } }))
+    .toMatchObject({ profilePhotoKey: null });
+});
+
+test("returns not found when removing a photo for a missing Rally account", async () => {
+  const response = await app.inject({
+    method: "DELETE",
+    url: "/users/me/photo",
+    headers: authHeader("alice"),
+  });
+
+  expect(response.statusCode).toBe(404);
+});
+
+test("keeps the stored photo when storage deletion fails", async () => {
+  await register();
+  await testDb.user.update({
+    where: { firebaseUid: "alice" },
+    data: { profilePhotoKey: "profile-photos/alice/old.png" },
+  });
+  vi.mocked(photos.delete).mockRejectedValueOnce(new Error("Storage unavailable"));
+
+  const response = await app.inject({
+    method: "DELETE",
+    url: "/users/me/photo",
+    headers: authHeader("alice"),
+  });
+
+  expect(response.statusCode).toBe(500);
+  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } }))
+    .toMatchObject({ profilePhotoKey: "profile-photos/alice/old.png" });
+});
+
 test("rejects requests without a file", async () => {
   await register();
   const response = await app.inject({

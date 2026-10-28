@@ -89,7 +89,6 @@ export const createUserRepository = (db: Database) => {
 
     updateByFirebaseUid: (firebaseUid: string, data: {
       displayName?: string;
-      bio?: string | null;
       profilePhotoKey?: string | null;
     }) =>
       db.user.update({ where: { firebaseUid }, data }),

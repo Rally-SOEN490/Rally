@@ -9,7 +9,6 @@ import type { ProfilePhotoStorage } from "./photo-storage.ts";
 export type UserResponse = {
   id: string;
   displayName: string;
-  bio: string | null;
   profilePhotoUrl: string | null;
   createdAt: string;
   badges: Array<{
@@ -29,7 +28,6 @@ type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFireb
 const toResponse = async (user: UserWithBadges, photos?: ProfilePhotoStorage): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
-  bio: user.bio,
   profilePhotoUrl: user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
@@ -67,12 +65,11 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
     return user ? toResponse(user, photos) : null;
   },
 
-  updateCurrent: async (firebaseUid: string, displayName: string, bio: string) => {
+  updateCurrent: async (firebaseUid: string, displayName: string) => {
     const existing = await users.findByFirebaseUid(firebaseUid);
     if (!existing) return null;
     await users.updateByFirebaseUid(firebaseUid, {
       displayName: displayName.trim(),
-      bio: bio.trim() || null,
     });
     const user = await users.findByFirebaseUid(firebaseUid);
     return user ? toResponse(user, photos) : null;
@@ -86,6 +83,17 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
     await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: key });
     if (existing.profilePhotoKey && existing.profilePhotoKey !== key)
       await photos.delete(existing.profilePhotoKey).catch(() => undefined);
+    const updated = await users.findByFirebaseUid(firebaseUid);
+    return updated ? toResponse(updated, photos) : null;
+  },
+
+  removePhoto: async (firebaseUid: string) => {
+    if (!photos) throw new Error("Profile photo uploads are not configured.");
+    const existing = await users.findByFirebaseUid(firebaseUid);
+    if (!existing) return null;
+    if (existing.profilePhotoKey)
+      await photos.delete(existing.profilePhotoKey);
+    await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: null });
     const updated = await users.findByFirebaseUid(firebaseUid);
     return updated ? toResponse(updated, photos) : null;
   },

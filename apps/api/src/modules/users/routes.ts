@@ -11,7 +11,7 @@ import { createUserRepository } from "./repository.ts";
 import { createUserService } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
-type UpdateProfileBody = { displayName: string; bio: string };
+type UpdateProfileBody = { displayName: string };
 
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
@@ -58,7 +58,7 @@ export const userRoutes: FastifyPluginAsync<{
       schema: {
         body: {
           type: "object",
-          required: ["displayName", "bio"],
+          required: ["displayName"],
           additionalProperties: false,
           properties: {
             displayName: {
@@ -66,20 +66,22 @@ export const userRoutes: FastifyPluginAsync<{
               maxLength: 100,
               pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
             },
-            bio: { type: "string", maxLength: 300 },
           },
         },
       },
     },
     async (request, reply) => {
-      const user = await users.updateCurrent(
-        request.firebaseUid,
-        request.body.displayName,
-        request.body.bio,
-      );
+      const user = await users.updateCurrent(request.firebaseUid, request.body.displayName);
       return user ?? reply.code(404).send({ message: "No Rally account found." });
     },
   );
+
+  app.delete("/me/photo", async (request, reply) => {
+    if (!photos)
+      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
+    const user = await users.removePhoto(request.firebaseUid);
+    return user ?? reply.code(404).send({ message: "No Rally account found." });
+  });
 
   app.post("/me/photo", async (request, reply) => {
     if (!photos)
