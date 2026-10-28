@@ -1,3 +1,8 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
@@ -7,16 +12,25 @@ import {
   apiErrorMessage,
   deleteMyAccount,
   getMyAccount,
+  getPlayers,
   removeMyProfilePhoto,
   saveNewUser,
   updateMyDisplayName,
+  updateMyAccount,
   uploadMyProfilePhoto,
 } from "@/lib/api";
 
 jest.mock("react-native", () => ({ Platform: { OS: "web" } }));
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
-const account = { id: "1", displayName: "Sam Lee", profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  profilePhotoUrl: null,
+  lookingForTeam: false,
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [],
+};
 
 // Pretends the API answered with this status and JSON body.
 const respond = (status: number, body?: object) =>
@@ -167,6 +181,59 @@ describe("removeMyProfilePhoto", () => {
       headers: { Authorization: "Bearer the-token" },
       body: undefined,
     });
+  });
+});
+
+describe("getPlayers", () => {
+  it("loads the player array with the signed-in user's token", async () => {
+    const players = [account];
+    respond(200, players);
+
+    await expect(getPlayers(user)).resolves.toEqual(players);
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users", {
+      method: "GET",
+      headers: { Authorization: "Bearer the-token" },
+      body: undefined,
+    });
+  });
+});
+
+describe("updateMyAccount", () => {
+  it("sends the change with the user's token and returns the updated account", async () => {
+    respond(200, { ...account, lookingForTeam: true });
+
+    await expect(updateMyAccount(user, { lookingForTeam: true })).resolves.toEqual({
+      ...account,
+      lookingForTeam: true,
+    });
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ lookingForTeam: true }),
+    });
+  });
+
+  it("sends the selected shown badges", async () => {
+    respond(200, { ...account, shownBadgeKeys: ["champion", "winner"] });
+
+    await expect(
+      updateMyAccount(user, { shownBadgeKeys: ["champion", "winner"] }),
+    ).resolves.toMatchObject({
+      shownBadgeKeys: ["champion", "winner"],
+    });
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/users/me", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+      body: JSON.stringify({ shownBadgeKeys: ["champion", "winner"] }),
+    });
+  });
+
+  it("fails with the API's message", async () => {
+    respond(400, { message: "Some of the details you sent aren't valid." });
+
+    await expect(updateMyAccount(user, { lookingForTeam: true })).rejects.toEqual(
+      new ApiError(400, "Some of the details you sent aren't valid."),
+    );
   });
 });
 

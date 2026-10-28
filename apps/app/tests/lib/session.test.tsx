@@ -1,17 +1,43 @@
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
 // Copyright (c) 2026 Rally contributors
 // SPDX-License-Identifier: MIT
 
-import { act, renderHook } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { ApiError, getMyAccount, type RallyUser } from "@/lib/api";
+import { ApiError, getMyAccount, updateMyAccount, type RallyUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { SessionProvider, useSession } from "@/lib/session";
 
 jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn() }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
-jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"),
+  getMyAccount: jest.fn(),
+  updateMyAccount: jest.fn(),
+}));
 
-const account = { id: "1", displayName: "Sam Lee", profilePhotoUrl: null, createdAt: "2026-10-17T12:00:00.000Z", badges: [] };
+const account = {
+  id: "1",
+  displayName: "Sam Lee",
+  profilePhotoUrl: null,
+  lookingForTeam: false,
+  createdAt: "2026-10-17T12:00:00.000Z",
+  badges: [],
+};
+const accountWithBadges = {
+  ...account,
+  badges: [
+    { key: "bronze", name: "Bronze", tier: "Bronze", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 2, awardedAt: "" },
+    { key: "gold", name: "Gold", tier: "Gold", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 20, awardedAt: "" },
+    { key: "silver", name: "Silver", tier: "Silver", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 10, awardedAt: "" },
+    { key: "winner", name: "Winner", tier: "Gold", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 15, awardedAt: "" },
+    { key: "extra", name: "Extra", tier: "Bronze", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 12, awardedAt: "" },
+  ],
+};
 const verified = { uid: "sam", email: "sam@example.com", emailVerified: true } as User;
 
 const unsubscribe = jest.fn();
@@ -24,6 +50,10 @@ beforeEach(() => {
     return unsubscribe;
   });
   jest.mocked(getMyAccount).mockResolvedValue(account);
+  jest.mocked(updateMyAccount).mockImplementation(async (_user, changes) => ({
+    ...accountWithBadges,
+    shownBadgeKeys: "shownBadgeKeys" in changes ? changes.shownBadgeKeys : [],
+  }));
 });
 
 const renderSession = () =>
@@ -94,6 +124,82 @@ describe("the Rally account", () => {
     expect(getMyAccount).toHaveBeenCalledWith(verified);
     expect(result.current.account).toEqual(account);
     expect(result.current.accountError).toBeUndefined();
+  });
+
+  it("initializes selected badges with the four highest receipt counts", async () => {
+    jest.mocked(getMyAccount).mockResolvedValue(accountWithBadges);
+    const { result } = await renderSession();
+    await act(async () => reportUser(verified));
+
+    await waitFor(() =>
+      expect(result.current.selectedBadgeKeys).toEqual([
+        "gold",
+        "winner",
+        "extra",
+        "silver",
+      ]),
+    );
+  });
+
+  it("initializes selected badges from the saved shown badges", async () => {
+    jest.mocked(getMyAccount).mockResolvedValue({
+      ...accountWithBadges,
+      shownBadgeKeys: ["bronze", "gold"],
+    });
+    const { result } = await renderSession();
+    await act(async () => reportUser(verified));
+
+    await waitFor(() => expect(result.current.selectedBadgeKeys).toEqual(["bronze", "gold"]));
+  });
+
+  it("defaults to the four highest badges when no badges are saved", async () => {
+    jest.mocked(getMyAccount).mockResolvedValue({
+      ...accountWithBadges,
+      shownBadgeKeys: [],
+    });
+    const { result } = await renderSession();
+    await act(async () => reportUser(verified));
+
+    await waitFor(() =>
+      expect(result.current.selectedBadgeKeys).toEqual([
+        "gold",
+        "winner",
+        "extra",
+        "silver",
+      ]),
+    );
+  });
+
+  it("adds and removes badge selections", async () => {
+    jest.mocked(getMyAccount).mockResolvedValue(accountWithBadges);
+    const { result } = await renderSession();
+    await act(async () => reportUser(verified));
+    await waitFor(() => expect(result.current.selectedBadgeKeys).toHaveLength(4));
+
+    await act(async () => result.current.toggleBadgeSelection("gold"));
+    expect(result.current.selectedBadgeKeys).toEqual(["winner", "extra", "silver"]);
+    expect(updateMyAccount).toHaveBeenCalledWith(verified, {
+      shownBadgeKeys: ["winner", "extra", "silver"],
+    });
+
+    await act(async () => result.current.toggleBadgeSelection("bronze"));
+    expect(result.current.selectedBadgeKeys).toEqual(["winner", "extra", "silver", "bronze"]);
+  });
+
+  it("does not select a fifth badge when four are already selected", async () => {
+    jest.mocked(getMyAccount).mockResolvedValue(accountWithBadges);
+    const { result } = await renderSession();
+    await act(async () => reportUser(verified));
+    await waitFor(() => expect(result.current.selectedBadgeKeys).toHaveLength(4));
+
+    await act(async () => result.current.toggleBadgeSelection("bronze"));
+
+    expect(result.current.selectedBadgeKeys).toEqual([
+      "gold",
+      "winner",
+      "extra",
+      "silver",
+    ]);
   });
 
   it("is loaded right after refresh() sees the email is now verified", async () => {

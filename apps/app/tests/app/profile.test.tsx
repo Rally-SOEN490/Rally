@@ -1,10 +1,12 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
-import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
+import { useState } from "react";
 import Profile from "@/app/profile";
+import { ApiError, updateMyAccount, type RallyUser } from "@/lib/api";
 import { removeMyProfilePhoto, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
@@ -13,10 +15,12 @@ jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() 
 jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: null }),
 }));
+jest.mock("expo-linking", () => ({ openURL: jest.fn() }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
   removeMyProfilePhoto: jest.fn(),
+  updateMyAccount: jest.fn(),
   uploadMyProfilePhoto: jest.fn(),
 }));
 
@@ -25,6 +29,7 @@ const account = {
   id: "1",
   displayName: "Sam Lee",
   profilePhotoUrl: null,
+  lookingForTeam: false,
   createdAt: "2026-10-17T12:00:00.000Z",
   badges: [
     {
@@ -67,6 +72,16 @@ const account = {
       receivedCount: 17,
       awardedAt: "2026-10-17T12:00:00.000Z",
     },
+    {
+      key: "defender",
+      name: "Defender",
+      tier: "Bronze",
+      description: "Placeholder defensive effort medal",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 16,
+      awardedAt: "2026-10-17T12:00:00.000Z",
+    },
   ],
 };
 
@@ -74,6 +89,7 @@ beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
   jest.mocked(removeMyProfilePhoto).mockResolvedValue({ ...account, profilePhotoUrl: null });
   jest.mocked(uploadMyProfilePhoto).mockResolvedValue(account);
+  jest.mocked(updateMyAccount).mockResolvedValue(account);
 });
 
 it("shows the name saved in Rally's database, like Home does", async () => {
@@ -205,6 +221,27 @@ it("keeps the photo actions available and shows an error when removal fails", as
   expect(screen.getByRole("button", { name: "Update photo" })).toBeOnTheScreen();
 });
 
+it("opens settings when Facebook is not connected", async () => {
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Facebook (not connected)" }));
+
+  expect(router.push).toHaveBeenCalledWith("/settings");
+});
+
+it("opens a connected Facebook profile", async () => {
+  const { openURL } = jest.requireMock("expo-linking") as { openURL: jest.Mock };
+  const facebookUrl = "https://facebook.com/sam";
+  jest.mocked(useSession).mockReturnValue(
+    fakeSession({ user, account: { ...account, facebookUrl } }),
+  );
+  openURL.mockResolvedValue(undefined);
+
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("link", { name: "Facebook profile" }));
+
+  expect(openURL).toHaveBeenCalledWith(facebookUrl);
+});
+
 it("shows badges saved on the Rally account", async () => {
   await render(<Profile />);
 
@@ -218,10 +255,28 @@ it("shows badges saved on the Rally account", async () => {
   expect(screen.getByText("Competitor")).toBeOnTheScreen();
 });
 
-it("places badges in a horizontal scroll area", async () => {
+it("caps the awards section at four badges without horizontal scrolling", async () => {
   await render(<Profile />);
 
-  expect(screen.getByLabelText("Scrollable awards")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Awards")).toBeOnTheScreen();
+  expect(screen.queryByLabelText("Scrollable awards")).not.toBeOnTheScreen();
+  expect(screen.getAllByRole("button", { name: /badge$/ })).toHaveLength(4);
+  expect(screen.queryByLabelText("Defender badge")).not.toBeOnTheScreen();
+});
+
+it("opens the awards page from View more", async () => {
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "View more awards" }));
+
+  expect(router.push).toHaveBeenCalledWith("/awards");
+});
+
+it("shows progress for each badge", async () => {
+  await render(<Profile />);
+
+  expect(screen.getByLabelText("Champion progress")).toBeOnTheScreen();
+  expect(screen.getByText("25/30")).toBeOnTheScreen();
+  expect(screen.getByLabelText("Competitor progress")).toBeOnTheScreen();
 });
 
 it("uses the badge tier color for each image border", async () => {
@@ -283,4 +338,286 @@ it("ignores the tabs that aren't built yet", async () => {
 
   expect(router.replace).not.toHaveBeenCalled();
   expect(router.push).not.toHaveBeenCalled();
+});
+
+describe("Profile thought", () => {
+  const showAccount = (initial: RallyUser) =>
+    jest.mocked(useSession).mockImplementation(function useFakeSession() {
+      const [shown, setShown] = useState(initial);
+      return fakeSession({ user, account: shown, setAccount: setShown });
+    });
+
+  it("opens the composer and rejects an empty message", async () => {
+    showAccount(account);
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    expect(screen.getByText("Share a thought")).toBeOnTheScreen();
+    expect(screen.getByText("0/180")).toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Share thought" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Write a thought before sharing.");
+    expect(updateMyAccount).not.toHaveBeenCalled();
+  });
+
+  it("closes the composer and opens profile photo selection", async () => {
+    showAccount(account);
+    const ImagePicker = require("expo-image-picker");
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    await userEvent.press(screen.getByRole("button", { name: "Close thought editor" }));
+    expect(screen.queryByText("Share a thought")).not.toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+  });
+
+  it("saves a message and shows it on the profile", async () => {
+    showAccount(account);
+    const saved = { ...account, thoughtText: "Ready for the next rally." };
+    jest.mocked(updateMyAccount).mockResolvedValueOnce(saved);
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    fireEvent.changeText(screen.getByLabelText("Thought"), "  Ready for the next rally.  ");
+    await userEvent.press(screen.getByRole("button", { name: "Share thought" }));
+
+    await waitFor(() => expect(screen.getByText("Ready for the next rally.")).toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, {
+      thoughtText: "Ready for the next rally.",
+    });
+    expect(screen.getByRole("button", { name: "Edit thought" })).toBeOnTheScreen();
+  });
+
+  it("keeps Enter as a newline in the thought editor", async () => {
+    showAccount(account);
+    const saved = { ...account, thoughtText: "First line.\nSecond line." };
+    jest.mocked(updateMyAccount).mockResolvedValueOnce(saved);
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    const input = screen.getByLabelText("Thought");
+    expect(input.props.submitBehavior).toBe("newline");
+
+    fireEvent.changeText(input, "First line.\nSecond line.");
+    await userEvent.press(screen.getByRole("button", { name: "Share thought" }));
+
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenCalledWith(user, {
+        thoughtText: "First line.\nSecond line.",
+      }),
+    );
+  });
+
+  it("shows a server error when saving fails", async () => {
+    showAccount(account);
+    jest.mocked(updateMyAccount).mockRejectedValueOnce(
+      new ApiError(0, "Can't reach the Rally server."),
+    );
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    fireEvent.changeText(screen.getByLabelText("Thought"), "A thought worth sharing.");
+    await userEvent.press(screen.getByRole("button", { name: "Share thought" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(screen.getByText("Share a thought")).toBeOnTheScreen();
+  });
+
+  it("deletes an existing message", async () => {
+    showAccount({ ...account, thoughtText: "Old message" });
+    jest.mocked(updateMyAccount).mockResolvedValueOnce({ ...account, thoughtText: null });
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Edit thought" }));
+    await userEvent.press(screen.getByRole("button", { name: "Delete thought" }));
+
+    await waitFor(() => expect(screen.queryByText("Old message")).not.toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, { thoughtText: null });
+    expect(screen.getByRole("button", { name: "Add a thought" })).toBeOnTheScreen();
+  });
+
+  it("shows an error when deleting a message fails", async () => {
+    showAccount({ ...account, thoughtText: "Old message" });
+    jest.mocked(updateMyAccount).mockRejectedValueOnce(
+      new ApiError(0, "Can't reach the Rally server."),
+    );
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Edit thought" }));
+    await userEvent.press(screen.getByRole("button", { name: "Delete thought" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(screen.getByText("Edit your thought")).toBeOnTheScreen();
+  });
+});
+
+describe("Looking for a team", () => {
+  // Like the real session, setAccount re-renders the screen.
+  const showAccount = (initial: RallyUser) =>
+    jest.mocked(useSession).mockImplementation(function useFakeSession() {
+      const [shown, setShown] = useState(initial);
+      return fakeSession({ user, account: shown, setAccount: setShown });
+    });
+
+  const toggle = () => screen.getByRole("switch", { name: "Looking for a team" });
+  const badge = () => screen.queryByTestId("looking-for-team-badge");
+  // Resolves once saving has finished.
+  const flip = (value: boolean) => fireEvent(toggle(), "valueChange", value);
+
+  const holdSave = () => {
+    let finish!: (saved: RallyUser) => void;
+    jest
+      .mocked(updateMyAccount)
+      .mockReturnValueOnce(new Promise<RallyUser>((resolve) => (finish = resolve)));
+    return finish;
+  };
+
+  it("is off, with no badge, when it was saved off", async () => {
+    showAccount(account);
+    await render(<Profile />);
+
+    expect(toggle().props.value).toBe(false);
+    expect(badge()).not.toBeOnTheScreen();
+  });
+
+  it("is on, with a badge, when it was saved on", async () => {
+    showAccount({ ...account, lookingForTeam: true });
+    await render(<Profile />);
+
+    expect(toggle().props.value).toBe(true);
+    expect(badge()).toBeOnTheScreen();
+  });
+
+  it("shows it's saving, then shows the badge once the server confirms", async () => {
+    showAccount(account);
+    const finishSaving = holdSave();
+    await render(<Profile />);
+
+    const flipped = flip(true);
+
+    await waitFor(() => expect(screen.getByLabelText("Saving")).toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, { lookingForTeam: true });
+    expect(toggle().props.value).toBe(true);
+    expect(toggle()).toBeDisabled();
+    expect(toggle()).toBeBusy();
+    expect(badge()).not.toBeOnTheScreen();
+
+    await act(async () => {
+      finishSaving({ ...account, lookingForTeam: true });
+      await flipped;
+    });
+
+    await waitFor(() => expect(badge()).toBeOnTheScreen());
+    expect(toggle().props.value).toBe(true);
+    expect(toggle()).toBeEnabled();
+    expect(screen.queryByLabelText("Saving")).not.toBeOnTheScreen();
+  });
+
+  it("hides the badge when turned off", async () => {
+    showAccount({ ...account, lookingForTeam: true });
+    jest.mocked(updateMyAccount).mockResolvedValueOnce(account);
+    await render(<Profile />);
+
+    await flip(false);
+
+    await waitFor(() => expect(badge()).not.toBeOnTheScreen());
+    expect(updateMyAccount).toHaveBeenCalledWith(user, { lookingForTeam: false });
+    expect(toggle().props.value).toBe(false);
+  });
+
+  it("goes back and explains when saving fails, and can try again", async () => {
+    showAccount(account);
+    jest
+      .mocked(updateMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."))
+      .mockResolvedValueOnce({ ...account, lookingForTeam: true });
+    await render(<Profile />);
+
+    await flip(true);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(toggle().props.value).toBe(false);
+    expect(toggle()).toBeEnabled();
+    expect(badge()).not.toBeOnTheScreen();
+
+    await flip(true);
+
+    await waitFor(() => expect(badge()).toBeOnTheScreen());
+    expect(toggle().props.value).toBe(true);
+    expect(screen.queryByRole("alert")).not.toBeOnTheScreen();
+  });
+});
+
+describe("Profile interests", () => {
+  const showAccount = (initial: RallyUser) =>
+    jest.mocked(useSession).mockImplementation(function useFakeSession() {
+      const [shown, setShown] = useState(initial);
+      return fakeSession({ user, account: shown, setAccount: setShown });
+    });
+
+  it("shows saved formats and positions as selected", async () => {
+    showAccount({
+      ...account,
+      interests: {
+        formats: ["indoor-6s"],
+        positions: ["setter"],
+      },
+    });
+    await render(<Profile />);
+
+    expect(screen.getByRole("button", { name: "Indoor 6s selected" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole("button", { name: "Setter selected" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole("button", { name: "Beach 2s" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: false }));
+  });
+
+  it("saves selected and deselected interests", async () => {
+    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    jest.mocked(updateMyAccount)
+      .mockResolvedValueOnce({
+        ...account,
+        interests: { formats: ["beach-2s"], positions: [] },
+      })
+      .mockResolvedValueOnce({
+        ...account,
+        interests: { formats: [], positions: [] },
+      });
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Beach 2s" }));
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenCalledWith(user, {
+        interests: { formats: ["beach-2s"], positions: [] },
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Beach 2s selected" })).toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Beach 2s selected" }));
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenLastCalledWith(user, {
+        interests: { formats: [], positions: [] },
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Beach 2s" })).toBeOnTheScreen();
+  });
+
+  it("restores the previous selection and shows an error when saving fails", async () => {
+    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    jest.mocked(updateMyAccount).mockRejectedValueOnce(
+      new ApiError(0, "Can't reach the Rally server."),
+    );
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Libero" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(screen.getByRole("button", { name: "Libero" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: false }));
+  });
 });

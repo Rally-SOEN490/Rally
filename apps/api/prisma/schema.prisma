@@ -1,5 +1,10 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+/*
+AI declaration:
+50% or more AI-generated
+*/
+
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 // The database tables. After editing this file, run `npm run db:migrate -- --name <what-changed>`
 // to create a migration and update the generated client.
@@ -17,17 +22,35 @@ datasource db {
 // what Rally knows about the person. Field names are camelCase in TypeScript and
 // snake_case in the database.
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  firebaseUid    String   @unique @map("firebase_uid")
-  displayName    String   @map("display_name")
+  id              String   @id @default(uuid()) @db.Uuid
+  firebaseUid     String   @unique @map("firebase_uid")
+  displayName     String   @map("display_name")
   profilePhotoKey String? @map("profile_photo_key")
+  gender         String?
+  instagramUrl   String?  @map("instagram_url")
+  facebookUrl    String?  @map("facebook_url")
+  thoughtText    String?  @map("thought_text")
   // When the person confirmed at sign-up that they are 14 or older.
   ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
+  lookingForTeam Boolean  @default(false) @map("looking_for_team")
+  shownBadgeKeys String[] @default([]) @map("shown_badges")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
+  interests      UserInterest[]
 
   @@map("users")
+}
+
+model UserInterest {
+  userId    String   @map("user_id") @db.Uuid
+  category  String
+  key       String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, category, key])
+  @@index([category, key])
+  @@map("user_interests")
 }
 
 model BadgeType {

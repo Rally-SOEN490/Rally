@@ -1,5 +1,8 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -21,7 +24,14 @@ import {
   updatePassword,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import { apiErrorMessage, deleteMyAccount } from "@/lib/api";
+import {
+  apiErrorMessage,
+  deleteMyAccount,
+  getMyGender,
+  updateMyAccount,
+  saveMyGender,
+  type Gender,
+} from "@/lib/api";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
@@ -50,13 +60,20 @@ const notify = (title: string, message: string) => {
 };
 
 export default function Settings() {
-  const { user } = useSession();
+  const { user, account, setAccount } = useSession();
   const [announcementToggles, setAnnouncementToggles] = useState({
     tournamentAnnouncements: true,
     joinRequests: true,
   });
   const [language, setLanguage] = useState<"EN" | "FR">("EN");
   const [colorBlindMode, setColorBlindMode] = useState(false);
+  const [gender, setGender] = useState<Gender | null>(null);
+  const [genderLoading, setGenderLoading] = useState(true);
+  const [genderSaving, setGenderSaving] = useState(false);
+  const [instagramUrl, setInstagramUrl] = useState(account?.instagramUrl ?? "");
+  const [instagramSaving, setInstagramSaving] = useState(false);
+  const [facebookUrl, setFacebookUrl] = useState(account?.facebookUrl ?? "");
+  const [facebookSaving, setFacebookSaving] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
   const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
@@ -70,6 +87,67 @@ export default function Settings() {
   const [confirmValue, setConfirmValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    getMyGender(user)
+      .then(({ gender: savedGender }) => setGender(savedGender))
+      .catch((error) => notify("Unable to load gender", apiErrorMessage(error)))
+      .finally(() => setGenderLoading(false));
+  }, [user]);
+
+  const updateGender = async (value: Gender | null) => {
+    if (!user || genderSaving) return;
+    const previous = gender;
+    setGender(value);
+    setGenderSaving(true);
+    try {
+      await saveMyGender(user, value);
+    } catch (error) {
+      setGender(previous);
+      notify("Unable to save gender", apiErrorMessage(error));
+    } finally {
+      setGenderSaving(false);
+    }
+  };
+
+  const saveInstagram = async () => {
+    if (!user || instagramSaving) return;
+    const value = instagramUrl.trim();
+    if (value && !/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._-]+\/?(?:[?#].*)?$/.test(value)) {
+      notify("Invalid Instagram link", "Use a link like https://instagram.com/yourusername.");
+      return;
+    }
+
+    setInstagramSaving(true);
+    try {
+      setAccount(await updateMyAccount(user, { instagramUrl: value || null }));
+      notify("Social media saved", value ? "Your Instagram link is now shown on your profile." : "Your Instagram link was removed.");
+    } catch (error) {
+      notify("Unable to save Instagram", apiErrorMessage(error));
+    } finally {
+      setInstagramSaving(false);
+    }
+  };
+
+  const saveFacebook = async () => {
+    if (!user || facebookSaving) return;
+    const value = facebookUrl.trim();
+    if (value && !/^https:\/\/(www\.)?facebook\.com\/[A-Za-z0-9._-]+\/?(?:[?#].*)?$/.test(value)) {
+      notify("Invalid Facebook link", "Use a link like https://facebook.com/yourusername.");
+      return;
+    }
+
+    setFacebookSaving(true);
+    try {
+      setAccount(await updateMyAccount(user, { facebookUrl: value || null }));
+      notify("Social media saved", value ? "Your Facebook link is now shown on your profile." : "Your Facebook link was removed.");
+    } catch (error) {
+      notify("Unable to save Facebook", apiErrorMessage(error));
+    } finally {
+      setFacebookSaving(false);
+    }
+  };
 
   const closeEdit = () => {
     setEditing(null);
@@ -199,7 +277,7 @@ export default function Settings() {
             onPress={() => setEditing("email")}
           >
             <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
+              <View style={[styles.iconBadge, styles.socialIconBadge]}>
                 <Text style={styles.iconText}>✉️</Text>
               </View>
               <View style={styles.rowTextStack}>
@@ -212,7 +290,7 @@ export default function Settings() {
 
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
+              <View style={[styles.iconBadge, styles.socialIconBadge]}>
                 <Text style={styles.iconText}>🔒</Text>
               </View>
               <View style={styles.rowTextStack}>
@@ -226,6 +304,96 @@ export default function Settings() {
               onPress={() => setEditing("password")}
             >
               <Text style={styles.inlineActionText}>Change</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Co-ed roster information</Text>
+          <Text style={styles.privacyNote}>
+            Optional. This is private and is not shown on your profile.
+          </Text>
+          <View style={styles.genderOptions}>
+            {(["male", "female"] as const).map((option) => (
+              <Pressable
+                key={option}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: gender === option, disabled: genderLoading || genderSaving }}
+                accessibilityLabel={option === "male" ? "Male" : "Female"}
+                disabled={genderLoading || genderSaving}
+                onPress={() => updateGender(option)}
+                style={[styles.genderOption, gender === option && styles.genderOptionActive]}
+              >
+                <Text style={[styles.genderOptionText, gender === option && styles.genderOptionTextActive]}>
+                  {option === "male" ? "Male" : "Female"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {gender !== null && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear gender"
+              disabled={genderSaving}
+              onPress={() => updateGender(null)}
+              style={styles.clearGender}
+            >
+              <Text style={styles.clearGenderText}>Prefer not to say</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Social media</Text>
+          <Text style={styles.privacyNote}>Optional links shown on your public profile.</Text>
+          <View style={styles.socialInputRow}>
+            <View style={[styles.iconBadge, styles.socialIconBadge]}>
+              <Text style={styles.iconText}>◎</Text>
+            </View>
+            <TextInput
+              accessibilityLabel="Instagram link"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onChangeText={setInstagramUrl}
+              placeholder="https://instagram.com/yourusername"
+              placeholderTextColor="#9aa39d"
+              style={styles.socialInput}
+              value={instagramUrl}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save Instagram link"
+              disabled={instagramSaving}
+              onPress={saveInstagram}
+              style={[styles.socialSaveButton, instagramSaving && styles.disabledButton]}
+            >
+              <Text style={styles.socialSaveText}>{instagramSaving ? "Saving…" : "Save link"}</Text>
+            </Pressable>
+          </View>
+          <View style={[styles.socialInputRow, styles.socialInputRowSpaced]}>
+            <View style={[styles.iconBadge, styles.socialIconBadge]}>
+              <Text style={styles.facebookMark}>f</Text>
+            </View>
+            <TextInput
+              accessibilityLabel="Facebook link"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onChangeText={setFacebookUrl}
+              placeholder="https://facebook.com/yourusername"
+              placeholderTextColor="#9aa39d"
+              style={styles.socialInput}
+              value={facebookUrl}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save Facebook link"
+              disabled={facebookSaving}
+              onPress={saveFacebook}
+              style={[styles.socialSaveButton, facebookSaving && styles.disabledButton]}
+            >
+              <Text style={styles.socialSaveText}>{facebookSaving ? "Saving…" : "Save link"}</Text>
             </Pressable>
           </View>
         </View>
@@ -580,6 +748,99 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#687872",
     marginTop: 2,
+  },
+  privacyNote: {
+    fontSize: 12,
+    color: "#687872",
+    marginBottom: 10,
+  },
+  socialInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f7f5f2",
+    borderWidth: 1,
+    borderColor: "#dfe5df",
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    minHeight: 52,
+    gap: 2,
+    shadowColor: "#12382d",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  socialInput: {
+    flex: 1,
+    minWidth: 0,
+    color: "#12382d",
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    fontSize: 12,
+  },
+  socialIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    marginRight: 0,
+  },
+  socialInputRowSpaced: {
+    marginTop: 12,
+  },
+  facebookMark: {
+    color: "#1d5c4d",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  socialSaveButton: {
+    backgroundColor: "#12382d",
+    borderRadius: 9,
+    marginLeft: 8,
+    minWidth: 74,
+    alignItems: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 9,
+  },
+  socialSaveText: {
+    color: "#f5f3ef",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  genderOptions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  genderOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  genderOptionActive: {
+    borderColor: "#12382d",
+    backgroundColor: "#dfe9e4",
+  },
+  genderOptionText: {
+    color: "#5a675f",
+    fontWeight: "700",
+  },
+  genderOptionTextActive: {
+    color: "#12382d",
+  },
+  clearGender: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+  },
+  clearGenderText: {
+    color: "#687872",
+    textDecorationLine: "underline",
   },
   rowChevron: {
     fontSize: 26,

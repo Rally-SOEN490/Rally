@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { fireEvent, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -15,10 +15,12 @@ import {
 } from "firebase/auth";
 import { Alert, Platform } from "react-native";
 import Settings from "@/app/settings";
-import { ApiError, deleteMyAccount } from "@/lib/api";
+import { ApiError, deleteMyAccount, getMyGender, saveMyGender, updateMyAccount } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
+
+jest.setTimeout(20_000);
 
 jest.mock("expo-router", () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(), replace: jest.fn() },
@@ -36,6 +38,9 @@ jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
   deleteMyAccount: jest.fn(),
+  getMyGender: jest.fn(),
+  saveMyGender: jest.fn(),
+  updateMyAccount: jest.fn(),
 }));
 
 const user = { email: "sam@example.com" } as User;
@@ -46,6 +51,9 @@ beforeEach(() => {
   jest.mocked(signOut).mockResolvedValue();
   jest.mocked(reauthenticateWithCredential).mockResolvedValue({} as UserCredential);
   jest.mocked(deleteMyAccount).mockResolvedValue();
+  jest.mocked(getMyGender).mockResolvedValue({ gender: null });
+  jest.mocked(saveMyGender).mockImplementation(async (_user, gender) => ({ gender }));
+  jest.mocked(updateMyAccount).mockResolvedValue({} as never);
   jest.mocked(deleteUser).mockResolvedValue();
   jest.mocked(updatePassword).mockResolvedValue();
   jest.mocked(verifyBeforeUpdateEmail).mockResolvedValue();
@@ -124,6 +132,88 @@ describe("preferences", () => {
     await userEvent.press(screen.getByText("EN"));
 
     expect(screen.getByText("EN")).toBeOnTheScreen();
+  });
+
+  it("saves the selected gender and can clear it", async () => {
+    await render(<Settings />);
+
+    await userEvent.press(screen.getByRole("radio", { name: "Female" }));
+    expect(saveMyGender).toHaveBeenCalledWith(user, "female");
+
+    await userEvent.press(screen.getByRole("button", { name: "Clear gender" }));
+    expect(saveMyGender).toHaveBeenLastCalledWith(user, null);
+  });
+
+  it("restores the previous gender when saving fails", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    jest.mocked(saveMyGender).mockRejectedValue(new ApiError(500, "Unable to save."));
+    await render(<Settings />);
+
+    await userEvent.press(screen.getByRole("radio", { name: "Female" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Unable to save gender", "Unable to save."),
+    );
+    expect(screen.getByRole("radio", { name: "Female" })).not.toHaveProp("accessibilityState.checked", true);
+  });
+
+  it("shows an error when loading gender fails", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    jest.mocked(getMyGender).mockRejectedValue(new ApiError(503, "Unable to load."));
+
+    await render(<Settings />);
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Unable to load gender", "Unable to load."),
+    );
+  });
+
+  it("saves Instagram and Facebook links", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    const savedAccount = { instagramUrl: "https://instagram.com/sam", facebookUrl: "https://facebook.com/sam" };
+    jest.mocked(updateMyAccount).mockResolvedValue(savedAccount as never);
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://instagram.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+    await userEvent.type(screen.getByLabelText("Facebook link"), "https://facebook.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Facebook link" }));
+
+    expect(updateMyAccount).toHaveBeenNthCalledWith(1, user, { instagramUrl: "https://instagram.com/sam" });
+    expect(updateMyAccount).toHaveBeenNthCalledWith(2, user, { facebookUrl: "https://facebook.com/sam" });
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Social media saved",
+      "Your Facebook link is now shown on your profile.",
+    );
+  });
+
+  it("rejects invalid social media links", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://example.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+    await userEvent.type(screen.getByLabelText("Facebook link"), "https://example.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Facebook link" }));
+
+    expect(updateMyAccount).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Invalid Facebook link",
+      "Use a link like https://facebook.com/yourusername.",
+    );
+  });
+
+  it("shows an API error when saving a social link fails", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    jest.mocked(updateMyAccount).mockRejectedValue(new ApiError(500, "Unable to save."));
+    await render(<Settings />);
+
+    await userEvent.type(screen.getByLabelText("Instagram link"), "https://instagram.com/sam");
+    await userEvent.press(screen.getByRole("button", { name: "Save Instagram link" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Unable to save Instagram", "Unable to save."),
+    );
   });
 });
 

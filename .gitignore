@@ -15,10 +15,5 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Signed administrative records may contain personal information.
-admin/*.pdf
-admin/*.png
-admin/*.jpg
-admin/*.jpeg
-admin/*.tif
-admin/*.tiff
+# Local agent scratch files; shared .agents/ files stay versioned.
+/.agents/local/

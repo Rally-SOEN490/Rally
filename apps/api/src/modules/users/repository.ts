@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { Database } from "../../db.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
@@ -10,6 +10,26 @@ export type NewUser = {
   ageConfirmedAt: Date;
 };
 
+export type ProfileChanges = {
+  displayName?: string;
+  profilePhotoKey?: string | null;
+  lookingForTeam?: boolean;
+  shownBadgeKeys?: string[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  thoughtText?: string | null;
+  interests?: {
+    formats: string[];
+    positions: string[];
+  };
+};
+
+const normalizeProfileThoughtText = (thoughtText: string | null | undefined) => {
+  if (thoughtText === null || thoughtText === undefined) return thoughtText;
+  const trimmed = thoughtText.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
 const autoAwardedBadgeKeys = badgeCatalog
   .filter((badge) => badge.autoAward)
   .map((badge) => badge.key);
@@ -17,6 +37,7 @@ const autoAwardedBadgeKeys = badgeCatalog
 // All database reads and writes for users go through here.
 export const createUserRepository = (db: Database) => {
   const includeBadges = {
+    interests: true,
     badges: {
       orderBy: [
         { receivedCount: "desc" as const },
@@ -63,6 +84,11 @@ export const createUserRepository = (db: Database) => {
   };
 
   return {
+    findAllExceptFirebaseUid: (firebaseUid: string) =>
+      db.user.findMany({
+        where: { firebaseUid: { not: firebaseUid } },
+        include: includeBadges,
+      }),
     findByFirebaseUid: async (firebaseUid: string) => {
       const user = await db.user.findUnique({ where: { firebaseUid } });
       if (!user) return null;
@@ -87,15 +113,53 @@ export const createUserRepository = (db: Database) => {
       });
     },
 
-    updateByFirebaseUid: (firebaseUid: string, data: {
-      displayName?: string;
-      profilePhotoKey?: string | null;
-    }) =>
-      db.user.update({ where: { firebaseUid }, data }),
+    updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
+      const normalizedChanges = {
+        ...changes,
+        ...(changes.thoughtText !== undefined
+          ? { thoughtText: normalizeProfileThoughtText(changes.thoughtText) }
+          : {}),
+      };
+
+      const { interests, ...userChanges } = normalizedChanges;
+      const user = await db.user.findUnique({ where: { firebaseUid }, select: { id: true } });
+      if (!user) return null;
+      const updatedUser = await db.$transaction(async (transaction) => {
+        await transaction.user.update({ where: { id: user.id }, data: userChanges });
+        if (interests) {
+          await transaction.userInterest.deleteMany({ where: { userId: user.id } });
+          await transaction.userInterest.createMany({
+            data: [
+              ...interests.formats.map((key) => ({ userId: user.id, category: "format", key })),
+              ...interests.positions.map((key) => ({ userId: user.id, category: "position", key })),
+            ],
+          });
+        }
+        return transaction.user.findUnique({ where: { id: user.id }, include: includeBadges });
+      });
+      return updatedUser;
+    },
 
     // Does nothing if the user is already gone, so retrying a deletion is safe.
     deleteByFirebaseUid: (firebaseUid: string) =>
       db.user.deleteMany({ where: { firebaseUid } }),
+
+    getGender: async (firebaseUid: string) => {
+      const user = await db.user.findUnique({
+        where: { firebaseUid },
+        select: { gender: true },
+      });
+      return user?.gender ?? null;
+    },
+
+    setGender: async (firebaseUid: string, gender: string | null) => {
+      const user = await db.user.update({
+        where: { firebaseUid },
+        data: { gender },
+        select: { gender: true },
+      });
+      return user.gender;
+    },
   };
 };
 

@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { authHeader, buildTestApp, testDb } from "./helpers.ts";
@@ -14,6 +14,56 @@ afterAll(async () => {
 const register = (uid: string, body: object) =>
   app.inject({ method: "POST", url: "/users/me", headers: authHeader(uid), payload: body });
 
+describe("GET /users", () => {
+  test("returns every other user with only directory fields", async () => {
+    await register("zoe", { displayName: "Zoe", ageConfirmed: true });
+    await register("self", { displayName: "Mira", ageConfirmed: true });
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await app.inject({
+      method: "PATCH",
+      url: "/users/me/gender",
+      headers: authHeader("alice"),
+      payload: { gender: "female" },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/users",
+      headers: authHeader("self"),
+    });
+    const users = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(users).toHaveLength(2);
+    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual(
+      expect.arrayContaining(["Alice", "Zoe"]),
+    );
+    for (const user of users) {
+      expect(Object.keys(user).sort()).toEqual([
+        "badges",
+        "createdAt",
+        "displayName",
+        "id",
+        "lookingForTeam",
+      ]);
+    }
+    expect(users.find((user: { displayName: string }) => user.displayName === "Alice").badges).toEqual(
+      (await app.inject({
+        method: "GET",
+        url: "/users/me",
+        headers: authHeader("alice"),
+      })).json().badges,
+    );
+  });
+
+  test("rejects a request without a token", async () => {
+    const response = await app.inject({ method: "GET", url: "/users" });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+});
+
 describe("POST /users/me", () => {
   test("saves the logged-in user", async () => {
     const response = await register("alice", { displayName: " Alice ", ageConfirmed: true });
@@ -24,6 +74,12 @@ describe("POST /users/me", () => {
       key: "champion",
       name: "Champion",
       receivedCount: 1,
+    }));
+    expect(response.json().badges).toContainEqual(expect.objectContaining({
+      key: "streak",
+      availableTiers: ["Bronze"],
+      isComplete: false,
+      nextTierThreshold: null,
     }));
     expect(response.json().badges).toHaveLength(12);
     expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
@@ -42,10 +98,22 @@ describe("POST /users/me", () => {
       "badges",
       "createdAt",
       "displayName",
+      "facebookUrl",
       "id",
+      "instagramUrl",
+      "interests",
+      "lookingForTeam",
       "profilePhotoUrl",
+      "shownBadgeKeys",
+      "thoughtText",
     ]);
     expect(response.json().profilePhotoUrl).toBeNull();
+  });
+
+  test("starts with 'looking for a team' turned off", async () => {
+    const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    expect(response.json().lookingForTeam).toBe(false);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -117,6 +185,94 @@ describe("GET /users/me", () => {
     const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
 
     expect(response.statusCode).toBe(404);
+  });
+
+  describe("gender settings", () => {
+    test("reads and updates only the logged-in user's gender", async () => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      const initial = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+      });
+      expect(initial.statusCode).toBe(200);
+      expect(initial.json()).toEqual({ gender: null });
+
+      const update = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "female" },
+      });
+      expect(update.statusCode).toBe(200);
+      expect(update.json()).toEqual({ gender: "female" });
+
+      const profile = await app.inject({
+        method: "GET",
+        url: "/users/me",
+        headers: authHeader("alice"),
+      });
+      expect(profile.json()).not.toHaveProperty("gender");
+
+      const bobGender = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("bob"),
+      });
+      expect(bobGender.json()).toEqual({ gender: null });
+    });
+
+    test("returns 404 when the logged-in user has no account", async () => {
+      const read = await app.inject({
+        method: "GET",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+      });
+      const update = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "female" },
+      });
+
+      expect(read.statusCode).toBe(404);
+      expect(update.statusCode).toBe(404);
+    });
+
+    test.each(["other", 1])("rejects unsupported gender %s", async (gender) => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    test("allows clearing gender", async () => {
+      await register("alice", { displayName: "Alice", ageConfirmed: true });
+      await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: "male" },
+      });
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/users/me/gender",
+        headers: authHeader("alice"),
+        payload: { gender: null },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ gender: null });
+    });
   });
 
   test("returns the logged-in user, not someone else", async () => {
@@ -259,11 +415,19 @@ describe("GET /users/me", () => {
 });
 
 describe("PATCH /users/me", () => {
-  const update = (uid: string, body: object) =>
-    app.inject({ method: "PATCH", url: "/users/me", headers: authHeader(uid), payload: body });
+  const update = (uid: string, body: unknown) =>
+    app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: { ...authHeader(uid), "content-type": "application/json" },
+      payload: JSON.stringify(body),
+    });
+  const getMe = (uid: string) =>
+    app.inject({ method: "GET", url: "/users/me", headers: authHeader(uid) });
+
+  beforeEach(() => register("alice", { displayName: "Alice", ageConfirmed: true }));
 
   test("updates the logged-in user's display name", async () => {
-    await register("alice", { displayName: "Alice", ageConfirmed: true });
     await register("bob", { displayName: "Bob", ageConfirmed: true });
 
     const response = await update("alice", { displayName: " Alice Smith " });
@@ -274,7 +438,7 @@ describe("PATCH /users/me", () => {
   });
 
   test("returns 404 when the Rally account does not exist", async () => {
-    const response = await update("alice", { displayName: "Alice" });
+    const response = await update("missing", { displayName: "Alice" });
 
     expect(response.statusCode).toBe(404);
   });
@@ -283,18 +447,238 @@ describe("PATCH /users/me", () => {
     ["a blank display name", { displayName: "  " }],
     ["a display name over 100 characters", { displayName: "a".repeat(101) }],
   ])("rejects %s", async (_, body) => {
-    await register("alice", { displayName: "Alice", ageConfirmed: true });
-
     const response = await update("alice", body);
 
     expect(response.statusCode).toBe(400);
+  });
+
+  test("turns 'looking for a team' on and off", async () => {
+    const on = await update("alice", { lookingForTeam: true });
+
+    expect(on.statusCode).toBe(200);
+    expect(on.json()).toMatchObject({ displayName: "Alice", lookingForTeam: true });
+
+    const off = await update("alice", { lookingForTeam: false });
+
+    expect(off.statusCode).toBe(200);
+    expect(off.json().lookingForTeam).toBe(false);
+  });
+
+  test("saves an Instagram link and returns it on the profile", async () => {
+    const updated = await update("alice", { instagramUrl: "https://instagram.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().instagramUrl).toBe("https://instagram.com/alice");
+    expect((await getMe("alice")).json().instagramUrl).toBe("https://instagram.com/alice");
+  });
+
+  test("saves a Facebook link and returns it on the profile", async () => {
+    const updated = await update("alice", { facebookUrl: "https://facebook.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().facebookUrl).toBe("https://facebook.com/alice");
+    expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
+  });
+
+  test("saves formats and positions without duplicate rows", async () => {
+    const updated = await update("alice", {
+      interests: {
+        formats: ["indoor-6s", "beach-2s"],
+        positions: ["libero", "setter"],
+      },
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().interests).toEqual({
+      formats: ["indoor-6s", "beach-2s"],
+      positions: ["libero", "setter"],
+    });
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(await testDb.userInterest.findMany({
+      where: { userId: saved.id },
+      orderBy: [{ category: "asc" }, { key: "asc" }],
+    })).toEqual([
+      { userId: saved.id, category: "format", key: "beach-2s" },
+      { userId: saved.id, category: "format", key: "indoor-6s" },
+      { userId: saved.id, category: "position", key: "libero" },
+      { userId: saved.id, category: "position", key: "setter" },
+    ]);
+
+    const replaced = await update("alice", {
+      interests: { formats: ["9-man"], positions: ["outside"] },
+    });
+    expect(replaced.json().interests).toEqual({
+      formats: ["9-man"],
+      positions: ["outside"],
+    });
+    expect(await testDb.userInterest.count({ where: { userId: saved.id } })).toBe(2);
+  });
+
+  test.each([
+    { interests: { formats: ["beach-4s"], positions: [] } },
+    { interests: { formats: [], positions: ["defensive-specialist"] } },
+    { interests: { formats: ["indoor-6s", "indoor-6s"], positions: [] } },
+  ])("rejects invalid interest payloads: %j", async (body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("trims whitespace before saving and clears blank profile thoughts", async () => {
+    const updated = await update("alice", { thoughtText: "  Bring good energy.  " });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({
+      thoughtText: "Bring good energy.",
+    });
+    expect((await getMe("alice")).json().thoughtText).toBe("Bring good energy.");
+
+    const cleared = await update("alice", { thoughtText: "   " });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().thoughtText).toBeNull();
+
+    const clearedAgain = await update("alice", { thoughtText: null });
+    expect(clearedAgain.json().thoughtText).toBeNull();
+  });
+
+  test("accepts multiline profile thoughts", async () => {
+    const response = await update("alice", { thoughtText: "First line.\nSecond line." });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().thoughtText).toBe("First line.\nSecond line.");
+  });
+
+  test.each([
+    "instagram.com/alice",
+    "https://example.com/alice",
+    "javascript:alert(1)",
+  ])("rejects an invalid Instagram link: %s", async (instagramUrl) => {
+    const response = await update("alice", { instagramUrl });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test.each([
+    "facebook.com/alice",
+    "https://example.com/alice",
+    "javascript:alert(1)",
+  ])("rejects an invalid Facebook link: %s", async (facebookUrl) => {
+    const response = await update("alice", { facebookUrl });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("allows removing an Instagram link", async () => {
+    await update("alice", { instagramUrl: "https://www.instagram.com/alice/" });
+
+    const response = await update("alice", { instagramUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().instagramUrl).toBeNull();
+  });
+
+  test("allows removing a Facebook link", async () => {
+    await update("alice", { facebookUrl: "https://www.facebook.com/alice/" });
+
+    const response = await update("alice", { facebookUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().facebookUrl).toBeNull();
+  });
+
+  test("saves shown badges and returns them on later account loads", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const updated = await update("alice", { shownBadgeKeys: ["champion", "winner"] });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().shownBadgeKeys).toEqual(["champion", "winner"]);
+    expect((await getMe("alice")).json().shownBadgeKeys).toEqual(["champion", "winner"]);
+    expect(
+      (await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } })).shownBadgeKeys,
+    ).toEqual(["champion", "winner"]);
+  });
+
+  test("rejects more than four shown badges", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    const response = await update("alice", {
+      shownBadgeKeys: ["champion", "winner", "podium", "competitor", "defender"],
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("saves the change, so it's still there when the profile loads again", async () => {
+    const updated = await update("alice", { lookingForTeam: true });
+
+    const reloaded = (await getMe("alice")).json();
+    expect(reloaded.lookingForTeam).toBe(true);
+    expect(updated.json()).toEqual(reloaded);
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(saved.lookingForTeam).toBe(true);
+  });
+
+  test("changes only the logged-in user", async () => {
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    await update("alice", { lookingForTeam: true });
+
+    expect((await getMe("bob")).json().lookingForTeam).toBe(false);
+  });
+
+  test("returns 404 when the user has no Rally account", async () => {
+    const response = await update("bob", { lookingForTeam: true });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: "No Rally account found." });
+    expect(await testDb.user.count()).toBe(1);
+  });
+
+  test("rejects a request without a token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      payload: { lookingForTeam: true },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect((await getMe("alice")).json().lookingForTeam).toBe(false);
+  });
+
+  test("rejects an invalid token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: { authorization: "Bearer not-a-real-token" },
+      payload: { lookingForTeam: true },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  test.each([
+    ["the body is empty", {}],
+    ["the body isn't an object", [true]],
+    ["the value is null", { lookingForTeam: null }],
+    ["the value is text", { lookingForTeam: "true" }],
+    ["the value is a number", { lookingForTeam: 1 }],
+    ["it has an unsupported field", { lookingForTeam: true, unsupported: true }],
+    ["it only has an unsupported field", { unsupported: true }],
+  ])("rejects the request when %s", async (_, body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false });
   });
 
   test("rejects requests without a token", async () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/users/me",
-      payload: { displayName: "Alice" },
+      payload: { displayName: "Alice Smith" },
     });
 
     expect(response.statusCode).toBe(401);
@@ -319,6 +703,20 @@ describe("POST /users/me/photo", () => {
     const response = await app.inject({ method: "POST", url: "/users/me/photo" });
 
     expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("DELETE /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/users/me/photo",
+      headers: authHeader("alice"),
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
   });
 });
 

@@ -17,7 +17,6 @@ jobs:
             README.md
             LICENSE
             CONTRIBUTING.md
-            admin/README.md
             .github/ISSUE_TEMPLATE/epic.yml
             .github/ISSUE_TEMPLATE/user-story.yml
             .github/ISSUE_TEMPLATE/task.yml

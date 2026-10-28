@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { User } from "firebase/auth";
 import { Platform } from "react-native";
@@ -12,6 +12,15 @@ export type RallyUser = {
   id: string;
   displayName: string;
   profilePhotoUrl: string | null;
+  lookingForTeam: boolean;
+  shownBadgeKeys?: string[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  thoughtText?: string | null;
+  interests?: {
+    formats: string[];
+    positions: string[];
+  };
   createdAt: string;
   badges: {
     key: string;
@@ -20,10 +29,27 @@ export type RallyUser = {
     description: string;
     imageUrl: string | null;
     image: string;
+    availableTiers?: string[];
+    isComplete?: boolean;
+    nextTierThreshold?: number | null;
     receivedCount: number;
     awardedAt: string;
   }[];
 };
+
+export type RallyPlayer = Pick<
+  RallyUser,
+  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+>;
+
+export type Gender = "male" | "female";
+export type ProfileChanges =
+  | { lookingForTeam: boolean }
+  | { shownBadgeKeys: string[] }
+  | { instagramUrl: string | null }
+  | { facebookUrl: string | null }
+  | { thoughtText: string | null }
+  | { interests: { formats: string[]; positions: string[] } };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
@@ -118,7 +144,21 @@ export const uploadMyProfilePhoto = async (
 export const removeMyProfilePhoto = (user: User): Promise<RallyUser> =>
   request(user, "DELETE", "/users/me/photo");
 
+export const getPlayers = (user: User): Promise<RallyPlayer[]> =>
+  request(user, "GET", "/users");
+
+export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
+  request(user, "PATCH", "/users/me", changes);
+
 // Deletes the person's Rally data. Safe to call again if it was already deleted.
 export const deleteMyAccount = async (user: User): Promise<void> => {
   await request(user, "DELETE", "/users/me");
 };
+
+export const getMyGender = (user: User): Promise<{ gender: Gender | null }> =>
+  request(user, "GET", "/users/me/gender");
+
+export const saveMyGender = (
+  user: User,
+  gender: Gender | null,
+): Promise<{ gender: Gender | null }> => request(user, "PATCH", "/users/me/gender", { gender });
