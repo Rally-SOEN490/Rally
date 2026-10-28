@@ -15,6 +15,17 @@ export type ProfileChanges = {
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;
   facebookUrl?: string | null;
+  thoughtText?: string | null;
+  interests?: {
+    formats: string[];
+    positions: string[];
+  };
+};
+
+const normalizeProfileThoughtText = (thoughtText: string | null | undefined) => {
+  if (thoughtText === null || thoughtText === undefined) return thoughtText;
+  const trimmed = thoughtText.trim();
+  return trimmed.length === 0 ? null : trimmed;
 };
 
 const autoAwardedBadgeKeys = badgeCatalog
@@ -24,6 +35,7 @@ const autoAwardedBadgeKeys = badgeCatalog
 // All database reads and writes for users go through here.
 export const createUserRepository = (db: Database) => {
   const includeBadges = {
+    interests: true,
     badges: {
       orderBy: [{ receivedCount: "desc" as const }, { badgeType: { key: "asc" as const } }],
       include: { badgeType: true },
@@ -99,9 +111,30 @@ export const createUserRepository = (db: Database) => {
     },
 
     updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
-      const { count } = await db.user.updateMany({ where: { firebaseUid }, data: changes });
-      if (!count) return null;
-      return db.user.findUnique({ where: { firebaseUid }, include: includeBadges });
+      const normalizedChanges = {
+        ...changes,
+        ...(changes.thoughtText !== undefined
+          ? { thoughtText: normalizeProfileThoughtText(changes.thoughtText) }
+          : {}),
+      };
+
+      const { interests, ...userChanges } = normalizedChanges;
+      const user = await db.user.findUnique({ where: { firebaseUid }, select: { id: true } });
+      if (!user) return null;
+      const updatedUser = await db.$transaction(async (transaction) => {
+        await transaction.user.update({ where: { id: user.id }, data: userChanges });
+        if (interests) {
+          await transaction.userInterest.deleteMany({ where: { userId: user.id } });
+          await transaction.userInterest.createMany({
+            data: [
+              ...interests.formats.map((key) => ({ userId: user.id, category: "format", key })),
+              ...interests.positions.map((key) => ({ userId: user.id, category: "position", key })),
+            ],
+          });
+        }
+        return transaction.user.findUnique({ where: { id: user.id }, include: includeBadges });
+      });
+      return updatedUser;
     },
 
     // Does nothing if the user is already gone, so retrying a deletion is safe.

@@ -10,6 +10,8 @@ import type { Gender } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
+const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
+const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
 
 const noAccount = { message: "No Rally account found." };
 
@@ -73,13 +75,22 @@ export const userRoutes: FastifyPluginAsync<{
           type: "object",
           additionalProperties: false,
           propertyNames: {
-            enum: ["lookingForTeam", "shownBadgeKeys", "instagramUrl", "facebookUrl"],
+            enum: [
+              "lookingForTeam",
+              "shownBadgeKeys",
+              "instagramUrl",
+              "facebookUrl",
+              "thoughtText",
+              "interests",
+            ],
           },
           anyOf: [
             { required: ["lookingForTeam"] },
             { required: ["shownBadgeKeys"] },
             { required: ["instagramUrl"] },
             { required: ["facebookUrl"] },
+            { required: ["thoughtText"] },
+            { required: ["interests"] },
           ],
           properties: {
             lookingForTeam: { enum: [true, false] },
@@ -108,6 +119,33 @@ export const userRoutes: FastifyPluginAsync<{
                   pattern: "^https://(www\\.)?facebook\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
                 },
               ],
+            },
+            thoughtText: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 180,
+                  pattern: "^(?:\\P{Cc}|\\n|\\r)*$",
+                },
+              ],
+            },
+            interests: {
+              type: "object",
+              additionalProperties: false,
+              required: ["formats", "positions"],
+              properties: {
+                formats: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestFormats },
+                },
+                positions: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestPositions },
+                },
+              },
             },
           },
         },

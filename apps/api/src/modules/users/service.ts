@@ -12,6 +12,11 @@ export type UserResponse = {
   shownBadgeKeys: string[];
   instagramUrl: string | null;
   facebookUrl: string | null;
+  thoughtText: string | null;
+  interests: {
+    formats: string[];
+    positions: string[];
+  };
   createdAt: string;
   badges: Array<{
     key: string;
@@ -44,6 +49,13 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
   shownBadgeKeys: [...user.shownBadgeKeys],
   instagramUrl: user.instagramUrl,
   facebookUrl: user.facebookUrl,
+  thoughtText: user.thoughtText,
+  interests: {
+    formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
+    positions: user.interests
+      .filter(({ category }) => category === "position")
+      .map(({ key }) => key),
+  },
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
