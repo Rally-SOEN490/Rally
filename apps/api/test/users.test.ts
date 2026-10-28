@@ -513,6 +513,14 @@ describe("PATCH /users/me", () => {
     const clearedAgain = await update("alice", { thoughtText: null });
     expect(clearedAgain.json().thoughtText).toBeNull();
   });
+
+  test("accepts multiline profile thoughts", async () => {
+    const response = await update("alice", { thoughtText: "First line.\nSecond line." });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().thoughtText).toBe("First line.\nSecond line.");
+  });
+
   test.each([
     "instagram.com/alice",
     "https://example.com/alice",

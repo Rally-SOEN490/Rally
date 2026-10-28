@@ -126,7 +126,7 @@ export const userRoutes: FastifyPluginAsync<{
                 {
                   type: "string",
                   maxLength: 180,
-                  pattern: "^\\P{Cc}*$",
+                  pattern: "^(?:\\P{Cc}|\\n|\\r)*$",
                 },
               ],
             },

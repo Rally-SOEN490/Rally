@@ -268,6 +268,26 @@ describe("Profile thought", () => {
     expect(screen.getByRole("button", { name: "Edit thought" })).toBeOnTheScreen();
   });
 
+  it("keeps Enter as a newline in the thought editor", async () => {
+    showAccount(account);
+    const saved = { ...account, thoughtText: "First line.\nSecond line." };
+    jest.mocked(updateMyAccount).mockResolvedValueOnce(saved);
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Add a thought" }));
+    const input = screen.getByLabelText("Thought");
+    expect(input.props.submitBehavior).toBe("newline");
+
+    fireEvent.changeText(input, "First line.\nSecond line.");
+    await userEvent.press(screen.getByRole("button", { name: "Share thought" }));
+
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenCalledWith(user, {
+        thoughtText: "First line.\nSecond line.",
+      }),
+    );
+  });
+
   it("shows a server error when saving fails", async () => {
     showAccount(account);
     jest.mocked(updateMyAccount).mockRejectedValueOnce(

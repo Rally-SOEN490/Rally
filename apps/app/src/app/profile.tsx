@@ -561,6 +561,7 @@ export default function Profile() {
               onChangeText={setThoughtText}
               placeholder="Your thoughts go here..."
               placeholderTextColor="#8a9690"
+              submitBehavior="newline"
               style={styles.thoughtInput}
               value={thoughtText}
             />
