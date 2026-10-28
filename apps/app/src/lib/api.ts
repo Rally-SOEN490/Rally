@@ -14,6 +14,11 @@ export type RallyUser = {
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;
   facebookUrl?: string | null;
+  thoughtText?: string | null;
+  interests?: {
+    formats: string[];
+    positions: string[];
+  };
   createdAt: string;
   badges: {
     key: string;
@@ -40,7 +45,9 @@ export type ProfileChanges =
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
-  | { facebookUrl: string | null };
+  | { facebookUrl: string | null }
+  | { thoughtText: string | null }
+  | { interests: { formats: string[]; positions: string[] } };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
