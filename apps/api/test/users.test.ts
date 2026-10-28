@@ -101,6 +101,7 @@ describe("POST /users/me", () => {
       "facebookUrl",
       "id",
       "instagramUrl",
+      "interests",
       "lookingForTeam",
       "shownBadgeKeys",
       "thoughtText",
@@ -450,6 +451,50 @@ describe("PATCH /users/me", () => {
     expect(updated.statusCode).toBe(200);
     expect(updated.json().facebookUrl).toBe("https://facebook.com/alice");
     expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
+  });
+
+  test("saves formats and positions without duplicate rows", async () => {
+    const updated = await update("alice", {
+      interests: {
+        formats: ["indoor-6s", "beach-2s"],
+        positions: ["libero", "setter"],
+      },
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().interests).toEqual({
+      formats: ["indoor-6s", "beach-2s"],
+      positions: ["libero", "setter"],
+    });
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(await testDb.userInterest.findMany({
+      where: { userId: saved.id },
+      orderBy: [{ category: "asc" }, { key: "asc" }],
+    })).toEqual([
+      { userId: saved.id, category: "format", key: "beach-2s" },
+      { userId: saved.id, category: "format", key: "indoor-6s" },
+      { userId: saved.id, category: "position", key: "libero" },
+      { userId: saved.id, category: "position", key: "setter" },
+    ]);
+
+    const replaced = await update("alice", {
+      interests: { formats: ["9-man"], positions: ["outside"] },
+    });
+    expect(replaced.json().interests).toEqual({
+      formats: ["9-man"],
+      positions: ["outside"],
+    });
+    expect(await testDb.userInterest.count({ where: { userId: saved.id } })).toBe(2);
+  });
+
+  test.each([
+    { interests: { formats: ["beach-4s"], positions: [] } },
+    { interests: { formats: [], positions: ["defensive-specialist"] } },
+    { interests: { formats: ["indoor-6s", "indoor-6s"], positions: [] } },
+  ])("rejects invalid interest payloads: %j", async (body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
   });
 
   test("trims whitespace before saving and clears blank profile thoughts", async () => {

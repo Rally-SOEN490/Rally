@@ -28,7 +28,18 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
+const interestFormats = [
+  { key: "indoor-6s", label: "Indoor 6s" },
+  { key: "beach-2s", label: "Beach 2s" },
+  { key: "9-man", label: "9-man" },
+] as const;
+const interestPositions = [
+  { key: "libero", label: "Libero" },
+  { key: "outside", label: "Outside" },
+  { key: "setter", label: "Setter" },
+  { key: "middle", label: "Middle" },
+  { key: "opposite", label: "Opposite" },
+] as const;
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -85,6 +96,12 @@ export default function Profile() {
   const [thoughtText, setThoughtText] = useState(account?.thoughtText ?? "");
   const [thoughtSaving, setThoughtSaving] = useState(false);
   const [thoughtError, setThoughtError] = useState("");
+  const [interestSelection, setInterestSelection] = useState(() => ({
+    formats: account?.interests?.formats ?? [],
+    positions: account?.interests?.positions ?? [],
+  }));
+  const [interestSaving, setInterestSaving] = useState(false);
+  const [interestError, setInterestError] = useState("");
 
   const openThoughtEditor = () => {
     setThoughtText(account?.thoughtText ?? "");
@@ -146,6 +163,30 @@ export default function Profile() {
       setSaveError(apiErrorMessage(e));
     } finally {
       setSavingValue(undefined);
+    }
+  };
+
+  const toggleInterest = async (
+    category: "formats" | "positions",
+    key: string,
+  ) => {
+    if (!user || interestSaving) return;
+    const nextSelection = {
+      ...interestSelection,
+      [category]: interestSelection[category].includes(key)
+        ? interestSelection[category].filter((selectedKey) => selectedKey !== key)
+        : [...interestSelection[category], key],
+    };
+    setInterestSelection(nextSelection);
+    setInterestSaving(true);
+    setInterestError("");
+    try {
+      setAccount(await updateMyAccount(user, { interests: nextSelection }));
+    } catch (error) {
+      setInterestSelection(interestSelection);
+      setInterestError(apiErrorMessage(error));
+    } finally {
+      setInterestSaving(false);
     }
   };
 
@@ -374,13 +415,51 @@ export default function Profile() {
 
         <View style={styles.tagSection}>
           <Text style={styles.sectionTitle}>Interested in</Text>
+          <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
           <View style={styles.tagRow}>
-            {interested.map((tag) => (
-              <View key={tag} style={styles.tagPill}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
+            {interestFormats.map(({ key, label }) => {
+              const selected = interestSelection.formats.includes(key);
+              return (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label}${selected ? " selected" : ""}`}
+                  accessibilityState={{ selected, disabled: interestSaving }}
+                  disabled={interestSaving}
+                  onPress={() => toggleInterest("formats", key)}
+                  style={[styles.tagPill, selected && styles.tagPillSelected]}
+                >
+                  <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
+          <Text style={styles.tagGroupLabel}>POSITIONS</Text>
+          <View style={styles.tagRow}>
+            {interestPositions.map(({ key, label }) => {
+              const selected = interestSelection.positions.includes(key);
+              return (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label}${selected ? " selected" : ""}`}
+                  accessibilityState={{ selected, disabled: interestSaving }}
+                  disabled={interestSaving}
+                  onPress={() => toggleInterest("positions", key)}
+                  style={[styles.tagPill, selected && styles.tagPillSelected]}
+                >
+                  <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {!!interestError && (
+            <Text accessibilityRole="alert" style={styles.saveError}>{interestError}</Text>
+          )}
         </View>
 
         <View style={styles.resultsSection}>
@@ -1108,6 +1187,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
+  tagGroupLabel: {
+    color: "#789087",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    marginTop: 14,
+  },
   tagPill: {
     backgroundColor: "#f2f0ed",
     borderRadius: 999,
@@ -1116,10 +1202,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d9d5d0",
   },
+  tagPillSelected: {
+    backgroundColor: "#dfe9e4",
+    borderColor: "#1d5c4d",
+  },
   tagText: {
     fontSize: 12,
     color: "#12382d",
     fontWeight: "600",
+  },
+  tagTextSelected: {
+    color: "#12382d",
+    fontWeight: "800",
   },
   resultsSection: {
     marginTop: 24,

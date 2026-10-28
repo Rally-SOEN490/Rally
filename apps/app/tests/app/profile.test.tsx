@@ -407,3 +407,74 @@ describe("Looking for a team", () => {
     expect(screen.queryByRole("alert")).not.toBeOnTheScreen();
   });
 });
+
+describe("Profile interests", () => {
+  const showAccount = (initial: RallyUser) =>
+    jest.mocked(useSession).mockImplementation(function useFakeSession() {
+      const [shown, setShown] = useState(initial);
+      return fakeSession({ user, account: shown, setAccount: setShown });
+    });
+
+  it("shows saved formats and positions as selected", async () => {
+    showAccount({
+      ...account,
+      interests: {
+        formats: ["indoor-6s"],
+        positions: ["setter"],
+      },
+    });
+    await render(<Profile />);
+
+    expect(screen.getByRole("button", { name: "Indoor 6s selected" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole("button", { name: "Setter selected" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole("button", { name: "Beach 2s" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: false }));
+  });
+
+  it("saves selected and deselected interests", async () => {
+    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    jest.mocked(updateMyAccount)
+      .mockResolvedValueOnce({
+        ...account,
+        interests: { formats: ["beach-2s"], positions: [] },
+      })
+      .mockResolvedValueOnce({
+        ...account,
+        interests: { formats: [], positions: [] },
+      });
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Beach 2s" }));
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenCalledWith(user, {
+        interests: { formats: ["beach-2s"], positions: [] },
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Beach 2s selected" })).toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Beach 2s selected" }));
+    await waitFor(() =>
+      expect(updateMyAccount).toHaveBeenLastCalledWith(user, {
+        interests: { formats: [], positions: [] },
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Beach 2s" })).toBeOnTheScreen();
+  });
+
+  it("restores the previous selection and shows an error when saving fails", async () => {
+    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    jest.mocked(updateMyAccount).mockRejectedValueOnce(
+      new ApiError(0, "Can't reach the Rally server."),
+    );
+    await render(<Profile />);
+
+    await userEvent.press(screen.getByRole("button", { name: "Libero" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+    expect(screen.getByRole("button", { name: "Libero" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState)
+      .toEqual(expect.objectContaining({ selected: false }));
+  });
+});

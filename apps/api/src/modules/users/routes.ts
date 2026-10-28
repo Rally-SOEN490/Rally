@@ -10,6 +10,8 @@ import type { Gender } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
+const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
+const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
 
 const noAccount = { message: "No Rally account found." };
 
@@ -79,6 +81,7 @@ export const userRoutes: FastifyPluginAsync<{
               "instagramUrl",
               "facebookUrl",
               "thoughtText",
+              "interests",
             ],
           },
           anyOf: [
@@ -87,6 +90,7 @@ export const userRoutes: FastifyPluginAsync<{
             { required: ["instagramUrl"] },
             { required: ["facebookUrl"] },
             { required: ["thoughtText"] },
+            { required: ["interests"] },
           ],
           properties: {
             lookingForTeam: { enum: [true, false] },
@@ -125,6 +129,23 @@ export const userRoutes: FastifyPluginAsync<{
                   pattern: "^\\P{Cc}*$",
                 },
               ],
+            },
+            interests: {
+              type: "object",
+              additionalProperties: false,
+              required: ["formats", "positions"],
+              properties: {
+                formats: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestFormats },
+                },
+                positions: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestPositions },
+                },
+              },
             },
           },
         },
