@@ -402,8 +402,8 @@ describe("PATCH /users/me", () => {
     expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
   });
 
-  test("saves and clears a public profile thought", async () => {
-    const updated = await update("alice", { thoughtText: "Bring good energy." });
+  test("trims whitespace before saving and clears blank profile thoughts", async () => {
+    const updated = await update("alice", { thoughtText: "  Bring good energy.  " });
 
     expect(updated.statusCode).toBe(200);
     expect(updated.json()).toMatchObject({
@@ -411,8 +411,12 @@ describe("PATCH /users/me", () => {
     });
     expect((await getMe("alice")).json().thoughtText).toBe("Bring good energy.");
 
-    const cleared = await update("alice", { thoughtText: null });
+    const cleared = await update("alice", { thoughtText: "   " });
+    expect(cleared.statusCode).toBe(200);
     expect(cleared.json().thoughtText).toBeNull();
+
+    const clearedAgain = await update("alice", { thoughtText: null });
+    expect(clearedAgain.json().thoughtText).toBeNull();
   });
 
   test.each([

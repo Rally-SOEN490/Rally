@@ -18,6 +18,12 @@ export type ProfileChanges = {
   thoughtText?: string | null;
 };
 
+const normalizeProfileThoughtText = (thoughtText: string | null | undefined) => {
+  if (thoughtText === null || thoughtText === undefined) return thoughtText;
+  const trimmed = thoughtText.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
 const autoAwardedBadgeKeys = badgeCatalog
   .filter((badge) => badge.autoAward)
   .map((badge) => badge.key);
@@ -96,7 +102,14 @@ export const createUserRepository = (db: Database) => {
     },
 
     updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
-      const { count } = await db.user.updateMany({ where: { firebaseUid }, data: changes });
+      const normalizedChanges = {
+        ...changes,
+        ...(changes.thoughtText !== undefined
+          ? { thoughtText: normalizeProfileThoughtText(changes.thoughtText) }
+          : {}),
+      };
+
+      const { count } = await db.user.updateMany({ where: { firebaseUid }, data: normalizedChanges });
       if (!count) return null;
       return db.user.findUnique({ where: { firebaseUid }, include: includeBadges });
     },
