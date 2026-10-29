@@ -86,16 +86,13 @@ beforeEach(() => {
 
 // Shows Settings for someone whose saved Rally account is `savedAccount`.
 const renderSettings = (savedAccount: RallyUser = account) => {
-  jest
-    .mocked(useSession)
-    .mockReturnValue(fakeSession({ user, account: savedAccount, setAccount }));
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account: savedAccount, setAccount }));
   return render(<Settings />);
 };
 
 // The popup that's open, and helpers to use it.
 const dialog = () => within(screen.getByTestId("dialog"));
-const pressInDialog = (name: string) =>
-  userEvent.press(dialog().getByRole("button", { name }));
+const pressInDialog = (name: string) => userEvent.press(dialog().getByRole("button", { name }));
 const tapOutside = () => fireEvent.press(screen.getByTestId("dialog-backdrop"));
 const expectNoDialog = () => expect(screen.queryByTestId("dialog")).not.toBeOnTheScreen();
 
@@ -359,9 +356,7 @@ describe("both change forms", () => {
     await typeInto("New e-mail address", "new@example.com");
     await tapOutside();
 
-    expect(screen.getByPlaceholderText("New e-mail address")).toHaveDisplayValue(
-      "new@example.com",
-    );
+    expect(screen.getByPlaceholderText("New e-mail address")).toHaveDisplayValue("new@example.com");
   });
 });
 
@@ -598,8 +593,7 @@ describe("log out", () => {
 });
 
 describe("delete account", () => {
-  const pressDelete = () =>
-    userEvent.press(screen.getByRole("button", { name: "Delete account" }));
+  const pressDelete = () => userEvent.press(screen.getByRole("button", { name: "Delete account" }));
 
   // Opens the popup and types the e-mail and password into it.
   const fillDeleteForm = async (email = "sam@example.com", password = "secret123") => {
