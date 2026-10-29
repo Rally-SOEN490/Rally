@@ -122,9 +122,7 @@ export const createUserRepository = (db: Database) => {
     updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
       const normalizedChanges = {
         ...changes,
-        ...(changes.displayName !== undefined
-          ? { displayName: changes.displayName.trim() }
-          : {}),
+        ...(changes.displayName !== undefined ? { displayName: changes.displayName.trim() } : {}),
         ...(changes.thoughtText !== undefined
           ? { thoughtText: normalizeProfileThoughtText(changes.thoughtText) }
           : {}),
