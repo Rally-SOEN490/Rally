@@ -354,8 +354,8 @@ export default function Settings() {
     }
   };
 
-  const dismissDialog = () => {
-    if (dialog === "deleted") finishDeletion();
+    const dismissDialog = () => {
+    if (dialog === "deleted") void finishDeletion();
     else closeDialog();
   };
 
