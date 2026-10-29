@@ -85,3 +85,52 @@ To make a new EAS build:
 eas build --profile development --platform ios
 eas build --profile development --platform android
 ```
+
+## Maestro E2E flows
+
+Maestro runs the installed development build against the Android emulator.
+Install the Maestro CLI separately, start an emulator, and start PostgreSQL,
+the API, and the Expo development server as described above.
+
+Create a dedicated Gmail account for testing, then add its address to the
+ignored local environment file `apps/app/.env.local`:
+
+```env
+MAESTRO_EMAIL_BASE=rally.volleyball.maestro@gmail.com
+MAESTRO_TEST_PASSWORD=your-test-only-password
+```
+
+The Windows runner creates a timestamped display name and a new Gmail
+plus-address on every run, such as `Maestro Test User 20261027-211500123` and
+`rally.maestro+20261027-211500123@gmail.com`. Firebase treats the address as a
+new account while Gmail delivers the message to `rally.maestro@gmail.com`:
+
+```powershell
+cd C:\Users\lihai\Documents\Github\Rally\apps\app
+powershell -ExecutionPolicy Bypass -File .maestro\run-account-e2e.ps1
+```
+
+The runner:
+
+1. Creates a new Firebase account through Rally.
+2. Verifies that the app reaches the email-verification screen.
+3. Opens Gmail and taps the Firebase verification email and link.
+4. Returns to Rally and confirms that it routes to Home.
+
+Gmail must be installed and signed in on the emulator, and the Firebase
+verification email must be accessible there. The inbox password and Firebase
+credentials must never be committed.
+
+The test selects the existing `Rally` development server from the Expo
+launcher screen, so they do not depend on the development-client deep link.
+Keep `npx expo start --dev-client` running on port 8081 before starting the
+runner.
+
+To run the YAML directly, set the test values first:
+
+```powershell
+$env:MAESTRO_TEST_NAME = "Maestro Test User"
+$env:MAESTRO_TEST_EMAIL = "unique-test-address@example.com"
+$env:MAESTRO_TEST_PASSWORD = "your-test-only-password"
+maestro test .maestro\signup-verify-and-home.yaml
+```
