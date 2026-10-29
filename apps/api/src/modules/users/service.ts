@@ -48,6 +48,38 @@ export type Gender = "male" | "female";
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
 
+// Turns one of the user's badges into what the API sends back.
+const toBadgeResponse = ({
+  badgeType,
+  receivedCount,
+  awardedAt,
+}: UserWithBadges["badges"][number]): UserResponse["badges"][number] => {
+  const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
+  const availableTiers = definition?.availableTiers ?? ["Bronze"];
+  const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
+  const tier = getBadgeTier(badgeType.tier, receivedCount, availableTiers, tierThresholds);
+  const completion = getBadgeCompletion(
+    badgeType.tier as "Bronze" | "Silver" | "Gold",
+    tier,
+    availableTiers,
+    tierThresholds,
+    receivedCount,
+  );
+
+  return {
+    key: badgeType.key,
+    name: badgeType.name,
+    tier,
+    description: badgeType.description,
+    imageUrl: badgeType.imageUrl,
+    image: badgeType.imageUrl ?? "badge-gold-placeholder",
+    availableTiers: [...availableTiers],
+    ...completion,
+    receivedCount,
+    awardedAt: awardedAt.toISOString(),
+  };
+};
+
 const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
@@ -75,32 +107,7 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
         right.receivedCount - left.receivedCount ||
         left.badgeType.key.localeCompare(right.badgeType.key),
     )
-    .map(({ badgeType, receivedCount, awardedAt }) => {
-      const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
-      const availableTiers = definition?.availableTiers ?? ["Bronze"];
-      const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
-      const tier = getBadgeTier(badgeType.tier, receivedCount, availableTiers, tierThresholds);
-      const completion = getBadgeCompletion(
-        badgeType.tier as "Bronze" | "Silver" | "Gold",
-        tier,
-        availableTiers,
-        tierThresholds,
-        receivedCount,
-      );
-
-      return {
-        key: badgeType.key,
-        name: badgeType.name,
-        tier,
-        description: badgeType.description,
-        imageUrl: badgeType.imageUrl,
-        image: badgeType.imageUrl ?? "badge-gold-placeholder",
-        availableTiers: [...availableTiers],
-        ...completion,
-        receivedCount,
-        awardedAt: awardedAt.toISOString(),
-      };
-    }),
+    .map(toBadgeResponse),
 });
 
 const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
