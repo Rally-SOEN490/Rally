@@ -65,14 +65,7 @@ type Preferences = {
 // Modal, so going from "Change e-mail" to "Verification email sent" never
 // stacks two modals (which iOS doesn't handle well).
 type Dialog =
-  | "name"
-  | "email"
-  | "password"
-  | "logout"
-  | "delete"
-  | "emailSent"
-  | "passwordChanged"
-  | "deleted";
+  "name" | "email" | "password" | "logout" | "delete" | "emailSent" | "passwordChanged" | "deleted";
 
 // Popups that close when you tap outside them. The ones with text fields
 // don't, so a stray tap can't throw away what you typed.
@@ -131,6 +124,9 @@ export default function Settings() {
     const previous = prefs[key];
     setPrefs((current) => ({ ...current, [key]: value }));
     try {
+      // `key` is always one of the five settings and `value` matches it, so this
+      // is one of the shapes ProfileChanges allows, like { darkMode: true }.
+      // TypeScript can't work that out from a computed key, hence the cast.
       const changes = { [key]: value } as unknown as ProfileChanges;
       setAccount(await updateMyAccount(user, changes));
     } catch (error) {
@@ -837,11 +833,12 @@ export default function Settings() {
         onRequestClose={dismissDialog}
       >
         <Pressable
+          testID="dialog-backdrop"
           style={styles.modalBackdrop}
           onPress={dialog && DISMISSABLE.includes(dialog) ? dismissDialog : undefined}
         >
           {/* Catches taps on the card so they don't reach the backdrop. */}
-          <View onStartShouldSetResponder={() => true} style={styles.modalCard}>
+          <View testID="dialog" onStartShouldSetResponder={() => true} style={styles.modalCard}>
             {renderDialog()}
           </View>
         </Pressable>
@@ -894,7 +891,12 @@ function Row({
   );
   const style = [styles.row, !last && styles.rowDivider];
   return onPress ? (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={style}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={style}
+    >
       {content}
     </Pressable>
   ) : (
