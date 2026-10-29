@@ -12,6 +12,33 @@ type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
 const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
 const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
+const languages = ["EN", "FR"] as const;
+const colorThemes = ["green", "blue", "pink"] as const;
+
+// At least one character that isn't a space, and no invisible control
+// characters (PostgreSQL can't store some of them). Used at sign-up and when
+// the name is changed in Settings.
+const displayNameSchema = {
+  type: "string",
+  maxLength: 100,
+  pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
+} as const;
+
+// Fields the app may change with PATCH /users/me.
+const editableFields = [
+  "displayName",
+  "lookingForTeam",
+  "shownBadgeKeys",
+  "instagramUrl",
+  "facebookUrl",
+  "thoughtText",
+  "interests",
+  "notificationsEnabled",
+  "language",
+  "colorTheme",
+  "colorBlindMode",
+  "darkMode",
+] as const;
 
 const noAccount = { message: "No Rally account found." };
 
@@ -47,13 +74,7 @@ export const userRoutes: FastifyPluginAsync<{
           type: "object",
           required: ["displayName", "ageConfirmed"],
           properties: {
-            // At least one character that isn't a space, and no invisible
-            // control characters (PostgreSQL can't store some of them).
-            displayName: {
-              type: "string",
-              maxLength: 100,
-              pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
-            },
+            displayName: displayNameSchema,
             ageConfirmed: { const: true },
           },
         },
@@ -74,25 +95,11 @@ export const userRoutes: FastifyPluginAsync<{
         body: {
           type: "object",
           additionalProperties: false,
-          propertyNames: {
-            enum: [
-              "lookingForTeam",
-              "shownBadgeKeys",
-              "instagramUrl",
-              "facebookUrl",
-              "thoughtText",
-              "interests",
-            ],
-          },
-          anyOf: [
-            { required: ["lookingForTeam"] },
-            { required: ["shownBadgeKeys"] },
-            { required: ["instagramUrl"] },
-            { required: ["facebookUrl"] },
-            { required: ["thoughtText"] },
-            { required: ["interests"] },
-          ],
+          propertyNames: { enum: editableFields },
+          // At least one field must be sent.
+          anyOf: editableFields.map((field) => ({ required: [field] })),
           properties: {
+            displayName: displayNameSchema,
             lookingForTeam: { enum: [true, false] },
             shownBadgeKeys: {
               type: "array",
@@ -147,6 +154,11 @@ export const userRoutes: FastifyPluginAsync<{
                 },
               },
             },
+            notificationsEnabled: { enum: [true, false] },
+            language: { enum: languages },
+            colorTheme: { enum: colorThemes },
+            colorBlindMode: { enum: [true, false] },
+            darkMode: { enum: [true, false] },
           },
         },
       },

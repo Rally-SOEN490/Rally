@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import type { ProfileChanges, UserRepository } from "./repository.ts";
+import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
@@ -17,6 +17,12 @@ export type UserResponse = {
     formats: string[];
     positions: string[];
   };
+  // App settings. Only sent to the person themselves (the directory leaves them out).
+  notificationsEnabled: boolean;
+  language: Language;
+  colorTheme: ColorTheme;
+  colorBlindMode: boolean;
+  darkMode: boolean;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -56,6 +62,12 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
       .filter(({ category }) => category === "position")
       .map(({ key }) => key),
   },
+  notificationsEnabled: user.notificationsEnabled,
+  // The route only stores the allowed values, so these casts are safe.
+  language: user.language as Language,
+  colorTheme: user.colorTheme as ColorTheme,
+  colorBlindMode: user.colorBlindMode,
+  darkMode: user.darkMode,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(

@@ -10,7 +10,11 @@ export type NewUser = {
   ageConfirmedAt: Date;
 };
 
+export type Language = "EN" | "FR";
+export type ColorTheme = "green" | "blue" | "pink";
+
 export type ProfileChanges = {
+  displayName?: string;
   lookingForTeam?: boolean;
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;
@@ -20,6 +24,11 @@ export type ProfileChanges = {
     formats: string[];
     positions: string[];
   };
+  notificationsEnabled?: boolean;
+  language?: Language;
+  colorTheme?: ColorTheme;
+  colorBlindMode?: boolean;
+  darkMode?: boolean;
 };
 
 const normalizeProfileThoughtText = (thoughtText: string | null | undefined) => {
@@ -113,6 +122,9 @@ export const createUserRepository = (db: Database) => {
     updateByFirebaseUid: async (firebaseUid: string, changes: ProfileChanges) => {
       const normalizedChanges = {
         ...changes,
+        ...(changes.displayName !== undefined
+          ? { displayName: changes.displayName.trim() }
+          : {}),
         ...(changes.thoughtText !== undefined
           ? { thoughtText: normalizeProfileThoughtText(changes.thoughtText) }
           : {}),
