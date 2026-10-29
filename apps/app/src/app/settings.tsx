@@ -1,8 +1,19 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import {
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  signOut,
+  updatePassword,
+  updateProfile,
+  verifyBeforeUpdateEmail,
+  type User,
+} from "firebase/auth";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -17,56 +28,70 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  deleteUser,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  signOut,
-  updatePassword,
-  verifyBeforeUpdateEmail,
-} from "firebase/auth";
-import {
   apiErrorMessage,
   deleteMyAccount,
   getMyGender,
-  updateMyAccount,
+  NAME_MAX_LENGTH,
   saveMyGender,
+  updateMyAccount,
+  type ColorTheme,
   type Gender,
+  type Language,
+  type ProfileChanges,
 } from "@/lib/api";
+import { clearAccountDeleted, markAccountDeleted } from "@/lib/account-deleted";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 
-// Alert.alert with buttons does nothing on web, so use window.confirm there.
-const confirmAsync = (title: string, message: string, confirmText: string) =>
-  new Promise<boolean>((resolve) => {
-    if (Platform.OS === "web") {
-      resolve(window.confirm(`${title}\n\n${message}`));
-      return;
-    }
-    Alert.alert(
-      title,
-      message,
-      [
-        { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-        { text: confirmText, style: "destructive", onPress: () => resolve(true) },
-      ],
-      { cancelable: true, onDismiss: () => resolve(false) },
-    );
-  });
+const GREEN = "#12382d";
+const MUTED = "#687872";
+const RED = "#c62828";
+
+const COLOR_THEMES: { key: ColorTheme; color: string; label: string }[] = [
+  { key: "green", color: "#1d4d3b", label: "Green" },
+  { key: "blue", color: "#2f6ca3", label: "Blue" },
+  { key: "pink", color: "#d4679b", label: "Pink" },
+];
+
+type Preferences = {
+  notificationsEnabled: boolean;
+  language: Language;
+  colorTheme: ColorTheme;
+  colorBlindMode: boolean;
+  darkMode: boolean;
+};
+
+// Every popup on this screen. Only one is shown at a time, inside a single
+// Modal, so going from "Change e-mail" to "Verification email sent" never
+// stacks two modals (which iOS doesn't handle well).
+type Dialog = "name" | "email" | "password" | "logout" | "delete" | "emailSent" | "passwordChanged";
+
+// Popups that close when you tap outside them. The ones with text fields
+// don't, so a stray tap can't throw away what you typed.
+const DISMISSABLE: Dialog[] = ["logout", "emailSent", "passwordChanged"];
 
 const notify = (title: string, message: string) => {
   if (Platform.OS === "web") window.alert(`${title}\n\n${message}`);
   else Alert.alert(title, message);
 };
 
+const reauthenticate = (user: User, password: string) =>
+  reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email ?? "", password));
+
 export default function Settings() {
   const { user, account, setAccount } = useSession();
-  const [announcementToggles, setAnnouncementToggles] = useState({
-    tournamentAnnouncements: true,
-    joinRequests: true,
+  const displayName = account?.displayName ?? user?.displayName ?? "";
+
+  // Preferences are saved to Rally's database as soon as they change.
+  const [prefs, setPrefs] = useState<Preferences>({
+    notificationsEnabled: account?.notificationsEnabled ?? true,
+    language: account?.language ?? "EN",
+    colorTheme: account?.colorTheme ?? "green",
+    colorBlindMode: account?.colorBlindMode ?? false,
+    darkMode: account?.darkMode ?? false,
   });
-  const [language, setLanguage] = useState<"EN" | "FR">("EN");
-  const [colorBlindMode, setColorBlindMode] = useState(false);
+
   const [gender, setGender] = useState<Gender | null>(null);
   const [genderLoading, setGenderLoading] = useState(true);
   const [genderSaving, setGenderSaving] = useState(false);
@@ -75,18 +100,14 @@ export default function Settings() {
   const [facebookUrl, setFacebookUrl] = useState(account?.facebookUrl ?? "");
   const [facebookSaving, setFacebookSaving] = useState(false);
 
-  const [deleting, setDeleting] = useState(false);
-  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-
-  // Change e-mail / change password (one modal, two modes).
-  const [editing, setEditing] = useState<null | "email" | "password">(null);
+  // Popup state.
+  const [dialog, setDialog] = useState<Dialog | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newValue, setNewValue] = useState("");
   const [confirmValue, setConfirmValue] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [editError, setEditError] = useState("");
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [dialogError, setDialogError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -95,6 +116,24 @@ export default function Settings() {
       .catch((error) => notify("Unable to load gender", apiErrorMessage(error)))
       .finally(() => setGenderLoading(false));
   }, [user]);
+
+  // ---------- Preferences ----------
+
+  const savePreference = async <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
+    if (!user) return;
+    const previous = prefs[key];
+    setPrefs((current) => ({ ...current, [key]: value }));
+    try {
+      // `key` is always one of the five settings and `value` matches it, so this
+      // is one of the shapes ProfileChanges allows, like { darkMode: true }.
+      // TypeScript can't work that out from a computed key, hence the cast.
+      const changes = { [key]: value } as unknown as ProfileChanges;
+      setAccount(await updateMyAccount(user, changes));
+    } catch (error) {
+      setPrefs((current) => ({ ...current, [key]: previous }));
+      notify("Unable to save setting", apiErrorMessage(error));
+    }
+  };
 
   const updateGender = async (value: Gender | null) => {
     if (!user || genderSaving) return;
@@ -159,169 +198,381 @@ export default function Settings() {
     }
   };
 
-  const closeEdit = () => {
-    setEditing(null);
+  // ---------- Popups ----------
+
+  const resetFields = () => {
     setCurrentPassword("");
     setNewValue("");
     setConfirmValue("");
-    setEditError("");
+    setDeleteEmail("");
+    setDialogError("");
   };
 
-  const handleSaveEdit = async () => {
+  const openDialog = (next: Dialog) => {
+    resetFields();
+    if (next === "name") setNewValue(displayName);
+    setDialog(next);
+  };
+
+  const closeDialog = () => {
+    if (busy) return;
+    setDialog(null);
+    resetFields();
+  };
+
+  const saveName = async () => {
     const current = auth.currentUser;
-    if (!current?.email || !editing) return;
-    const value = newValue.trim();
+    const name = newValue.trim();
+    if (!current || !name) return;
+    if (name === displayName) return closeDialog();
 
-    if (editing === "email" && value.toLowerCase() === current.email.toLowerCase()) {
-      setEditError("That's already your e-mail.");
-      return;
-    }
-    if (editing === "password" && value !== confirmValue) {
-      setEditError("Passwords don't match.");
-      return;
-    }
-
-    setSaving(true);
-    setEditError("");
+    setBusy(true);
+    setDialogError("");
     try {
-      await reauthenticateWithCredential(
-        current,
-        EmailAuthProvider.credential(current.email, currentPassword),
-      );
-      if (editing === "email") {
-        await verifyBeforeUpdateEmail(current, value);
-        closeEdit();
-        notify(
-          "Check your new inbox",
-          `We sent a verification link to ${value}. Your e-mail will change once you click it.`,
-        );
-      } else {
-        await updatePassword(current, newValue);
-        closeEdit();
-        notify("Password updated", "Your password has been changed.");
-      }
+      const updated = await updateMyAccount(current, { displayName: name });
+      // Keep Firebase's copy in step too. Rally's database is what other
+      // screens read, so a failure here isn't worth an error.
+      await updateProfile(current, { displayName: name }).catch(() => {});
+      setAccount(updated);
+      setDialog(null);
+      resetFields();
     } catch (e) {
-      setEditError(authErrorMessage(e));
+      setDialogError(apiErrorMessage(e));
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   };
 
-  const handleLogout = async () => {
+  const saveEmail = async () => {
+    const current = auth.currentUser;
+    if (!current?.email) return;
+    const value = newValue.trim();
+    if (value.toLowerCase() === current.email.toLowerCase()) {
+      setDialogError("That's already your e-mail.");
+      return;
+    }
+
+    setBusy(true);
+    setDialogError("");
+    try {
+      await reauthenticate(current, currentPassword);
+      await verifyBeforeUpdateEmail(current, value);
+      resetFields();
+      setDialog("emailSent");
+    } catch (e) {
+      setDialogError(authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const savePassword = async () => {
+    const current = auth.currentUser;
+    if (!current?.email) return;
+    if (newValue !== confirmValue) {
+      setDialogError("Passwords don't match.");
+      return;
+    }
+
+    setBusy(true);
+    setDialogError("");
+    try {
+      await reauthenticate(current, currentPassword);
+      await updatePassword(current, newValue);
+      resetFields();
+      setDialog("passwordChanged");
+    } catch (e) {
+      setDialogError(authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const logOut = async () => {
+    setBusy(true);
     try {
       await signOut(auth);
       router.replace("/login");
     } catch {
-      notify("Unable to log out", "Please try again in a moment.");
+      setBusy(false);
+      setDialogError("Unable to log out. Please try again in a moment.");
     }
   };
 
-  const closePasswordPrompt = () => {
-    setPasswordPromptVisible(false);
-    setPassword("");
-    setPasswordError("");
-  };
-
-  const handleDeleteAccount = async () => {
-    const confirmed = await confirmAsync(
-      "Delete account",
-      "Are you sure you want to delete your account? This can't be undone.",
-      "Yes, delete my account",
-    );
-    if (confirmed) setPasswordPromptVisible(true);
-  };
-
-  // Deletes the account from Rally's database first, then from Firebase.
+  // Deletes everything in one go: checks the e-mail and password, deletes the
+  // account from Rally's database, then deletes the Firebase login (which also
+  // logs them out) and goes to Sign up, which says the account was deleted.
   const deleteAccount = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser?.email) return;
-    setDeleting(true);
-    setPasswordError("");
+    const current = auth.currentUser;
+    if (!current?.email) return;
+    if (deleteEmail.trim().toLowerCase() !== current.email.toLowerCase()) {
+      setDialogError("That e-mail doesn't match your account.");
+      return;
+    }
 
+    setBusy(true);
+    setDialogError("");
     try {
       // Firebase only deletes logins that signed in recently, so check the
-      // password first. This way the deletion below can't be refused halfway.
-      const credential = EmailAuthProvider.credential(currentUser.email, password);
-      await reauthenticateWithCredential(currentUser, credential);
+      // password first. This way Firebase can't refuse the deletion below.
+      await reauthenticate(current, currentPassword);
     } catch (e) {
-      setPasswordError(authErrorMessage(e));
-      setDeleting(false);
+      setDialogError(authErrorMessage(e));
+      setBusy(false);
       return;
     }
 
     try {
-      // If the second step fails, the person can still log in and try again,
-      // and deleting from Rally's database again is safe.
-      await deleteMyAccount(currentUser);
-      await deleteUser(currentUser); // also logs them out
-      router.replace("/login");
+      await deleteMyAccount(current);
     } catch (e) {
-      notify("Unable to delete account", apiErrorMessage(e));
-      setDeleting(false);
+      // Nothing was deleted, so they can simply try again.
+      setDialogError(apiErrorMessage(e));
+      setBusy(false);
+      return;
+    }
+
+    try {
+      // Set before deleting: logging out can move them away from this screen
+      // before the line after deleteUser runs.
+      markAccountDeleted();
+      await deleteUser(current); // also logs them out
+    } catch {
+      clearAccountDeleted();
+      // Deleting Rally's data again is safe, so pressing Delete again finishes the job.
+      setDialogError(
+        "Your Rally data was deleted, but your login couldn't be removed. Please try again.",
+      );
+      setBusy(false);
+      return;
+    }
+
+    // Sign up only opens once the session has noticed the log-out, so wait a tick.
+    setTimeout(() => router.replace("/sign-up"), 0);
+  };
+
+  const errorText = !!dialogError && <Text style={styles.modalError}>{dialogError}</Text>;
+
+  const renderDialog = () => {
+    switch (dialog) {
+      case "name":
+        return (
+          <DialogCard
+            icon={<Ionicons name="person-outline" size={24} color={GREEN} />}
+            title="Change name"
+            message="This is the name other players see on your profile."
+          >
+            <TextInput
+              value={newValue}
+              onChangeText={setNewValue}
+              maxLength={NAME_MAX_LENGTH}
+              placeholder="Full name"
+              style={styles.modalInput}
+            />
+            {errorText}
+            <DialogActions
+              onCancel={closeDialog}
+              confirmLabel={busy ? "Saving…" : "Save"}
+              onConfirm={saveName}
+              disabled={busy || !newValue.trim()}
+            />
+          </DialogCard>
+        );
+
+      case "email":
+        return (
+          <DialogCard
+            icon={<Ionicons name="mail" size={22} color={GREEN} />}
+            title="Change e-mail"
+            message="Enter your current password and your new e-mail. We'll send a verification link to the new address."
+          >
+            <TextInput
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Current password"
+              style={styles.modalInput}
+            />
+            <TextInput
+              value={newValue}
+              onChangeText={setNewValue}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="New e-mail address"
+              style={styles.modalInput}
+            />
+            {errorText}
+            <DialogActions
+              onCancel={closeDialog}
+              confirmLabel={busy ? "Saving…" : "Save"}
+              onConfirm={saveEmail}
+              disabled={busy || !currentPassword || !newValue.trim()}
+            />
+          </DialogCard>
+        );
+
+      case "password":
+        return (
+          <DialogCard
+            icon={<Ionicons name="lock-closed" size={22} color={GREEN} />}
+            title="Change password"
+            message="Enter your current password, then choose a new one."
+          >
+            <TextInput
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Current password"
+              style={styles.modalInput}
+            />
+            <TextInput
+              value={newValue}
+              onChangeText={setNewValue}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="New password"
+              style={styles.modalInput}
+            />
+            <TextInput
+              value={confirmValue}
+              onChangeText={setConfirmValue}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Confirm new password"
+              style={styles.modalInput}
+            />
+            {errorText}
+            <DialogActions
+              onCancel={closeDialog}
+              confirmLabel={busy ? "Saving…" : "Save"}
+              onConfirm={savePassword}
+              disabled={busy || !currentPassword || !newValue || !confirmValue}
+            />
+          </DialogCard>
+        );
+
+      case "emailSent":
+        return (
+          <DialogCard
+            icon={<MaterialCommunityIcons name="email-check" size={24} color={GREEN} />}
+            title="Verification email sent"
+            message="We sent a verification link to your new e-mail address. Once you accept it, your e-mail will change."
+          >
+            <DialogActions confirmLabel="OK" onConfirm={closeDialog} />
+          </DialogCard>
+        );
+
+      case "passwordChanged":
+        return (
+          <DialogCard
+            icon={<Ionicons name="lock-closed" size={22} color={GREEN} />}
+            title="Password changed"
+            message="Your password has successfully been changed."
+          >
+            <DialogActions confirmLabel="OK" onConfirm={closeDialog} />
+          </DialogCard>
+        );
+
+      case "logout":
+        return (
+          <DialogCard
+            icon={<Ionicons name="log-out-outline" size={24} color={GREEN} />}
+            title="Log out?"
+            message="Are you sure you want to log out? You'll need to sign in again to see your teams and tournaments."
+          >
+            {errorText}
+            <DialogActions
+              onCancel={closeDialog}
+              confirmLabel={busy ? "Logging out…" : "Log out"}
+              onConfirm={logOut}
+              disabled={busy}
+            />
+          </DialogCard>
+        );
+
+      case "delete":
+        return (
+          <DialogCard
+            icon={<Ionicons name="trash-outline" size={22} color={RED} />}
+            danger
+            title="Delete account?"
+            message={
+              "Are you sure you want to delete your account? This permanently removes your profile, teams and tournament history, and can't be undone.\n\nTo confirm, enter your e-mail and password."
+            }
+          >
+            <TextInput
+              value={deleteEmail}
+              onChangeText={setDeleteEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="E-mail address"
+              style={styles.modalInput}
+            />
+            <TextInput
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Password"
+              style={styles.modalInput}
+            />
+            {errorText}
+            <DialogActions
+              onCancel={closeDialog}
+              confirmLabel={busy ? "Deleting…" : "Delete account"}
+              onConfirm={deleteAccount}
+              disabled={busy || !deleteEmail.trim() || !currentPassword}
+              danger
+            />
+          </DialogCard>
+        );
+
+      default:
+        return null;
     }
   };
+
+  // ---------- Screen ----------
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            // After a reload, Settings can be the only screen, with nothing to go back to.
-            onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))}
-            style={styles.backButton}
-          >
-            <Text style={styles.backText}>‹</Text>
-          </Pressable>
-          <Text style={styles.heading}>Settings</Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          // After a reload, Settings can be the only screen, with nothing to go back to.
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))}
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-back" size={22} color={GREEN} />
+        </Pressable>
+        <Text style={styles.heading}>Settings</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account & login</Text>
+        <Section title="Account & login">
+          <Row
+            icon={<MaterialCommunityIcons name="account-edit-outline" size={22} color={GREEN} />}
+            label="Name"
+            value={displayName}
+            onPress={() => openDialog("name")}
+          />
+          <Row
+            icon={<Ionicons name="mail" size={20} color={GREEN} />}
+            label="E-mail"
+            value={user?.email ?? ""}
+            onPress={() => openDialog("email")}
+          />
+          <Row
+            icon={<Ionicons name="lock-closed" size={20} color={GREEN} />}
+            label="Password"
+            value="••••••••"
+            onPress={() => openDialog("password")}
+            last
+          />
+        </Section>
 
-          <Pressable
-            style={styles.rowItem}
-            accessibilityRole="button"
-            onPress={() => setEditing("email")}
-          >
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconBadge, styles.socialIconBadge]}>
-                <Text style={styles.iconText}>✉️</Text>
-              </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>E-mail</Text>
-                <Text style={styles.rowValue}>{user?.email}</Text>
-              </View>
-            </View>
-            <Text style={styles.rowChevron}>›</Text>
-          </Pressable>
-
-          <View style={styles.rowItem}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconBadge, styles.socialIconBadge]}>
-                <Text style={styles.iconText}>🔒</Text>
-              </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>Password</Text>
-                <Text style={styles.rowValue}>••••••••</Text>
-              </View>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.inlineAction}
-              onPress={() => setEditing("password")}
-            >
-              <Text style={styles.inlineActionText}>Change</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Co-ed roster information</Text>
-          <Text style={styles.privacyNote}>
-            Optional. This is private and is not shown on your profile.
-          </Text>
+        <Section title="Co-ed roster information">
+          <Text style={styles.note}>Optional. This is private and not shown on your profile.</Text>
           <View style={styles.genderOptions}>
             {(["male", "female"] as const).map((option) => (
               <Pressable
@@ -358,22 +609,19 @@ export default function Settings() {
               <Text style={styles.clearGenderText}>Prefer not to say</Text>
             </Pressable>
           )}
-        </View>
+        </Section>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Social media</Text>
-          <Text style={styles.privacyNote}>Optional links shown on your public profile.</Text>
+        <Section title="Social media">
+          <Text style={styles.note}>Optional links shown on your public profile.</Text>
           <View style={styles.socialInputRow}>
-            <View style={[styles.iconBadge, styles.socialIconBadge]}>
-              <Text style={styles.iconText}>◎</Text>
-            </View>
+            <Ionicons name="logo-instagram" size={20} color="#c13584" />
             <TextInput
               accessibilityLabel="Instagram link"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               onChangeText={setInstagramUrl}
-              placeholder="https://instagram.com/yourusername"
+              placeholder="https://www.instagram.com/yourusername"
               placeholderTextColor="#9aa39d"
               style={styles.socialInput}
               value={instagramUrl}
@@ -383,22 +631,20 @@ export default function Settings() {
               accessibilityLabel="Save Instagram link"
               disabled={instagramSaving}
               onPress={saveInstagram}
-              style={[styles.socialSaveButton, instagramSaving && styles.disabledButton]}
+              style={[styles.socialSaveButton, instagramSaving && styles.disabled]}
             >
               <Text style={styles.socialSaveText}>{instagramSaving ? "Saving…" : "Save link"}</Text>
             </Pressable>
           </View>
           <View style={[styles.socialInputRow, styles.socialInputRowSpaced]}>
-            <View style={[styles.iconBadge, styles.socialIconBadge]}>
-              <Text style={styles.facebookMark}>f</Text>
-            </View>
+            <Ionicons name="logo-facebook" size={20} color="#1877f2" />
             <TextInput
               accessibilityLabel="Facebook link"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               onChangeText={setFacebookUrl}
-              placeholder="https://facebook.com/yourusername"
+              placeholder="https://www.facebook.com/yourusername"
               placeholderTextColor="#9aa39d"
               style={styles.socialInput}
               value={facebookUrl}
@@ -408,253 +654,292 @@ export default function Settings() {
               accessibilityLabel="Save Facebook link"
               disabled={facebookSaving}
               onPress={saveFacebook}
-              style={[styles.socialSaveButton, facebookSaving && styles.disabledButton]}
+              style={[styles.socialSaveButton, facebookSaving && styles.disabled]}
             >
               <Text style={styles.socialSaveText}>{facebookSaving ? "Saving…" : "Save link"}</Text>
             </Pressable>
           </View>
-        </View>
+        </Section>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+        <Section title="Notifications">
+          <Row
+            icon={<Ionicons name="notifications" size={20} color="#c99a06" />}
+            iconBackground="#fbe7a1"
+            label="Notifications"
+            value="Tournament and team alerts"
+            right={
+              <Switch
+                value={prefs.notificationsEnabled}
+                onValueChange={(value) => savePreference("notificationsEnabled", value)}
+                trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
+              />
+            }
+            last
+          />
+        </Section>
 
-          <View style={styles.toggleRow}>
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconText}>📣</Text>
+        <Section title="App preferences">
+          <Row
+            icon={<Ionicons name="language" size={20} color="#3b6ea5" />}
+            iconBackground="#dbe8f5"
+            label="Language"
+            right={
+              <View style={styles.languageToggle}>
+                {(["EN", "FR"] as const).map((option) => (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: prefs.language === option }}
+                    onPress={() => savePreference("language", option)}
+                    style={[
+                      styles.languageOption,
+                      prefs.language === option && styles.languageOptionActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.languageText,
+                        prefs.language === option && styles.languageTextActive,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>Tournament announcements</Text>
-                <Text style={styles.rowValue}>New events and registration openings</Text>
+            }
+          />
+          <Row
+            icon={<Ionicons name="color-palette" size={20} color="#c2557f" />}
+            iconBackground="#f8dce8"
+            label="Color theme"
+            right={
+              <View style={styles.colorOptions}>
+                {COLOR_THEMES.map(({ key, color, label }) => {
+                  const selected = prefs.colorTheme === key;
+                  return (
+                    <Pressable
+                      key={key}
+                      accessibilityRole="radio"
+                      accessibilityLabel={label}
+                      accessibilityState={{ checked: selected }}
+                      onPress={() => savePreference("colorTheme", key)}
+                      hitSlop={6}
+                      style={[
+                        styles.colorDot,
+                        selected && styles.colorDotSelected,
+                        { backgroundColor: color },
+                      ]}
+                    />
+                  );
+                })}
               </View>
-            </View>
-            <Switch
-              value={announcementToggles.tournamentAnnouncements}
-              onValueChange={(value) =>
-                setAnnouncementToggles((current) => ({
-                  ...current,
-                  tournamentAnnouncements: value,
-                }))
-              }
-              trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
-            />
-          </View>
+            }
+          />
+          <Row
+            icon={<Ionicons name="eye-outline" size={20} color="#6f5cc2" />}
+            iconBackground="#e6e0f7"
+            label="Color blind mode"
+            value="Swaps colour-only cues for patterns and labels"
+            right={
+              <Switch
+                value={prefs.colorBlindMode}
+                onValueChange={(value) => savePreference("colorBlindMode", value)}
+                trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
+              />
+            }
+          />
+          <Row
+            icon={<Ionicons name="moon" size={18} color="#5b63b7" />}
+            iconBackground="#e3e5f7"
+            label="Dark mode"
+            value="Switch between light and dark"
+            right={
+              <Switch
+                value={prefs.darkMode}
+                onValueChange={(value) => savePreference("darkMode", value)}
+                trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
+              />
+            }
+            last
+          />
+        </Section>
 
-          <View style={styles.toggleRow}>
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconText}>👥</Text>
-              </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>Join-request alerts</Text>
-                <Text style={styles.rowValue}>When a player asks to join your team</Text>
-              </View>
-            </View>
-            <Switch
-              value={announcementToggles.joinRequests}
-              onValueChange={(value) =>
-                setAnnouncementToggles((current) => ({ ...current, joinRequests: value }))
-              }
-              trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
-            />
-          </View>
-        </View>
+        <Section title="Support">
+          <Row
+            icon={<Ionicons name="help-circle" size={22} color="#5a675f" />}
+            label="Help & support"
+            value="FAQ, contact us, report a problem"
+            onPress={() => {}}
+            last
+          />
+        </Section>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App preferences</Text>
-
-          <View style={styles.languageRow}>
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconText}>🌐</Text>
-              </View>
-              <Text style={styles.rowLabel}>Language</Text>
-            </View>
-            <View style={styles.languageToggle}>
-              <Pressable
-                onPress={() => setLanguage("EN")}
-                style={[styles.languageOption, language === "EN" && styles.languageOptionActive]}
-              >
-                <Text style={[styles.languageText, language === "EN" && styles.languageTextActive]}>
-                  EN
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setLanguage("FR")}
-                style={[styles.languageOption, language === "FR" && styles.languageOptionActive]}
-              >
-                <Text style={[styles.languageText, language === "FR" && styles.languageTextActive]}>
-                  FR
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconText}>🎯</Text>
-              </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>Color blind mode</Text>
-                <Text style={styles.rowValue}>Swaps colour-only cues for patterns and labels</Text>
-              </View>
-            </View>
-            <Switch
-              value={colorBlindMode}
-              onValueChange={setColorBlindMode}
-              trackColor={{ false: "#d9d5d0", true: "#1d5c4d" }}
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <Pressable style={styles.rowItem} accessibilityRole="button">
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconText}>❔</Text>
-              </View>
-              <View style={styles.rowTextStack}>
-                <Text style={styles.rowLabel}>Help & support</Text>
-                <Text style={styles.rowValue}>FAQ, contact us, report a problem</Text>
-              </View>
-            </View>
-            <Text style={styles.rowChevron}>›</Text>
-          </Pressable>
+        <View style={[styles.card, styles.standaloneCard]}>
+          <Row
+            icon={<MaterialCommunityIcons name="volleyball" size={22} color={GREEN} />}
+            label="Request Organiser account"
+            value="Request account to Host and Manage tournaments"
+            onPress={() => {}}
+            last
+          />
         </View>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Log out"
-          onPress={handleLogout}
-          style={styles.primaryButton}
+          onPress={() => openDialog("logout")}
+          style={styles.logoutButton}
         >
-          <Text style={styles.primaryText}>↩ Log out</Text>
+          <Ionicons name="log-out-outline" size={20} color={GREEN} />
+          <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Delete account"
-          onPress={handleDeleteAccount}
-          disabled={deleting}
-          style={[styles.deleteButton, deleting && { opacity: 0.5 }]}
+          onPress={() => openDialog("delete")}
+          style={styles.deleteButton}
         >
-          <Text style={styles.deleteText}>{deleting ? "Deleting…" : "🗑 Delete account"}</Text>
+          <Ionicons name="trash" size={20} color={RED} />
+          <Text style={styles.deleteText}>Delete account</Text>
         </Pressable>
       </ScrollView>
 
       <Modal
-        visible={passwordPromptVisible}
+        visible={dialog !== null}
         transparent
         animationType="fade"
-        onRequestClose={closePasswordPrompt}
+        onRequestClose={closeDialog}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirm your password</Text>
-            <Text style={styles.rowValue}>
-              For security, please enter your password to finish deleting your account.
-            </Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              placeholder="Password"
-              style={styles.modalInput}
-            />
-            {!!passwordError && <Text style={styles.modalError}>{passwordError}</Text>}
-            <View style={styles.modalActions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={closePasswordPrompt}
-                style={styles.inlineAction}
-              >
-                <Text style={styles.inlineActionText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Delete my account"
-                onPress={deleteAccount}
-                disabled={!password || deleting}
-                style={[styles.modalDelete, (!password || deleting) && { opacity: 0.5 }]}
-              >
-                <Text style={styles.modalDeleteText}>
-                  {deleting ? "Deleting…" : "Delete account"}
-                </Text>
-              </Pressable>
-            </View>
+        <Pressable
+          testID="dialog-backdrop"
+          style={styles.modalBackdrop}
+          onPress={dialog && DISMISSABLE.includes(dialog) ? closeDialog : undefined}
+        >
+          {/* Catches taps on the card so they don't reach the backdrop. */}
+          <View testID="dialog" onStartShouldSetResponder={() => true} style={styles.modalCard}>
+            {renderDialog()}
           </View>
-        </View>
-      </Modal>
-
-      <Modal visible={editing !== null} transparent animationType="fade" onRequestClose={closeEdit}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {editing === "email" ? "Change e-mail" : "Change password"}
-            </Text>
-            <Text style={styles.rowValue}>
-              {editing === "email"
-                ? "Enter your current password and your new e-mail. We'll send a verification link to the new address."
-                : "Enter your current password, then choose a new one."}
-            </Text>
-            <TextInput
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              placeholder="Current password"
-              style={styles.modalInput}
-            />
-            <TextInput
-              value={newValue}
-              onChangeText={setNewValue}
-              secureTextEntry={editing === "password"}
-              autoCapitalize="none"
-              keyboardType={editing === "email" ? "email-address" : "default"}
-              placeholder={editing === "email" ? "New e-mail address" : "New password"}
-              style={styles.modalInput}
-            />
-            {editing === "password" && (
-              <TextInput
-                value={confirmValue}
-                onChangeText={setConfirmValue}
-                secureTextEntry
-                autoCapitalize="none"
-                placeholder="Confirm new password"
-                style={styles.modalInput}
-              />
-            )}
-            {!!editError && <Text style={styles.modalError}>{editError}</Text>}
-            <View style={styles.modalActions}>
-              <Pressable onPress={closeEdit} style={styles.inlineAction}>
-                <Text style={styles.inlineActionText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSaveEdit}
-                disabled={
-                  saving ||
-                  !currentPassword ||
-                  !newValue ||
-                  (editing === "password" && !confirmValue)
-                }
-                style={[
-                  styles.modalSave,
-                  (saving ||
-                    !currentPassword ||
-                    !newValue ||
-                    (editing === "password" && !confirmValue)) && { opacity: 0.5 },
-                ]}
-              >
-                <Text style={styles.modalSaveText}>{saving ? "Saving…" : "Save"}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+        </Pressable>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+// ---------- Building blocks ----------
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.card}>{children}</View>
+    </View>
+  );
+}
+
+function Row({
+  icon,
+  iconBackground = "#e2e8e3",
+  label,
+  value,
+  right,
+  onPress,
+  last,
+}: {
+  icon: ReactNode;
+  iconBackground?: string;
+  label: string;
+  value?: string;
+  right?: ReactNode;
+  onPress?: () => void;
+  last?: boolean;
+}) {
+  const content = (
+    <>
+      <View style={[styles.iconBadge, { backgroundColor: iconBackground }]}>{icon}</View>
+      <View style={styles.rowTextStack}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {!!value && (
+          <Text style={styles.rowValue} numberOfLines={2}>
+            {value}
+          </Text>
+        )}
+      </View>
+      {right ?? (onPress && <Ionicons name="chevron-forward" size={20} color={GREEN} />)}
+    </>
+  );
+  const style = [styles.row, !last && styles.rowDivider];
+  return onPress ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={style}
+    >
+      {content}
+    </Pressable>
+  ) : (
+    <View style={style}>{content}</View>
+  );
+}
+
+function DialogCard({
+  icon,
+  title,
+  message,
+  danger,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  message: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <View style={[styles.modalIcon, danger && styles.modalIconDanger]}>{icon}</View>
+      <Text style={styles.modalTitle}>{title}</Text>
+      <Text style={styles.modalMessage}>{message}</Text>
+      {children}
+    </>
+  );
+}
+
+function DialogActions({
+  onCancel,
+  confirmLabel,
+  onConfirm,
+  disabled,
+  danger,
+}: {
+  onCancel?: () => void;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <View style={styles.modalActions}>
+      {onCancel && (
+        <Pressable accessibilityRole="button" onPress={onCancel} style={styles.modalCancel}>
+          <Text style={styles.modalCancelText}>Cancel</Text>
+        </Pressable>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        onPress={onConfirm}
+        disabled={disabled}
+        style={[
+          styles.modalConfirm,
+          danger && styles.modalConfirmDanger,
+          disabled && styles.disabled,
+        ]}
+      >
+        <Text style={styles.modalConfirmText}>{confirmLabel}</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -665,97 +950,60 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 18,
-    paddingTop: 14,
+    paddingTop: 10,
     paddingBottom: 42,
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#f4f1ee",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
-  },
-  backText: {
-    fontSize: 30,
-    color: "#12382d",
-    lineHeight: 30,
   },
   heading: {
-    fontSize: 44,
+    fontSize: 34,
     fontWeight: "800",
-    color: "#12382d",
-    flex: 1,
+    color: GREEN,
+    marginTop: 10,
   },
   section: {
-    backgroundColor: "#f3f0ed",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
     marginTop: 18,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#5a675f",
     fontWeight: "700",
-    letterSpacing: 1,
     textTransform: "uppercase",
-    marginBottom: 10,
+    marginBottom: 6,
   },
-  rowItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  card: {
     backgroundColor: "#f7f5f2",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
   },
-  toggleRow: {
+  standaloneCard: {
+    marginTop: 12,
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#f7f5f2",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
+    paddingVertical: 12,
+    gap: 12,
   },
-  languageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#f7f5f2",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#cfcac4",
   },
   iconBadge: {
-    width: 30,
-    height: 30,
+    width: 42,
+    height: 42,
     borderRadius: 10,
-    backgroundColor: "#e6e8e4",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 16,
   },
   rowTextStack: {
     flex: 1,
@@ -763,73 +1011,18 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#12382d",
+    color: GREEN,
   },
   rowValue: {
     fontSize: 12,
-    color: "#687872",
+    color: MUTED,
     marginTop: 2,
   },
-  privacyNote: {
+  note: {
     fontSize: 12,
-    color: "#687872",
+    color: MUTED,
+    marginTop: 8,
     marginBottom: 10,
-  },
-  socialInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f7f5f2",
-    borderWidth: 1,
-    borderColor: "#dfe5df",
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    minHeight: 52,
-    gap: 2,
-    shadowColor: "#12382d",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  socialInput: {
-    flex: 1,
-    minWidth: 0,
-    color: "#12382d",
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-    fontSize: 12,
-  },
-  socialIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
-    marginRight: 0,
-  },
-  socialInputRowSpaced: {
-    marginTop: 12,
-  },
-  facebookMark: {
-    color: "#1d5c4d",
-    fontSize: 22,
-    fontWeight: "800",
-  },
-  socialSaveButton: {
-    backgroundColor: "#12382d",
-    borderRadius: 9,
-    marginLeft: 8,
-    minWidth: 74,
-    alignItems: "center",
-    paddingHorizontal: 9,
-    paddingVertical: 9,
-  },
-  socialSaveText: {
-    color: "#f5f3ef",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  disabledButton: {
-    opacity: 0.5,
   },
   genderOptions: {
     flexDirection: "row",
@@ -845,7 +1038,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   genderOptionActive: {
-    borderColor: "#12382d",
+    borderColor: GREEN,
     backgroundColor: "#dfe9e4",
   },
   genderOptionText: {
@@ -853,79 +1046,124 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   genderOptionTextActive: {
-    color: "#12382d",
+    color: GREEN,
   },
   clearGender: {
     alignSelf: "flex-start",
     marginTop: 10,
+    marginBottom: 8,
   },
   clearGenderText: {
-    color: "#687872",
+    color: MUTED,
+    fontSize: 12,
     textDecorationLine: "underline",
   },
-  rowChevron: {
-    fontSize: 26,
-    color: "#12382d",
+  socialInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#dfe5df",
+    borderRadius: 12,
+    paddingLeft: 10,
+    paddingRight: 5,
+    paddingVertical: 5,
+    gap: 4,
   },
-  inlineAction: {
-    backgroundColor: "#dfe9e4",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  socialInputRowSpaced: {
+    marginTop: 8,
+    marginBottom: 10,
   },
-  inlineActionText: {
-    color: "#12382d",
+  socialInput: {
+    flex: 1,
+    minWidth: 0,
+    color: GREEN,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    fontSize: 12,
+  },
+  socialSaveButton: {
+    backgroundColor: GREEN,
+    borderRadius: 8,
+    minWidth: 70,
+    alignItems: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  socialSaveText: {
+    color: "#f5f3ef",
+    fontSize: 12,
     fontWeight: "700",
+  },
+  disabled: {
+    opacity: 0.5,
   },
   languageToggle: {
     flexDirection: "row",
     backgroundColor: "#e5e1dc",
-    borderRadius: 10,
-    padding: 3,
+    borderRadius: 8,
+    padding: 2,
   },
   languageOption: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    minWidth: 42,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 30,
     alignItems: "center",
   },
   languageOptionActive: {
-    backgroundColor: "#f7f5f2",
+    backgroundColor: "#fff",
   },
   languageText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#5a675f",
+    color: "#8a948e",
   },
   languageTextActive: {
-    color: "#12382d",
+    color: GREEN,
   },
-  primaryButton: {
-    backgroundColor: "#f2f0ed",
+  colorOptions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  colorDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  colorDotSelected: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#f7f5f2",
     borderWidth: 1,
-    borderColor: "#12382d",
+    borderColor: GREEN,
     borderRadius: 14,
     paddingVertical: 14,
     marginTop: 24,
-    alignItems: "center",
   },
-  primaryText: {
-    color: "#12382d",
+  logoutText: {
+    color: GREEN,
     fontSize: 18,
     fontWeight: "700",
   },
   deleteButton: {
-    marginTop: 16,
-    backgroundColor: "#f2f0ed",
-    borderWidth: 1,
-    borderColor: "#d15b57",
-    borderRadius: 14,
-    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
+    gap: 8,
+    paddingVertical: 14,
+    marginTop: 6,
   },
   deleteText: {
-    color: "#d15b57",
+    color: RED,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -934,32 +1172,49 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 20,
   },
   modalCard: {
     width: "100%",
     maxWidth: 420,
     backgroundColor: "#f7f5f2",
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 22,
+    padding: 20,
+  },
+  modalIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#dfe5e0",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  modalIconDanger: {
+    backgroundColor: "#f6dcdc",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "800",
-    color: "#12382d",
-    marginBottom: 6,
+    color: GREEN,
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: "#4f5b55",
+    lineHeight: 20,
   },
   modalInput: {
     borderWidth: 1,
     borderColor: "#d9d5d0",
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 14,
+    paddingVertical: 11,
+    marginTop: 12,
     backgroundColor: "#fff",
   },
   modalError: {
-    color: "#d15b57",
+    color: RED,
     marginTop: 8,
     fontSize: 13,
   },
@@ -967,26 +1222,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 10,
-    marginTop: 16,
+    marginTop: 18,
   },
-  modalDelete: {
-    backgroundColor: "#d15b57",
+  modalCancel: {
+    backgroundColor: "#dfe3df",
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
   },
-  modalDeleteText: {
+  modalCancelText: {
+    color: GREEN,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  modalConfirm: {
+    backgroundColor: "#1f4535",
+    borderRadius: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  modalConfirmDanger: {
+    backgroundColor: RED,
+  },
+  modalConfirmText: {
     color: "#fff",
     fontWeight: "700",
-  },
-  modalSave: {
-    backgroundColor: "#12382d",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  modalSaveText: {
-    color: "#f5f3ef",
-    fontWeight: "700",
+    fontSize: 15,
   },
 });

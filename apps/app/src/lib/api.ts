@@ -7,6 +7,9 @@ import type { User } from "firebase/auth";
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+export type Language = "EN" | "FR";
+export type ColorTheme = "green" | "blue" | "pink";
+
 export type RallyUser = {
   id: string;
   displayName: string;
@@ -19,6 +22,12 @@ export type RallyUser = {
     formats: string[];
     positions: string[];
   };
+  // App settings from the Settings screen.
+  notificationsEnabled?: boolean;
+  language?: Language;
+  colorTheme?: ColorTheme;
+  colorBlindMode?: boolean;
+  darkMode?: boolean;
   createdAt: string;
   badges: {
     key: string;
@@ -42,12 +51,18 @@ export type RallyPlayer = Pick<
 
 export type Gender = "male" | "female";
 export type ProfileChanges =
+  | { displayName: string }
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
   | { facebookUrl: string | null }
   | { thoughtText: string | null }
-  | { interests: { formats: string[]; positions: string[] } };
+  | { interests: { formats: string[]; positions: string[] } }
+  | { notificationsEnabled: boolean }
+  | { language: Language }
+  | { colorTheme: ColorTheme }
+  | { colorBlindMode: boolean }
+  | { darkMode: boolean };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
