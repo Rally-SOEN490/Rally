@@ -23,6 +23,7 @@ import {
 } from "firebase/auth";
 import { Alert, Platform } from "react-native";
 import Settings from "@/app/settings";
+import { clearAccountDeleted, wasAccountJustDeleted } from "@/lib/account-deleted";
 import {
   ApiError,
   deleteMyAccount,
@@ -70,6 +71,7 @@ const account = {
 const setAccount = jest.fn();
 
 beforeEach(() => {
+  clearAccountDeleted();
   Object.assign(auth, { currentUser: user });
   jest.mocked(useSession).mockReturnValue(fakeSession({ user, account, setAccount }));
   jest.mocked(signOut).mockResolvedValue();
@@ -632,43 +634,21 @@ describe("delete account", () => {
     expect(deleteMyAccount).not.toHaveBeenCalled();
   });
 
-  it("checks the password, deletes Rally's data, then says the account was deleted", async () => {
+  it("deletes Rally's data and the login in one go, then goes to Sign up", async () => {
     await renderSettings();
     await fillDeleteForm();
     await confirmDeletion();
 
-    expect(await screen.findByText("Account deleted")).toBeOnTheScreen();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-up"));
     expect(EmailAuthProvider.credential).toHaveBeenCalledWith("sam@example.com", "secret123");
     expect(reauthenticateWithCredential).toHaveBeenCalledWith(user, "the-credential");
     expect(deleteMyAccount).toHaveBeenCalledWith(user);
-    // The login is kept until they've read the popup.
-    expect(deleteUser).not.toHaveBeenCalled();
-    expect(router.replace).not.toHaveBeenCalled();
-  });
-
-  it("deletes the login and goes to Sign up when OK is pressed", async () => {
-    await renderSettings();
-    await fillDeleteForm();
-    await confirmDeletion();
-    await screen.findByText("Account deleted");
-    await pressInDialog("OK");
-
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-up"));
     expect(deleteUser).toHaveBeenCalledWith(user);
     expect(jest.mocked(deleteMyAccount).mock.invocationCallOrder[0]).toBeLessThan(
       jest.mocked(deleteUser).mock.invocationCallOrder[0],
     );
-  });
-
-  it("also finishes when tapping outside the Account deleted popup", async () => {
-    await renderSettings();
-    await fillDeleteForm();
-    await confirmDeletion();
-    await screen.findByText("Account deleted");
-    await tapOutside();
-
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-up"));
-    expect(deleteUser).toHaveBeenCalledWith(user);
+    // Sign up reads this to show "Account deleted".
+    expect(wasAccountJustDeleted()).toBe(true);
   });
 
   it("accepts the e-mail with different capitals and extra spaces", async () => {
@@ -676,7 +656,8 @@ describe("delete account", () => {
     await fillDeleteForm("  SAM@Example.com ");
     await confirmDeletion();
 
-    expect(await screen.findByText("Account deleted")).toBeOnTheScreen();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-up"));
+    expect(deleteUser).toHaveBeenCalledWith(user);
   });
 
   it("deletes nothing when the e-mail isn't the account's", async () => {
@@ -687,6 +668,7 @@ describe("delete account", () => {
     expect(await screen.findByText("That e-mail doesn't match your account.")).toBeOnTheScreen();
     expect(reauthenticateWithCredential).not.toHaveBeenCalled();
     expect(deleteMyAccount).not.toHaveBeenCalled();
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("deletes nothing when the password is wrong", async () => {
@@ -720,28 +702,42 @@ describe("delete account", () => {
     await confirmDeletion();
 
     expect(await dialog().findByText("Can't reach the Rally server.")).toBeOnTheScreen();
-    expect(screen.queryByText("Account deleted")).not.toBeOnTheScreen();
     expect(deleteUser).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(wasAccountJustDeleted()).toBe(false);
     expect(dialog().getByRole("button", { name: "Delete account" })).toBeEnabled();
   });
 
-  it("explains when Firebase can't delete the login", async () => {
-    const alertSpy = jest.spyOn(Alert, "alert");
+  it("explains when the login can't be deleted, and stays on Settings", async () => {
     jest.mocked(deleteUser).mockRejectedValue(new Error("Network error"));
     await renderSettings();
     await fillDeleteForm();
     await confirmDeletion();
-    await screen.findByText("Account deleted");
-    await pressInDialog("OK");
 
-    await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith(
-        "Unable to finish deleting your account",
-        expect.any(String),
+    expect(
+      await dialog().findByText(
+        "Your Rally data was deleted, but your login couldn't be removed. Please try again.",
       ),
-    );
-    expectNoDialog();
+    ).toBeOnTheScreen();
     expect(router.replace).not.toHaveBeenCalled();
+    expect(wasAccountJustDeleted()).toBe(false);
+    expect(dialog().getByRole("button", { name: "Delete account" })).toBeEnabled();
+  });
+
+  it("finishes the job when they try again after the login couldn't be deleted", async () => {
+    jest.mocked(deleteUser).mockRejectedValueOnce(new Error("Network error"));
+    await renderSettings();
+    await fillDeleteForm();
+    await confirmDeletion();
+    await dialog().findByText(
+      "Your Rally data was deleted, but your login couldn't be removed. Please try again.",
+    );
+
+    await confirmDeletion();
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-up"));
+    expect(deleteMyAccount).toHaveBeenCalledTimes(2);
+    expect(deleteUser).toHaveBeenCalledTimes(2);
   });
 
   it("closes the popup and forgets what was typed on Cancel", async () => {

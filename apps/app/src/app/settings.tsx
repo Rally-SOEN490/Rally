@@ -39,6 +39,7 @@ import {
   type Language,
   type ProfileChanges,
 } from "@/lib/api";
+import { clearAccountDeleted, markAccountDeleted } from "@/lib/account-deleted";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
@@ -64,12 +65,11 @@ type Preferences = {
 // Every popup on this screen. Only one is shown at a time, inside a single
 // Modal, so going from "Change e-mail" to "Verification email sent" never
 // stacks two modals (which iOS doesn't handle well).
-type Dialog =
-  "name" | "email" | "password" | "logout" | "delete" | "emailSent" | "passwordChanged" | "deleted";
+type Dialog = "name" | "email" | "password" | "logout" | "delete" | "emailSent" | "passwordChanged";
 
 // Popups that close when you tap outside them. The ones with text fields
 // don't, so a stray tap can't throw away what you typed.
-const DISMISSABLE: Dialog[] = ["logout", "emailSent", "passwordChanged", "deleted"];
+const DISMISSABLE: Dialog[] = ["logout", "emailSent", "passwordChanged"];
 
 const notify = (title: string, message: string) => {
   if (Platform.OS === "web") window.alert(`${title}\n\n${message}`);
@@ -299,8 +299,9 @@ export default function Settings() {
     }
   };
 
-  // Step 1: check the e-mail and password, then delete from Rally's database
-  // and show "Account deleted".
+  // Deletes everything in one go: checks the e-mail and password, deletes the
+  // account from Rally's database, then deletes the Firebase login (which also
+  // logs them out) and goes to Sign up, which says the account was deleted.
   const deleteAccount = async () => {
     const current = auth.currentUser;
     if (!current?.email) return;
@@ -313,7 +314,7 @@ export default function Settings() {
     setDialogError("");
     try {
       // Firebase only deletes logins that signed in recently, so check the
-      // password first. This way the deletion can't be refused halfway.
+      // password first. This way Firebase can't refuse the deletion below.
       await reauthenticate(current, currentPassword);
     } catch (e) {
       setDialogError(authErrorMessage(e));
@@ -323,40 +324,30 @@ export default function Settings() {
 
     try {
       await deleteMyAccount(current);
-      resetFields();
-      setDialog("deleted");
     } catch (e) {
+      // Nothing was deleted, so they can simply try again.
       setDialogError(apiErrorMessage(e));
-    } finally {
       setBusy(false);
+      return;
     }
-  };
 
-  // Step 2, when they press OK or tap outside "Account deleted": delete the
-  // Firebase login and go to Sign up. This waits until now because deleting
-  // the login logs them out, and the guards in _layout.tsx would then close
-  // this screen (and the popup with it) before they could read it. If the app
-  // is closed before this runs, they can still log in, land on "Finish
-  // setting up", and delete again from here.
-  const finishDeletion = async () => {
-    if (busy) return;
-    const current = auth.currentUser;
-    setBusy(true);
     try {
-      if (current) await deleteUser(current); // also logs them out
-      // Sign up is only reachable once the session has noticed the log-out,
-      // so navigate on the next tick.
-      setTimeout(() => router.replace("/sign-up"), 0);
-    } catch (e) {
+      // Set before deleting: logging out can move them away from this screen
+      // before the line after deleteUser runs.
+      markAccountDeleted();
+      await deleteUser(current); // also logs them out
+    } catch {
+      clearAccountDeleted();
+      // Deleting Rally's data again is safe, so pressing Delete again finishes the job.
+      setDialogError(
+        "Your Rally data was deleted, but your login couldn't be removed. Please try again.",
+      );
       setBusy(false);
-      setDialog(null);
-      notify("Unable to finish deleting your account", authErrorMessage(e));
+      return;
     }
-  };
 
-  const dismissDialog = () => {
-    if (dialog === "deleted") void finishDeletion();
-    else closeDialog();
+    // Sign up only opens once the session has noticed the log-out, so wait a tick.
+    setTimeout(() => router.replace("/sign-up"), 0);
   };
 
   const errorText = !!dialogError && <Text style={styles.modalError}>{dialogError}</Text>;
@@ -534,17 +525,6 @@ export default function Settings() {
               disabled={busy || !deleteEmail.trim() || !currentPassword}
               danger
             />
-          </DialogCard>
-        );
-
-      case "deleted":
-        return (
-          <DialogCard
-            icon={<Ionicons name="checkmark-circle-outline" size={26} color={GREEN} />}
-            title="Account deleted"
-            message="Your account has been successfully deleted. We're sorry to see you go."
-          >
-            <DialogActions confirmLabel="OK" onConfirm={finishDeletion} disabled={busy} />
           </DialogCard>
         );
 
@@ -830,12 +810,12 @@ export default function Settings() {
         visible={dialog !== null}
         transparent
         animationType="fade"
-        onRequestClose={dismissDialog}
+        onRequestClose={closeDialog}
       >
         <Pressable
           testID="dialog-backdrop"
           style={styles.modalBackdrop}
-          onPress={dialog && DISMISSABLE.includes(dialog) ? dismissDialog : undefined}
+          onPress={dialog && DISMISSABLE.includes(dialog) ? closeDialog : undefined}
         >
           {/* Catches taps on the card so they don't reach the backdrop. */}
           <View testID="dialog" onStartShouldSetResponder={() => true} style={styles.modalCard}>
