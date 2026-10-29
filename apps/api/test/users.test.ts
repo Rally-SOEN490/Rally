@@ -14,6 +14,14 @@ afterAll(async () => {
 const register = (uid: string, body: object) =>
   app.inject({ method: "POST", url: "/users/me", headers: authHeader(uid), payload: body });
 
+const defaultSettings = {
+  notificationsEnabled: true,
+  language: "EN",
+  colorTheme: "green",
+  colorBlindMode: false,
+  darkMode: false,
+};
+
 describe("GET /users", () => {
   test("returns every other user with only directory fields", async () => {
     await register("zoe", { displayName: "Zoe", ageConfirmed: true });
@@ -103,13 +111,18 @@ describe("POST /users/me", () => {
 
     expect(Object.keys(response.json()).sort()).toEqual([
       "badges",
+      "colorBlindMode",
+      "colorTheme",
       "createdAt",
+      "darkMode",
       "displayName",
       "facebookUrl",
       "id",
       "instagramUrl",
       "interests",
+      "language",
       "lookingForTeam",
+      "notificationsEnabled",
       "shownBadgeKeys",
       "thoughtText",
     ]);
@@ -119,6 +132,12 @@ describe("POST /users/me", () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
     expect(response.json().lookingForTeam).toBe(false);
+  });
+
+  test("starts with the default app settings", async () => {
+    const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    expect(response.json()).toMatchObject(defaultSettings);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -607,6 +626,113 @@ describe("PATCH /users/me", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  describe("name", () => {
+    test("changes the name, trimming spaces, and other players see it", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      const updated = await update("alice", { displayName: "  Alice Smith " });
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json().displayName).toBe("Alice Smith");
+      expect((await getMe("alice")).json().displayName).toBe("Alice Smith");
+      const directory = await app.inject({
+        method: "GET",
+        url: "/users",
+        headers: authHeader("bob"),
+      });
+      expect(directory.json().map((user: { displayName: string }) => user.displayName)).toEqual([
+        "Alice Smith",
+      ]);
+    });
+
+    test("accepts accents and emoji", async () => {
+      const response = await update("alice", { displayName: "Zoé 🏐 Nguyễn" });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().displayName).toBe("Zoé 🏐 Nguyễn");
+    });
+
+    test.each([
+      ["blank", "   "],
+      ["empty", ""],
+      ["too long", "a".repeat(101)],
+      ["has an invisible character", "a\u0000b"],
+      ["has a line break", "Alice\nBob"],
+      ["is null", null],
+    ])("rejects a name that is %s", async (_, displayName) => {
+      const response = await update("alice", { displayName });
+
+      expect(response.statusCode).toBe(400);
+      expect((await getMe("alice")).json().displayName).toBe("Alice");
+    });
+  });
+
+  describe("app settings", () => {
+    test.each([
+      { notificationsEnabled: false },
+      { language: "FR" },
+      { colorTheme: "blue" },
+      { colorTheme: "pink" },
+      { colorBlindMode: true },
+      { darkMode: true },
+    ])("saves %j and returns it on later account loads", async (body) => {
+      const updated = await update("alice", body);
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toMatchObject(body);
+      expect((await getMe("alice")).json()).toMatchObject(body);
+    });
+
+    test("saves several settings at once and leaves the others alone", async () => {
+      const updated = await update("alice", { language: "FR", darkMode: true });
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toMatchObject({
+        ...defaultSettings,
+        language: "FR",
+        darkMode: true,
+      });
+      const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+      expect(saved).toMatchObject({ language: "FR", darkMode: true, colorTheme: "green" });
+    });
+
+    test.each([
+      ["an unsupported language", { language: "ES" }],
+      ["a lower-case language", { language: "fr" }],
+      ["an unsupported colour", { colorTheme: "red" }],
+      ["notifications as text", { notificationsEnabled: "false" }],
+      ["colour blind mode as a number", { colorBlindMode: 1 }],
+      ["dark mode as null", { darkMode: null }],
+    ])("rejects %s", async (_, body) => {
+      const response = await update("alice", body);
+
+      expect(response.statusCode).toBe(400);
+      expect((await getMe("alice")).json()).toMatchObject(defaultSettings);
+    });
+
+    test("changes only the logged-in user's settings", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      await update("alice", { darkMode: true, colorTheme: "pink" });
+
+      expect((await getMe("bob")).json()).toMatchObject(defaultSettings);
+    });
+
+    test("keeps settings out of the player directory", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+      await update("alice", { darkMode: true });
+
+      const directory = await app.inject({
+        method: "GET",
+        url: "/users",
+        headers: authHeader("bob"),
+      });
+
+      expect(directory.json()[0]).not.toHaveProperty("darkMode");
+      expect(directory.json()[0]).not.toHaveProperty("language");
+    });
+  });
+
   test("saves the change, so it's still there when the profile loads again", async () => {
     const updated = await update("alice", { lookingForTeam: true });
 
@@ -655,21 +781,23 @@ describe("PATCH /users/me", () => {
     expect(response.statusCode).toBe(401);
   });
 
+  // firebaseUid and gender are real columns, but this route must never change them.
   test.each([
     ["the body is empty", {}],
     ["the body isn't an object", [true]],
     ["the value is null", { lookingForTeam: null }],
     ["the value is text", { lookingForTeam: "true" }],
     ["the value is a number", { lookingForTeam: 1 }],
-    ["it has another field", { lookingForTeam: true, displayName: "Mallory" }],
-    ["it only has another field", { displayName: "Mallory" }],
+    ["it has another field", { lookingForTeam: true, firebaseUid: "mallory" }],
+    ["it only has another field", { firebaseUid: "mallory" }],
+    ["it tries to change the gender", { gender: "male" }],
   ])("rejects the request when %s", async (_, body) => {
     const response = await update("alice", body);
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
-    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false });
+    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false, gender: null });
   });
 });
 
