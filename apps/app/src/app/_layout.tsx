@@ -56,11 +56,10 @@ function RootNavigator() {
         <Stack.Screen name="finish-setup" />
       </Stack.Protected>
       <Stack.Protected guard={hasAccount}>
-        <Stack.Screen name="home" />
-        <Stack.Screen name="profile" />
+        {/* Home, Events, Search, Notifications and You, with the nav bar. */}
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
-        <Stack.Screen name="search" />
       </Stack.Protected>
     </Stack>
   );
