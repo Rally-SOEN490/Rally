@@ -81,12 +81,7 @@ export const Button = ({
   onPress?: () => void;
   testID?: string;
 }) => (
-  <Pressable
-    role="button"
-    testID={testID}
-    style={styles.button}
-    onPress={onPress}
-  >
+  <Pressable role="button" testID={testID} style={styles.button} onPress={onPress}>
     <Text style={styles.buttonText}>{title}</Text>
   </Pressable>
 );

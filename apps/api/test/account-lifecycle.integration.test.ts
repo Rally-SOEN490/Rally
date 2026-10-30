@@ -3,7 +3,6 @@ AI declaration:
 50% or more AI-generated
 */
 
-
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { authHeader, buildTestApp, testDb } from "./helpers.ts";
 

@@ -3,7 +3,6 @@ AI declaration:
 50% or more AI-generated
 */
 
-
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { authHeader, buildTestApp, testDb } from "./helpers.ts";
 
@@ -46,7 +45,9 @@ describe("authenticated account read performance", () => {
     const p95 = durations[Math.ceil(durations.length * 0.95) - 1] ?? 0;
 
     expect(responses.every((response) => response.statusCode === 200)).toBe(true);
-    expect(responses.every((response) => response.json().displayName === "Performance User")).toBe(true);
+    expect(responses.every((response) => response.json().displayName === "Performance User")).toBe(
+      true,
+    );
     expect(p95).toBeLessThan(p95LimitMs);
   });
 });

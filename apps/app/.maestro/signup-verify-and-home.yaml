@@ -1,7 +1,6 @@
 #AI declaration:
 #50% or more AI-generated
 
-
 appId: com.rally.app
 ---
 - launchApp:
