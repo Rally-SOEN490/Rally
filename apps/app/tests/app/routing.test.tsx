@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { act, renderRouter } from "expo-router/testing-library";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { Text } from "react-native";
+import TabsLayout from "@/app/(tabs)/_layout";
 import RootLayout from "@/app/_layout";
 import Index from "@/app/index";
 import { ApiError, getMyAccount, type RallyUser } from "@/lib/api";
@@ -13,6 +14,10 @@ import { auth } from "@/lib/firebase";
 jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn(), signOut: jest.fn() }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
+jest.mock("expo-blur", () => {
+  const { View } = jest.requireActual("react-native");
+  return { BlurView: (props: object) => <View {...props} /> };
+});
 
 const account = {
   id: "1",
@@ -32,8 +37,9 @@ beforeEach(() => {
   jest.mocked(getMyAccount).mockResolvedValue(account);
 });
 
-// The real layout and index decide where to go. The other screens are
-// replaced by simple placeholders so we can see which one is shown.
+// The real layouts and index decide where to go. The other screens are
+// replaced by simple placeholders so we can see which one is shown. Like the
+// real app, the main screens sit in the (tabs) folder with the nav bar.
 const renderApp = (initialUrl = "/") =>
   renderRouter(
     {
@@ -44,8 +50,12 @@ const renderApp = (initialUrl = "/") =>
       "recover-account": () => <Text>Recover account screen</Text>,
       "verify-email": () => <Text>Verify email screen</Text>,
       "finish-setup": () => <Text>Finish setup screen</Text>,
-      home: () => <Text>Home screen</Text>,
-      profile: () => <Text>Profile screen</Text>,
+      "(tabs)/_layout": TabsLayout,
+      "(tabs)/home": () => <Text>Home screen</Text>,
+      "(tabs)/events": () => <Text>Events screen</Text>,
+      "(tabs)/search": () => <Text>Search screen</Text>,
+      "(tabs)/notifications": () => <Text>Notifications screen</Text>,
+      "(tabs)/profile": () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
     },
     { initialUrl },
