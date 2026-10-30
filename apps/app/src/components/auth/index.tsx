@@ -72,8 +72,16 @@ export const Field = ({
   </View>
 );
 
-export const Button = ({ title, onPress }: { title: string; onPress?: () => void }) => (
-  <Pressable role="button" style={styles.button} onPress={onPress}>
+export const Button = ({
+  title,
+  onPress,
+  testID,
+}: {
+  title: string;
+  onPress?: () => void;
+  testID?: string;
+}) => (
+  <Pressable role="button" testID={testID} style={styles.button} onPress={onPress}>
     <Text style={styles.buttonText}>{title}</Text>
   </Pressable>
 );
@@ -82,12 +90,15 @@ export const Checkbox = ({
   checked,
   onChange,
   label,
+  testID,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  testID?: string;
 }) => (
   <Pressable
+    testID={testID}
     style={styles.checkboxRow}
     onPress={() => onChange(!checked)}
     accessibilityRole="checkbox"
