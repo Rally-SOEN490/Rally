@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { User } from "firebase/auth";
 
@@ -12,11 +7,27 @@ import type { User } from "firebase/auth";
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+export type Language = "EN" | "FR";
+export type ColorTheme = "green" | "blue" | "pink";
+
 export type RallyUser = {
   id: string;
   displayName: string;
   lookingForTeam: boolean;
   shownBadgeKeys?: string[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  thoughtText?: string | null;
+  interests?: {
+    formats: string[];
+    positions: string[];
+  };
+  // App settings from the Settings screen.
+  notificationsEnabled?: boolean;
+  language?: Language;
+  colorTheme?: ColorTheme;
+  colorBlindMode?: boolean;
+  darkMode?: boolean;
   createdAt: string;
   badges: {
     key: string;
@@ -33,10 +44,25 @@ export type RallyUser = {
   }[];
 };
 
+export type RallyPlayer = Pick<
+  RallyUser,
+  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+>;
+
 export type Gender = "male" | "female";
 export type ProfileChanges =
+  | { displayName: string }
   | { lookingForTeam: boolean }
-  | { shownBadgeKeys: string[] };
+  | { shownBadgeKeys: string[] }
+  | { instagramUrl: string | null }
+  | { facebookUrl: string | null }
+  | { thoughtText: string | null }
+  | { interests: { formats: string[]; positions: string[] } }
+  | { notificationsEnabled: boolean }
+  | { language: Language }
+  | { colorTheme: ColorTheme }
+  | { colorBlindMode: boolean }
+  | { darkMode: boolean };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
@@ -71,7 +97,10 @@ const request = async (
     },
     body: body && JSON.stringify(body),
   }).catch(() => {
-    throw new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again.");
+    throw new ApiError(
+      0,
+      "Can't reach the Rally server. Check your internet connection and try again.",
+    );
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
@@ -89,6 +118,8 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   });
+
+export const getPlayers = (user: User): Promise<RallyPlayer[]> => request(user, "GET", "/users");
 
 export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
   request(user, "PATCH", "/users/me", changes);

@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { afterAll, expect, test } from "vitest";
 import { buildApp } from "../src/app.ts";
@@ -16,7 +15,9 @@ test("hides internal details when something breaks on the server", async () => {
   const brokenDb = {
     user: {
       findUnique: () =>
-        Promise.reject(new Error("Invalid `prisma.user.findUnique()`: database `rally` does not exist")),
+        Promise.reject(
+          new Error("Invalid `prisma.user.findUnique()`: database `rally` does not exist"),
+        ),
     },
   } as unknown as Database;
   const brokenApp = await buildApp({
@@ -25,10 +26,16 @@ test("hides internal details when something breaks on the server", async () => {
     corsOrigins: [],
   });
 
-  const response = await brokenApp.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+  const response = await brokenApp.inject({
+    method: "GET",
+    url: "/users/me",
+    headers: authHeader("alice"),
+  });
 
   expect(response.statusCode).toBe(500);
-  expect(response.json()).toEqual({ message: "Something went wrong on our side. Please try again." });
+  expect(response.json()).toEqual({
+    message: "Something went wrong on our side. Please try again.",
+  });
   await brokenApp.close();
 });
 

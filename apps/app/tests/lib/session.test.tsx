@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -30,11 +25,56 @@ const account = {
 const accountWithBadges = {
   ...account,
   badges: [
-    { key: "bronze", name: "Bronze", tier: "Bronze", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 2, awardedAt: "" },
-    { key: "gold", name: "Gold", tier: "Gold", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 20, awardedAt: "" },
-    { key: "silver", name: "Silver", tier: "Silver", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 10, awardedAt: "" },
-    { key: "winner", name: "Winner", tier: "Gold", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 15, awardedAt: "" },
-    { key: "extra", name: "Extra", tier: "Bronze", description: "", imageUrl: null, image: "badge-gold-placeholder", receivedCount: 12, awardedAt: "" },
+    {
+      key: "bronze",
+      name: "Bronze",
+      tier: "Bronze",
+      description: "",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 2,
+      awardedAt: "",
+    },
+    {
+      key: "gold",
+      name: "Gold",
+      tier: "Gold",
+      description: "",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 20,
+      awardedAt: "",
+    },
+    {
+      key: "silver",
+      name: "Silver",
+      tier: "Silver",
+      description: "",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 10,
+      awardedAt: "",
+    },
+    {
+      key: "winner",
+      name: "Winner",
+      tier: "Gold",
+      description: "",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 15,
+      awardedAt: "",
+    },
+    {
+      key: "extra",
+      name: "Extra",
+      tier: "Bronze",
+      description: "",
+      imageUrl: null,
+      image: "badge-gold-placeholder",
+      receivedCount: 12,
+      awardedAt: "",
+    },
   ],
 };
 const verified = { uid: "sam", email: "sam@example.com", emailVerified: true } as User;
@@ -55,8 +95,7 @@ beforeEach(() => {
   }));
 });
 
-const renderSession = () =>
-  renderHook(() => useSession(), { wrapper: SessionProvider });
+const renderSession = () => renderHook(() => useSession(), { wrapper: SessionProvider });
 
 it("is loading until Firebase reports who is signed in", async () => {
   const { result } = await renderSession();
@@ -131,12 +170,7 @@ describe("the Rally account", () => {
     await act(async () => reportUser(verified));
 
     await waitFor(() =>
-      expect(result.current.selectedBadgeKeys).toEqual([
-        "gold",
-        "winner",
-        "extra",
-        "silver",
-      ]),
+      expect(result.current.selectedBadgeKeys).toEqual(["gold", "winner", "extra", "silver"]),
     );
   });
 
@@ -160,12 +194,7 @@ describe("the Rally account", () => {
     await act(async () => reportUser(verified));
 
     await waitFor(() =>
-      expect(result.current.selectedBadgeKeys).toEqual([
-        "gold",
-        "winner",
-        "extra",
-        "silver",
-      ]),
+      expect(result.current.selectedBadgeKeys).toEqual(["gold", "winner", "extra", "silver"]),
     );
   });
 
@@ -193,12 +222,7 @@ describe("the Rally account", () => {
 
     await act(async () => result.current.toggleBadgeSelection("bronze"));
 
-    expect(result.current.selectedBadgeKeys).toEqual([
-      "gold",
-      "winner",
-      "extra",
-      "silver",
-    ]);
+    expect(result.current.selectedBadgeKeys).toEqual(["gold", "winner", "extra", "silver"]);
   });
 
   it("is loaded right after refresh() sees the email is now verified", async () => {
@@ -225,7 +249,9 @@ describe("the Rally account", () => {
   });
 
   it("reports why it couldn't be loaded, and can try again", async () => {
-    jest.mocked(getMyAccount).mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
+    jest
+      .mocked(getMyAccount)
+      .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     const { result } = await renderSession();
     await act(async () => reportUser(verified));
 

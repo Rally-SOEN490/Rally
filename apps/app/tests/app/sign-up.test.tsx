@@ -1,8 +1,7 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
-import { screen, userEvent, waitFor } from "@testing-library/react-native";
-import { renderRouter } from "expo-router/testing-library";
+import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { fireEvent, renderRouter } from "expo-router/testing-library";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -14,6 +13,7 @@ import { Text } from "react-native";
 import SignUp from "@/app/sign-up";
 import { ApiError, saveNewUser, type RallyUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
+import { clearAccountDeleted, markAccountDeleted } from "@/lib/account-deleted";
 
 jest.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: jest.fn(),
@@ -26,7 +26,9 @@ jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), saveNewUser:
 const newUser = { email: "sam@example.com" } as User;
 
 beforeEach(() => {
-  jest.mocked(createUserWithEmailAndPassword).mockResolvedValue({ user: newUser } as UserCredential);
+  jest
+    .mocked(createUserWithEmailAndPassword)
+    .mockResolvedValue({ user: newUser } as UserCredential);
   jest.mocked(updateProfile).mockResolvedValue();
   jest.mocked(sendEmailVerification).mockResolvedValue();
   jest.mocked(saveNewUser).mockResolvedValue({} as RallyUser);
@@ -38,7 +40,11 @@ const renderSignUp = () =>
     { initialUrl: "/sign-up" },
   );
 
-const fillInForm = async ({ name = "Sam Lee", confirmPassword = "secret123", tickAge = true } = {}) => {
+const fillInForm = async ({
+  name = "Sam Lee",
+  confirmPassword = "secret123",
+  tickAge = true,
+} = {}) => {
   await userEvent.type(screen.getByPlaceholderText("Full Name"), name);
   await userEvent.type(screen.getByPlaceholderText("E-mail address"), "sam@example.com");
   await userEvent.type(screen.getByPlaceholderText("Password"), "secret123");
@@ -107,7 +113,9 @@ it("stops when the 14-or-older box isn't ticked", async () => {
 });
 
 it("shows a friendly message when the email is already used", async () => {
-  jest.mocked(createUserWithEmailAndPassword).mockRejectedValue({ code: "auth/email-already-in-use" });
+  jest
+    .mocked(createUserWithEmailAndPassword)
+    .mockRejectedValue({ code: "auth/email-already-in-use" });
   await renderSignUp();
   await fillInForm();
   await submit();
@@ -142,4 +150,31 @@ it("links to Login", async () => {
   await renderSignUp();
   await userEvent.press(screen.getByText("Log in"));
   expect(await screen.findByText("Login screen")).toBeOnTheScreen();
+});
+
+describe("after deleting an account", () => {
+  afterEach(clearAccountDeleted);
+
+  it("says the account was deleted, and closes on OK", async () => {
+    markAccountDeleted();
+    await render(<SignUp />);
+
+    expect(screen.getByText("Account deleted")).toBeOnTheScreen();
+    await userEvent.press(screen.getByRole("button", { name: "OK" }));
+    expect(screen.queryByText("Account deleted")).not.toBeOnTheScreen();
+  });
+
+  it("also closes when tapping outside the popup", async () => {
+    markAccountDeleted();
+    await render(<SignUp />);
+
+    await fireEvent.press(screen.getByTestId("account-deleted-backdrop"));
+    expect(screen.queryByText("Account deleted")).not.toBeOnTheScreen();
+  });
+
+  it("doesn't show the popup on a normal visit", async () => {
+    await render(<SignUp />);
+
+    expect(screen.queryByText("Account deleted")).not.toBeOnTheScreen();
+  });
 });

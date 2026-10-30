@@ -1,7 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { Stack } from "expo-router";
 import { useState } from "react";
@@ -24,8 +22,7 @@ function RootNavigator() {
   // Wait until we know who is signed in and whether they have a Rally account.
   // Otherwise every guard starts out false, and opening or reloading a URL
   // like /profile would be sent to index before the session has loaded.
-  const isSettled =
-    !isLoading && (!user?.emailVerified || account !== undefined || !!accountError);
+  const isSettled = !isLoading && (!user?.emailVerified || account !== undefined || !!accountError);
   const [hasSettled, setHasSettled] = useState(isSettled);
   if (isSettled && !hasSettled) setHasSettled(true);
 
@@ -63,6 +60,7 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="search" />
       </Stack.Protected>
     </Stack>
   );

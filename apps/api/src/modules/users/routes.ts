@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { FastifyPluginAsync } from "fastify";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
@@ -15,6 +10,35 @@ import type { Gender } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
+const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
+const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
+const languages = ["EN", "FR"] as const;
+const colorThemes = ["green", "blue", "pink"] as const;
+
+// At least one character that isn't a space, and no invisible control
+// characters (PostgreSQL can't store some of them). Used at sign-up and when
+// the name is changed in Settings.
+const displayNameSchema = {
+  type: "string",
+  maxLength: 100,
+  pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
+} as const;
+
+// Fields the app may change with PATCH /users/me.
+const editableFields = [
+  "displayName",
+  "lookingForTeam",
+  "shownBadgeKeys",
+  "instagramUrl",
+  "facebookUrl",
+  "thoughtText",
+  "interests",
+  "notificationsEnabled",
+  "language",
+  "colorTheme",
+  "colorBlindMode",
+  "darkMode",
+] as const;
 
 const noAccount = { message: "No Rally account found." };
 
@@ -27,6 +51,20 @@ export const userRoutes: FastifyPluginAsync<{
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));
 
+  app.get(
+    "/",
+    {
+      schema: {
+        querystring: {
+          type: "object",
+          additionalProperties: false,
+          properties: {},
+        },
+      },
+    },
+    (request) => users.getDirectory(request.firebaseUid),
+  );
+
   // Saves the logged-in person in Rally's database. The app calls this right after sign-up.
   app.post<{ Body: RegisterBody }>(
     "/me",
@@ -36,13 +74,7 @@ export const userRoutes: FastifyPluginAsync<{
           type: "object",
           required: ["displayName", "ageConfirmed"],
           properties: {
-            // At least one character that isn't a space, and no invisible
-            // control characters (PostgreSQL can't store some of them).
-            displayName: {
-              type: "string",
-              maxLength: 100,
-              pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
-            },
+            displayName: displayNameSchema,
             ageConfirmed: { const: true },
           },
         },
@@ -63,9 +95,11 @@ export const userRoutes: FastifyPluginAsync<{
         body: {
           type: "object",
           additionalProperties: false,
-          propertyNames: { enum: ["lookingForTeam", "shownBadgeKeys"] },
-          anyOf: [{ required: ["lookingForTeam"] }, { required: ["shownBadgeKeys"] }],
+          propertyNames: { enum: editableFields },
+          // At least one field must be sent.
+          anyOf: editableFields.map((field) => ({ required: [field] })),
           properties: {
+            displayName: displayNameSchema,
             lookingForTeam: { enum: [true, false] },
             shownBadgeKeys: {
               type: "array",
@@ -73,6 +107,58 @@ export const userRoutes: FastifyPluginAsync<{
               uniqueItems: true,
               items: { type: "string", minLength: 1 },
             },
+            instagramUrl: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 2048,
+                  pattern: "^https://(www\\.)?instagram\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
+                },
+              ],
+            },
+            facebookUrl: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 2048,
+                  pattern: "^https://(www\\.)?facebook\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
+                },
+              ],
+            },
+            thoughtText: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "string",
+                  maxLength: 180,
+                  pattern: "^(?:\\P{Cc}|\\n|\\r)*$",
+                },
+              ],
+            },
+            interests: {
+              type: "object",
+              additionalProperties: false,
+              required: ["formats", "positions"],
+              properties: {
+                formats: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestFormats },
+                },
+                positions: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: interestPositions },
+                },
+              },
+            },
+            notificationsEnabled: { enum: [true, false] },
+            language: { enum: languages },
+            colorTheme: { enum: colorThemes },
+            colorBlindMode: { enum: [true, false] },
+            darkMode: { enum: [true, false] },
           },
         },
       },

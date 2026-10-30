@@ -1,11 +1,10 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { router } from "expo-router";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -13,8 +12,10 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import * as Linking from "expo-linking";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiErrorMessage, updateMyAccount, type RallyUser } from "@/lib/api";
@@ -27,7 +28,20 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const interested = ["Beach 2s", "Indoor 6s", "Cobra 6s", "Weekend leagues"];
+const interestFormats = [
+  { key: "indoor-6s", label: "Indoor 6s" },
+  { key: "beach-2s", label: "Beach 2s" },
+  { key: "9-man", label: "9-man" },
+] as const;
+const interestPositions = [
+  { key: "libero", label: "Libero" },
+  { key: "outside", label: "Outside" },
+  { key: "setter", label: "Setter" },
+  { key: "middle", label: "Middle" },
+  { key: "opposite", label: "Opposite" },
+] as const;
+type InterestCategory = "formats" | "positions";
+type InterestOption = (typeof interestFormats)[number] | (typeof interestPositions)[number];
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -55,18 +69,123 @@ const getBadgeProgress = (receivedCount: number, nextTierThreshold?: number | nu
   };
 };
 
+const InstagramLogo = () => (
+  <View style={styles.instagramLogo}>
+    <View style={styles.instagramLens} />
+    <View style={styles.instagramDot} />
+  </View>
+);
+
+const FacebookLogo = () => (
+  <View style={styles.facebookLogo}>
+    <Text style={styles.facebookLogoText}>f</Text>
+  </View>
+);
+
+const InterestPills = ({
+  category,
+  options,
+  selectedKeys,
+  saving,
+  onToggle,
+}: {
+  category: InterestCategory;
+  options: readonly InterestOption[];
+  selectedKeys: string[];
+  saving: boolean;
+  onToggle: (category: InterestCategory, key: string) => void;
+}) => (
+  <View style={styles.tagRow}>
+    {options.map(({ key, label }) => {
+      const selected = selectedKeys.includes(key);
+      return (
+        <Pressable
+          key={key}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}${selected ? " selected" : ""}`}
+          accessibilityState={{ selected, disabled: saving }}
+          disabled={saving}
+          onPress={() => onToggle(category, key)}
+          style={[styles.tagPill, selected && styles.tagPillSelected]}
+        >
+          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>{label}</Text>
+        </Pressable>
+      );
+    })}
+  </View>
+);
+
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
-  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
-    null,
-  );
+  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(null);
   const hasSavedShownBadges = account?.shownBadgeKeys !== undefined;
   const lookingForTeam = account?.lookingForTeam ?? false;
   // The switch shows this right away; the badge waits for the server.
   const [savingValue, setSavingValue] = useState<boolean>();
   const [saveError, setSaveError] = useState("");
   const saving = savingValue !== undefined;
+  const [thoughtEditorVisible, setThoughtEditorVisible] = useState(false);
+  const [thoughtText, setThoughtText] = useState(account?.thoughtText ?? "");
+  const [thoughtSaving, setThoughtSaving] = useState(false);
+  const [thoughtError, setThoughtError] = useState("");
+  const [interestSelection, setInterestSelection] = useState(() => ({
+    formats: account?.interests?.formats ?? [],
+    positions: account?.interests?.positions ?? [],
+  }));
+  const [interestSaving, setInterestSaving] = useState(false);
+  const [interestError, setInterestError] = useState("");
+
+  const openThoughtEditor = () => {
+    setThoughtText(account?.thoughtText ?? "");
+    setThoughtError("");
+    setThoughtEditorVisible(true);
+  };
+
+  const saveThought = async () => {
+    if (!user) return;
+    const text = thoughtText.trim();
+    if (!text) {
+      setThoughtError("Write a thought before sharing.");
+      return;
+    }
+    setThoughtSaving(true);
+    setThoughtError("");
+    try {
+      setAccount(
+        await updateMyAccount(user, {
+          thoughtText: text || null,
+        }),
+      );
+      setThoughtEditorVisible(false);
+    } catch (error) {
+      setThoughtError(apiErrorMessage(error));
+    } finally {
+      setThoughtSaving(false);
+    }
+  };
+
+  const deleteThought = async () => {
+    if (!user) return;
+    setThoughtSaving(true);
+    setThoughtError("");
+    try {
+      setAccount(
+        await updateMyAccount(user, {
+          thoughtText: null,
+        }),
+      );
+      setThoughtEditorVisible(false);
+    } catch (error) {
+      setThoughtError(apiErrorMessage(error));
+    } finally {
+      setThoughtSaving(false);
+    }
+  };
+
+  const openProfilePictureEditor = () => {
+    Alert.alert("Edit profile picture", "Profile picture selection will be available here.");
+  };
 
   const changeLookingForTeam = async (value: boolean) => {
     if (!user) return;
@@ -78,6 +197,28 @@ export default function Profile() {
       setSaveError(apiErrorMessage(e));
     } finally {
       setSavingValue(undefined);
+    }
+  };
+
+  const toggleInterest = async (category: InterestCategory, key: string) => {
+    if (!user || interestSaving) return;
+    const previousSelection = interestSelection;
+    const nextSelection = {
+      ...previousSelection,
+      [category]: previousSelection[category].includes(key)
+        ? previousSelection[category].filter((selectedKey) => selectedKey !== key)
+        : [...previousSelection[category], key],
+    };
+    setInterestSelection(nextSelection);
+    setInterestSaving(true);
+    setInterestError("");
+    try {
+      setAccount(await updateMyAccount(user, { interests: nextSelection }));
+    } catch (error) {
+      setInterestSelection(previousSelection);
+      setInterestError(apiErrorMessage(error));
+    } finally {
+      setInterestSaving(false);
     }
   };
 
@@ -96,11 +237,75 @@ export default function Profile() {
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatarBadge}>
-            <Text style={styles.avatarText}>M</Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={account?.thoughtText ? "Edit thought" : "Add a thought"}
+            onPress={openThoughtEditor}
+            style={styles.thoughtBubbleButton}
+          >
+            <View style={styles.thoughtBubble}>
+              <Text numberOfLines={3} style={styles.thoughtBubbleText}>
+                {account?.thoughtText || "Your thought"}
+              </Text>
+              <View style={styles.thoughtBubbleTail} />
+              <View style={styles.thoughtBubbleTailDot} />
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile picture"
+            onPress={openProfilePictureEditor}
+            style={styles.avatarWithThought}
+          >
+            <View style={styles.avatarBadge}>
+              <Text style={styles.avatarText}>M</Text>
+            </View>
+            <View style={styles.profilePictureEditBadge}>
+              <Text style={styles.profilePictureEditText}>✎</Text>
+            </View>
+          </Pressable>
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
+          <View style={styles.socialLinks}>
+            {[
+              {
+                name: "Instagram",
+                url: account?.instagramUrl,
+                Logo: InstagramLogo,
+              },
+              {
+                name: "Facebook",
+                url: account?.facebookUrl,
+                Logo: FacebookLogo,
+              },
+            ].map(({ name, url, Logo }) => (
+              <Pressable
+                key={name}
+                accessibilityRole={url ? "link" : "button"}
+                accessibilityLabel={`${name}${url ? " profile" : " (not connected)"}`}
+                onPress={() =>
+                  url
+                    ? Linking.openURL(url).catch(() => {
+                        Alert.alert(`Unable to open ${name}`, "Please try opening the link again.");
+                      })
+                    : router.push("/settings")
+                }
+                style={[styles.socialLink, !url && styles.socialLinkPlaceholder]}
+              >
+                <Logo />
+                <View>
+                  <Text style={styles.socialLinkText}>{name}</Text>
+                  <Text
+                    accessibilityLabel={`${name} ${url ? "connected" : "not connected"}`}
+                    testID={`${name.toLowerCase()}-status`}
+                    style={styles.socialLinkStatus}
+                  >
+                    {url ? "Connected" : "Not connected"}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
           {lookingForTeam && (
             <View testID="looking-for-team-badge" style={styles.lookingBadge}>
               <View style={styles.lookingDot} />
@@ -113,9 +318,7 @@ export default function Profile() {
           <View style={styles.lookingRow}>
             <View style={styles.lookingTextStack}>
               <Text style={styles.lookingTitle}>Looking for a team</Text>
-              <Text style={styles.lookingHint}>
-                Captains will see a badge on your profile.
-              </Text>
+              <Text style={styles.lookingHint}>Captains will see a badge on your profile.</Text>
             </View>
             {saving && (
               <ActivityIndicator
@@ -179,8 +382,7 @@ export default function Profile() {
             {[...(account?.badges ?? [])]
               .sort(
                 (left, right) =>
-                  right.receivedCount - left.receivedCount ||
-                  left.key.localeCompare(right.key),
+                  right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
               )
               .filter((badge) =>
                 hasSavedShownBadges ? selectedBadgeKeys.includes(badge.key) : true,
@@ -226,7 +428,10 @@ export default function Profile() {
                           style={styles.progressTrack}
                         >
                           <View
-                            style={[styles.progressFill, { width: `${progress.percentage * 100}%` }]}
+                            style={[
+                              styles.progressFill,
+                              { width: `${progress.percentage * 100}%` },
+                            ]}
                           />
                         </View>
                         <Text style={styles.progressText}>
@@ -242,13 +447,27 @@ export default function Profile() {
 
         <View style={styles.tagSection}>
           <Text style={styles.sectionTitle}>Interested in</Text>
-          <View style={styles.tagRow}>
-            {interested.map((tag) => (
-              <View key={tag} style={styles.tagPill}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+          <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
+          <InterestPills
+            category="formats"
+            options={interestFormats}
+            selectedKeys={interestSelection.formats}
+            saving={interestSaving}
+            onToggle={toggleInterest}
+          />
+          <Text style={styles.tagGroupLabel}>POSITIONS</Text>
+          <InterestPills
+            category="positions"
+            options={interestPositions}
+            selectedKeys={interestSelection.positions}
+            saving={interestSaving}
+            onToggle={toggleInterest}
+          />
+          {!!interestError && (
+            <Text accessibilityRole="alert" style={styles.saveError}>
+              {interestError}
+            </Text>
+          )}
         </View>
 
         <View style={styles.resultsSection}>
@@ -278,19 +497,11 @@ export default function Profile() {
         animationType="fade"
         onRequestClose={() => setSelectedBadge(null)}
       >
-        <Pressable
-          onPress={() => setSelectedBadge(null)}
-          style={styles.modalBackdrop}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={styles.badgeDetails}
-          >
+        <Pressable onPress={() => setSelectedBadge(null)} style={styles.modalBackdrop}>
+          <Pressable onPress={(event) => event.stopPropagation()} style={styles.badgeDetails}>
             <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
             <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
-            <Text style={styles.badgeDetailsDescription}>
-              {selectedBadge?.description}
-            </Text>
+            <Text style={styles.badgeDetailsDescription}>{selectedBadge?.description}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close badge details"
@@ -299,6 +510,81 @@ export default function Profile() {
             >
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={thoughtEditorVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setThoughtEditorVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setThoughtEditorVisible(false)}>
+          <Pressable style={styles.thoughtEditor} onPress={(event) => event.stopPropagation()}>
+            <View style={styles.thoughtEditorHeader}>
+              <View style={styles.thoughtEditorIcon}>
+                <Text style={styles.thoughtEditorIconText}>✦</Text>
+              </View>
+              <View style={styles.thoughtEditorHeading}>
+                <Text style={styles.thoughtEditorTitle}>
+                  {account?.thoughtText ? "Edit your thought" : "Share a thought"}
+                </Text>
+                <Text style={styles.thoughtEditorHint}>This appears publicly on your profile.</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close thought editor"
+                onPress={() => setThoughtEditorVisible(false)}
+                style={styles.thoughtEditorClose}
+              >
+                <Text style={styles.thoughtEditorCloseText}>×</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.thoughtFieldLabel}>MESSAGE</Text>
+            <TextInput
+              accessibilityLabel="Thought"
+              maxLength={180}
+              multiline
+              onChangeText={setThoughtText}
+              placeholder="Your thoughts go here..."
+              placeholderTextColor="#8a9690"
+              submitBehavior="newline"
+              style={styles.thoughtInput}
+              value={thoughtText}
+            />
+            <Text style={styles.thoughtCharacterCount}>{thoughtText.length}/180</Text>
+            {!!thoughtError && (
+              <Text accessibilityRole="alert" style={styles.saveError}>
+                {thoughtError}
+              </Text>
+            )}
+            <View style={styles.thoughtActions}>
+              {account?.thoughtText && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete thought"
+                  disabled={thoughtSaving}
+                  onPress={deleteThought}
+                  style={styles.deleteThoughtButton}
+                >
+                  <Text style={styles.deleteThoughtText}>Delete</Text>
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share thought"
+                disabled={thoughtSaving}
+                onPress={saveThought}
+                style={styles.shareThoughtButton}
+              >
+                {thoughtSaving ? (
+                  <ActivityIndicator color="#f7f4f1" />
+                ) : (
+                  <Text style={styles.shareThoughtText}>Share</Text>
+                )}
+              </Pressable>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -316,14 +602,25 @@ export default function Profile() {
             style={[styles.navItem, item.active && styles.navItemActive]}
             onPress={() => {
               if (item.label === "Home") router.replace("/home");
+              if (item.label === "Search") router.replace("/search");
             }}
             accessibilityRole="button"
             accessibilityLabel={item.label}
           >
             <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
+              {item.label === "Home"
+                ? "⌂"
+                : item.label === "Events"
+                  ? "◫"
+                  : item.label === "Search"
+                    ? "⌕"
+                    : item.label === "Notifications"
+                      ? "◔"
+                      : "◉"}
             </Text>
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>{item.label}</Text>
+            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
+              {item.label}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -360,6 +657,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  avatarWithThought: {
+    alignItems: "center",
+    position: "relative",
+  },
+  thoughtBubbleButton: {
+    alignItems: "center",
+    marginBottom: 3,
+    transform: [{ translateX: 16 }],
+  },
   avatarBadge: {
     width: 108,
     height: 108,
@@ -375,6 +681,66 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#12382d",
   },
+  thoughtBubble: {
+    maxWidth: 260,
+    minWidth: 162,
+    minHeight: 50,
+    paddingHorizontal: 19,
+    paddingVertical: 13,
+    borderRadius: 26,
+    backgroundColor: "#f8f8f6",
+    shadowColor: "#12382d",
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  thoughtBubbleText: {
+    color: "#68706c",
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  thoughtBubbleTail: {
+    position: "absolute",
+    bottom: -10,
+    left: 30,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#f8f8f6",
+    transform: [{ rotate: "28deg" }],
+  },
+  thoughtBubbleTailDot: {
+    position: "absolute",
+    bottom: -21,
+    left: 46,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: "#f8f8f6",
+  },
+  profilePictureEditBadge: {
+    position: "absolute",
+    right: -3,
+    bottom: -1,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#e8e4df",
+  },
+  profilePictureEditText: {
+    color: "#f7f4f1",
+    fontSize: 18,
+    fontWeight: "700",
+  },
   playerName: {
     marginTop: 12,
     fontSize: 28,
@@ -385,6 +751,75 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 15,
     color: "#536761",
+  },
+  socialLinks: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  socialLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 132,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderRadius: 14,
+    backgroundColor: "#f7f5f2",
+    borderWidth: 1,
+    borderColor: "#d9d5d0",
+  },
+  socialLinkPlaceholder: {
+    opacity: 0.55,
+  },
+  socialLinkText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  socialLinkStatus: {
+    color: "#687872",
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  instagramLogo: {
+    width: 25,
+    height: 25,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  instagramLens: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+  },
+  instagramDot: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d62976",
+  },
+  facebookLogo: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  facebookLogoText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+    lineHeight: 24,
   },
   lookingBadge: {
     flexDirection: "row",
@@ -591,10 +1026,10 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(18, 56, 45, 0.45)",
+    backgroundColor: "rgba(18, 56, 45, 0.52)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 18,
   },
   badgeDetails: {
     width: "100%",
@@ -622,6 +1057,128 @@ const styles = StyleSheet.create({
     marginTop: 14,
     textAlign: "center",
   },
+  thoughtEditor: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#fbfaf8",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#071c15",
+    shadowOpacity: 0.2,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  thoughtEditorHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  thoughtEditorIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#dcebe4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  thoughtEditorIconText: {
+    color: "#0b5544",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  thoughtEditorHeading: {
+    flex: 1,
+  },
+  thoughtEditorClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#edf0ed",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  thoughtEditorCloseText: {
+    color: "#536761",
+    fontSize: 22,
+    fontWeight: "400",
+    lineHeight: 25,
+  },
+  thoughtEditorTitle: {
+    color: "#12382d",
+    fontSize: 21,
+    fontWeight: "800",
+  },
+  thoughtEditorHint: {
+    color: "#536761",
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+  thoughtFieldLabel: {
+    color: "#789087",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  thoughtInput: {
+    minHeight: 76,
+    maxHeight: 92,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#d4dfd9",
+    backgroundColor: "#ffffff",
+    color: "#12382d",
+    fontSize: 15,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    textAlignVertical: "top",
+  },
+  thoughtCharacterCount: {
+    alignSelf: "flex-end",
+    color: "#97a49e",
+    fontSize: 11,
+    marginTop: 4,
+    marginBottom: 13,
+  },
+  thoughtActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 0,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e7ebe8",
+  },
+  deleteThoughtButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  deleteThoughtText: {
+    color: "#c24f4b",
+    fontWeight: "700",
+  },
+  shareThoughtButton: {
+    minWidth: 92,
+    alignItems: "center",
+    backgroundColor: "#12382d",
+    borderRadius: 999,
+    paddingHorizontal: 17,
+    paddingVertical: 10,
+    shadowColor: "#063e31",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  shareThoughtText: {
+    color: "#f7f4f1",
+    fontWeight: "700",
+  },
   closeButton: {
     backgroundColor: "#12382d",
     borderRadius: 999,
@@ -643,6 +1200,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
+  tagGroupLabel: {
+    color: "#789087",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    marginTop: 14,
+  },
   tagPill: {
     backgroundColor: "#f2f0ed",
     borderRadius: 999,
@@ -651,10 +1215,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d9d5d0",
   },
+  tagPillSelected: {
+    backgroundColor: "#dfe9e4",
+    borderColor: "#1d5c4d",
+  },
   tagText: {
     fontSize: 12,
     color: "#12382d",
     fontWeight: "600",
+  },
+  tagTextSelected: {
+    color: "#12382d",
+    fontWeight: "800",
   },
   resultsSection: {
     marginTop: 24,

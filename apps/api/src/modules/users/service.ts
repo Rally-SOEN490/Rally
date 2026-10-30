@@ -1,12 +1,7 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
-
-import type { ProfileChanges, UserRepository } from "./repository.ts";
+import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
@@ -15,6 +10,19 @@ export type UserResponse = {
   displayName: string;
   lookingForTeam: boolean;
   shownBadgeKeys: string[];
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  thoughtText: string | null;
+  interests: {
+    formats: string[];
+    positions: string[];
+  };
+  // App settings. Only sent to the person themselves (the directory leaves them out).
+  notificationsEnabled: boolean;
+  language: Language;
+  colorTheme: ColorTheme;
+  colorBlindMode: boolean;
+  darkMode: boolean;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -31,15 +39,67 @@ export type UserResponse = {
   }>;
 };
 
+export type UserDirectoryResponse = Pick<
+  UserResponse,
+  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+>;
+
 export type Gender = "male" | "female";
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
+
+// Turns one of the user's badges into what the API sends back.
+const toBadgeResponse = ({
+  badgeType,
+  receivedCount,
+  awardedAt,
+}: UserWithBadges["badges"][number]): UserResponse["badges"][number] => {
+  const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
+  const availableTiers = definition?.availableTiers ?? ["Bronze"];
+  const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
+  const tier = getBadgeTier(badgeType.tier, receivedCount, availableTiers, tierThresholds);
+  const completion = getBadgeCompletion(
+    badgeType.tier as "Bronze" | "Silver" | "Gold",
+    tier,
+    availableTiers,
+    tierThresholds,
+    receivedCount,
+  );
+
+  return {
+    key: badgeType.key,
+    name: badgeType.name,
+    tier,
+    description: badgeType.description,
+    imageUrl: badgeType.imageUrl,
+    image: badgeType.imageUrl ?? "badge-gold-placeholder",
+    availableTiers: [...availableTiers],
+    ...completion,
+    receivedCount,
+    awardedAt: awardedAt.toISOString(),
+  };
+};
 
 const toResponse = (user: UserWithBadges): UserResponse => ({
   id: user.id,
   displayName: user.displayName,
   lookingForTeam: user.lookingForTeam,
   shownBadgeKeys: [...user.shownBadgeKeys],
+  instagramUrl: user.instagramUrl,
+  facebookUrl: user.facebookUrl,
+  thoughtText: user.thoughtText,
+  interests: {
+    formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
+    positions: user.interests
+      .filter(({ category }) => category === "position")
+      .map(({ key }) => key),
+  },
+  notificationsEnabled: user.notificationsEnabled,
+  // The route only stores the allowed values, so these casts are safe.
+  language: user.language as Language,
+  colorTheme: user.colorTheme as ColorTheme,
+  colorBlindMode: user.colorBlindMode,
+  darkMode: user.darkMode,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
@@ -47,40 +107,24 @@ const toResponse = (user: UserWithBadges): UserResponse => ({
         right.receivedCount - left.receivedCount ||
         left.badgeType.key.localeCompare(right.badgeType.key),
     )
-    .map(({ badgeType, receivedCount, awardedAt }) => {
-      const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
-      const availableTiers = definition?.availableTiers ?? ["Bronze"];
-      const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
-      const tier = getBadgeTier(
-        badgeType.tier,
-        receivedCount,
-        availableTiers,
-        tierThresholds,
-      );
-      const completion = getBadgeCompletion(
-        badgeType.tier as "Bronze" | "Silver" | "Gold",
-        tier,
-        availableTiers,
-        tierThresholds,
-        receivedCount,
-      );
-
-      return {
-        key: badgeType.key,
-        name: badgeType.name,
-        tier,
-        description: badgeType.description,
-        imageUrl: badgeType.imageUrl,
-        image: badgeType.imageUrl ?? "badge-gold-placeholder",
-        availableTiers: [...availableTiers],
-        ...completion,
-        receivedCount,
-        awardedAt: awardedAt.toISOString(),
-      };
-    }),
+    .map(toBadgeResponse),
 });
 
+const toDirectoryResponse = (user: UserWithBadges): UserDirectoryResponse => {
+  const response = toResponse(user);
+  return {
+    id: response.id,
+    displayName: response.displayName,
+    lookingForTeam: response.lookingForTeam,
+    createdAt: response.createdAt,
+    badges: response.badges,
+  };
+};
+
 export const createUserService = (users: UserRepository) => ({
+  getDirectory: async (firebaseUid: string) =>
+    (await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse),
+
   // The route only accepts the request if the person confirmed their age.
   register: async (firebaseUid: string, displayName: string) =>
     toResponse(

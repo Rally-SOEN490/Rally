@@ -1,7 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { router } from "expo-router";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -30,15 +28,13 @@ const lockedAwards = [
 ] as const;
 
 const getBadgeProgress = (receivedCount: number, nextTierThreshold?: number | null) => {
-  const target =
-    nextTierThreshold ?? (Math.floor(Math.max(0, receivedCount) / 10) + 1) * 10;
+  const target = nextTierThreshold ?? (Math.floor(Math.max(0, receivedCount) / 10) + 1) * 10;
   return { target, percentage: Math.min(receivedCount / target, 1) };
 };
 
 const sortBadges = (badges: RallyUser["badges"]) =>
   [...badges].sort(
-    (left, right) =>
-      right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
+    (left, right) => right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
   );
 
 export default function Awards() {
@@ -140,7 +136,10 @@ function AwardTile({
         <Image
           accessibilityLabel={`${badge.name} award image`}
           source={badgeImages[badge.image as keyof typeof badgeImages]}
-          style={[styles.awardImage, { borderColor: tierColors[badge.tier as keyof typeof tierColors] }]}
+          style={[
+            styles.awardImage,
+            { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
+          ]}
         />
         {selected && <Text style={styles.checkmark}>✓</Text>}
       </View>
@@ -151,7 +150,9 @@ function AwardTile({
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progress.percentage * 100}%` }]} />
           </View>
-          <Text style={styles.progressText}>{badge.receivedCount}/{progress.target}</Text>
+          <Text style={styles.progressText}>
+            {badge.receivedCount}/{progress.target}
+          </Text>
         </>
       )}
     </Pressable>
@@ -211,16 +212,36 @@ const styles = StyleSheet.create({
   goldStarBottom: { bottom: 0 },
   goldStarLeft: { left: 0 },
   checkmark: {
-    position: "absolute", right: -1, top: -1, width: 16, height: 16, borderRadius: 8,
-    backgroundColor: "#164d3d", color: "#fff", fontSize: 11, textAlign: "center",
+    position: "absolute",
+    right: -1,
+    top: -1,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#164d3d",
+    color: "#fff",
+    fontSize: 11,
+    textAlign: "center",
   },
   lock: {
-    position: "absolute", right: -1, bottom: -1, width: 16, height: 16, borderRadius: 8,
+    position: "absolute",
+    right: -1,
+    bottom: -1,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     tintColor: "#718079",
   },
   awardName: { marginTop: 3, color: "#12382d", fontSize: 10, textAlign: "center" },
   tierText: { marginTop: 2, color: "#718079", fontSize: 9, textAlign: "center" },
-  progressTrack: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#d9d5d0", marginTop: 5, overflow: "hidden" },
+  progressTrack: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d9d5d0",
+    marginTop: 5,
+    overflow: "hidden",
+  },
   progressFill: { height: "100%", borderRadius: 2, backgroundColor: "#b47a2a" },
   progressText: { marginTop: 2, color: "#718079", fontSize: 9 },
 });
