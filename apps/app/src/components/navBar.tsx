@@ -41,8 +41,11 @@ const useNativeDriver = Platform.OS !== "web";
 // When the open tab changes, the bubble springs over to it and swells briefly
 // on the way, then settles. Nothing moves when the bar first appears.
 function useBubbleAnimation(activeIndex: number) {
-  const position = useRef(new Animated.Value(activeIndex)).current;
-  const swell = useRef(new Animated.Value(0)).current;
+  // Created once and kept for the life of the bar. (useState rather than
+  // useRef, because React's lint rules don't allow reading a ref while drawing.)
+  const [position] = useState(() => new Animated.Value(activeIndex));
+  const [swell] = useState(() => new Animated.Value(0));
+  // Only read inside the effect, to skip the animation on the first draw.
   const shownIndex = useRef(activeIndex);
 
   useEffect(() => {
