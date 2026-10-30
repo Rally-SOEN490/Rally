@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -96,6 +97,18 @@ it.each([
   ["a verified user away from Sign up", "/sign-up", verified, "Home screen"],
   ["a signed-out user away from Verify email", "/verify-email", signedOut, "Login screen"],
   ["a signed-out user away from Profile", "/profile", signedOut, "Login screen"],
+  ["a signed-out user away from Events", "/events", signedOut, "Login screen"],
+  ["a signed-out user away from Search", "/search", signedOut, "Login screen"],
+  ["a signed-out user away from Notifications", "/notifications", signedOut, "Login screen"],
+  ["an unverified user away from Events", "/events", unverified, "Verify email screen"],
+  ["an unverified user away from Search", "/search", unverified, "Verify email screen"],
+  [
+    "an unverified user away from Notifications",
+    "/notifications",
+    unverified,
+    "Verify email screen",
+  ],
+  ["an unverified user away from Profile", "/profile", unverified, "Verify email screen"],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -155,7 +168,7 @@ describe("the Rally account", () => {
     expect(await screen.findByText("Finish setup screen")).toBeOnTheScreen();
   });
 
-  it.each(["/home", "/profile", "/settings"])(
+  it.each(["/home", "/events", "/search", "/notifications", "/profile", "/settings"])(
     "keeps a user without an account away from %s",
     async (url) => {
       jest.mocked(getMyAccount).mockResolvedValue(null);
@@ -176,6 +189,9 @@ describe("the Rally account", () => {
   describe("when the app is reloaded", () => {
     it.each([
       ["/home", "Home screen"],
+      ["/events", "Events screen"],
+      ["/search", "Search screen"],
+      ["/notifications", "Notifications screen"],
       ["/profile", "Profile screen"],
       ["/settings", "Settings screen"],
     ])("stays on %s", async (url, expected) => {
@@ -213,6 +229,9 @@ describe("the Rally account", () => {
   });
 
   it.each([
+    ["/events", "Events screen"],
+    ["/search", "Search screen"],
+    ["/notifications", "Notifications screen"],
     ["/profile", "Profile screen"],
     ["/settings", "Settings screen"],
   ] as const)("lets a user with an account open %s", async (url, expected) => {
