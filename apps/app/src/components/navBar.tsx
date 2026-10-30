@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// The tabs, in order. `name` is the screen's file name in app/(tabs).
 export const NAV_TABS = [
   { name: "home", label: "Home", icon: "home-outline" },
   { name: "events", label: "Events", icon: "trophy-outline" },
@@ -34,15 +33,9 @@ export type NavTabName = (typeof NAV_TABS)[number]["name"];
 const GREEN = "#12382d";
 const MUTED = "#3f4a46";
 
-// The native driver isn't available on the web; there the animation runs in JavaScript.
 const useNativeDriver = Platform.OS !== "web";
 
-// Where the bubble is, counted in tabs (0 = Home), and how swollen it is (0 = at rest).
-// When the open tab changes, the bubble springs over to it and swells briefly
-// on the way, then settles. Nothing moves when the bar first appears.
 function useBubbleAnimation(activeIndex: number) {
-  // Created once and kept for the life of the bar. (useState rather than
-  // useRef, because React's lint rules don't allow reading a ref while drawing.)
   const [position] = useState(() => new Animated.Value(activeIndex));
   const [swell] = useState(() => new Animated.Value(0));
   // Only read inside the effect, to skip the animation on the first draw.
@@ -149,7 +142,6 @@ export function NavBar({
     NAV_TABS.findIndex((tab) => tab.name === active),
   );
   const { position, swell } = useBubbleAnimation(activeIndex);
-  // How wide each tab is, known once the bar has been laid out.
   const [tabWidth, setTabWidth] = useState(0);
   const measure = (event: LayoutChangeEvent) =>
     setTabWidth((event.nativeEvent.layout.width - BAR_PADDING * 2) / NAV_TABS.length);
