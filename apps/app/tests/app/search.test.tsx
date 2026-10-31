@@ -2,15 +2,13 @@
 // AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
-import { router } from "expo-router";
 import type { User } from "firebase/auth";
-import SearchScreen from "@/app/search";
+import SearchScreen from "@/app/(tabs)/search";
 import { SearchBar } from "@/components/searchBar";
 import { ApiError, getPlayers } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
-jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
@@ -127,27 +125,6 @@ it("shows and searches mock tournament names", async () => {
 
   expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
   expect(screen.queryByText("Montreal Spring Open")).not.toBeOnTheScreen();
-});
-
-it("navigates to the profile from the You tab", async () => {
-  await render(<SearchScreen />);
-  await userEvent.press(screen.getByRole("button", { name: "You" }));
-
-  expect(router.replace).toHaveBeenCalledWith("/profile");
-});
-
-it("replaces Search with Home", async () => {
-  await render(<SearchScreen />);
-  await userEvent.press(screen.getByRole("button", { name: "Home" }));
-
-  expect(router.replace).toHaveBeenCalledWith("/home");
-});
-
-it.each(["Search", "Events", "Notifications"])("does not navigate from the %s tab", async (tab) => {
-  await render(<SearchScreen />);
-  await userEvent.press(screen.getByRole("button", { name: tab }));
-
-  expect(router.replace).not.toHaveBeenCalled();
 });
 
 it("remembers the selected tab after leaving and reopening Search", async () => {
