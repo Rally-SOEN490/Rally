@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { User } from "firebase/auth";
 import {
@@ -86,7 +81,10 @@ describe("getMyAccount", () => {
 
     const error = await getMyAccount(user).catch((e) => e);
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 500, message: "Something went wrong. Please try again." });
+    expect(error).toMatchObject({
+      status: 500,
+      message: "Something went wrong. Please try again.",
+    });
   });
 
   it("explains when the API can't be reached", async () => {
@@ -282,4 +280,23 @@ it("calls the address in EXPO_PUBLIC_API_URL when it is set", async () => {
   } finally {
     delete process.env.EXPO_PUBLIC_API_URL;
   }
+});
+
+it("sends a new name or an app setting", async () => {
+  respond(200, { ...account, displayName: "Sam Park", darkMode: true });
+
+  await updateMyAccount(user, { displayName: "Sam Park" });
+  expect(fetch).toHaveBeenLastCalledWith("http://localhost:3000/users/me", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer the-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName: "Sam Park" }),
+  });
+
+  await expect(updateMyAccount(user, { darkMode: true })).resolves.toMatchObject({
+    darkMode: true,
+  });
+  expect(fetch).toHaveBeenLastCalledWith(
+    "http://localhost:3000/users/me",
+    expect.objectContaining({ body: JSON.stringify({ darkMode: true }) }),
+  );
 });

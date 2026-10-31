@@ -115,9 +115,7 @@ const InterestPills = ({
           onPress={() => onToggle(category, key)}
           style={[styles.tagPill, selected && styles.tagPillSelected]}
         >
-          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>
-            {label}
-          </Text>
+          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>{label}</Text>
         </Pressable>
       );
     })}
@@ -127,9 +125,7 @@ const InterestPills = ({
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
-  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(
-    null,
-  );
+  const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(null);
   const [photoActionsVisible, setPhotoActionsVisible] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const [photoSaving, setPhotoSaving] = useState(false);
@@ -180,10 +176,12 @@ export default function Profile() {
         return;
       }
 
-      setAccount(await uploadMyProfilePhoto(user, {
-        uri: asset.uri,
-        mimeType: asset.mimeType ?? null,
-      }));
+      setAccount(
+        await uploadMyProfilePhoto(user, {
+          uri: asset.uri,
+          mimeType: asset.mimeType ?? null,
+        }),
+      );
     } catch (error) {
       setPhotoError(apiErrorMessage(error));
     } finally {
@@ -251,10 +249,7 @@ export default function Profile() {
     }
   };
 
-  const toggleInterest = async (
-    category: InterestCategory,
-    key: string,
-  ) => {
+  const toggleInterest = async (category: InterestCategory, key: string) => {
     if (!user || interestSaving) return;
     const previousSelection = interestSelection;
     const nextSelection = {
@@ -307,7 +302,9 @@ export default function Profile() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={account?.profilePhotoUrl ? "Profile photo options" : "Change profile photo"}
+            accessibilityLabel={
+              account?.profilePhotoUrl ? "Profile photo options" : "Change profile photo"
+            }
             onPress={() => {
               if (account?.profilePhotoUrl) setPhotoActionsVisible(true);
               else void choosePhoto();
@@ -331,9 +328,7 @@ export default function Profile() {
               )}
             </View>
             <View style={styles.photoActionBadge}>
-              <Text style={styles.photoActionIcon}>
-                {account?.profilePhotoUrl ? "✎" : "📷"}
-              </Text>
+              <Text style={styles.photoActionIcon}>{account?.profilePhotoUrl ? "✎" : "📷"}</Text>
             </View>
           </Pressable>
           {!photoActionsVisible && !!photoError && (
@@ -393,9 +388,7 @@ export default function Profile() {
           <View style={styles.lookingRow}>
             <View style={styles.lookingTextStack}>
               <Text style={styles.lookingTitle}>Looking for a team</Text>
-              <Text style={styles.lookingHint}>
-                Captains will see a badge on your profile.
-              </Text>
+              <Text style={styles.lookingHint}>Captains will see a badge on your profile.</Text>
             </View>
             {saving && (
               <ActivityIndicator
@@ -459,8 +452,7 @@ export default function Profile() {
             {[...(account?.badges ?? [])]
               .sort(
                 (left, right) =>
-                  right.receivedCount - left.receivedCount ||
-                  left.key.localeCompare(right.key),
+                  right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
               )
               .filter((badge) =>
                 hasSavedShownBadges ? selectedBadgeKeys.includes(badge.key) : true,
@@ -506,7 +498,10 @@ export default function Profile() {
                           style={styles.progressTrack}
                         >
                           <View
-                            style={[styles.progressFill, { width: `${progress.percentage * 100}%` }]}
+                            style={[
+                              styles.progressFill,
+                              { width: `${progress.percentage * 100}%` },
+                            ]}
                           />
                         </View>
                         <Text style={styles.progressText}>
@@ -539,7 +534,9 @@ export default function Profile() {
             onToggle={toggleInterest}
           />
           {!!interestError && (
-            <Text accessibilityRole="alert" style={styles.saveError}>{interestError}</Text>
+            <Text accessibilityRole="alert" style={styles.saveError}>
+              {interestError}
+            </Text>
           )}
         </View>
 
@@ -593,7 +590,9 @@ export default function Profile() {
               disabled={photoSaving}
               style={styles.removePhotoButton}
             >
-              <Text style={styles.removePhotoButtonText}>{photoSaving ? "Removing..." : "Remove photo"}</Text>
+              <Text style={styles.removePhotoButtonText}>
+                {photoSaving ? "Removing..." : "Remove photo"}
+              </Text>
             </Pressable>
             {!!photoError && <Text style={styles.photoError}>{photoError}</Text>}
             <Pressable
@@ -624,9 +623,7 @@ export default function Profile() {
           <View style={styles.badgeDetails}>
             <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
             <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
-            <Text style={styles.badgeDetailsDescription}>
-              {selectedBadge?.description}
-            </Text>
+            <Text style={styles.badgeDetailsDescription}>{selectedBadge?.description}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close badge details"
@@ -686,7 +683,9 @@ export default function Profile() {
             />
             <Text style={styles.thoughtCharacterCount}>{thoughtText.length}/180</Text>
             {!!thoughtError && (
-              <Text accessibilityRole="alert" style={styles.saveError}>{thoughtError}</Text>
+              <Text accessibilityRole="alert" style={styles.saveError}>
+                {thoughtError}
+              </Text>
             )}
             <View style={styles.thoughtActions}>
               {account?.thoughtText && (
@@ -737,9 +736,19 @@ export default function Profile() {
             accessibilityLabel={item.label}
           >
             <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
+              {item.label === "Home"
+                ? "⌂"
+                : item.label === "Events"
+                  ? "◫"
+                  : item.label === "Search"
+                    ? "⌕"
+                    : item.label === "Notifications"
+                      ? "◔"
+                      : "◉"}
             </Text>
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>{item.label}</Text>
+            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
+              {item.label}
+            </Text>
           </Pressable>
         ))}
       </View>

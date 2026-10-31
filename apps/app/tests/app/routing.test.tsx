@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -218,7 +217,9 @@ describe("the Rally account", () => {
 
   describe("when it can't be loaded", () => {
     beforeEach(() => {
-      jest.mocked(getMyAccount).mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
+      jest
+        .mocked(getMyAccount)
+        .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     });
 
     it("explains the problem", async () => {

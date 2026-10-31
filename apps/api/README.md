@@ -33,15 +33,15 @@ Open http://localhost:3000/health. You should see `{"status":"ok"}`. Press `Ctrl
 
 After pulling new code, run `npm install` and `npm run db:deploy` in case someone added a package or a table.
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Starts the API and restarts it when files change |
-| `npm test` | Runs the tests against the separate `rally_test` database |
-| `npm run test:coverage` | Runs the tests and shows which lines they cover (full report in `coverage/`) |
-| `npm run typecheck` | Checks the TypeScript types |
-| `npm run db:deploy` | Applies new migrations to your database |
-| `npm run db:migrate -- --name <name>` | Creates a migration after you change the schema |
-| `npm run db:studio` | Opens a web page where you can browse and edit the tables |
+| Command                               | What it does                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run dev`                         | Starts the API and restarts it when files change                             |
+| `npm test`                            | Runs the tests against the separate `rally_test` database                    |
+| `npm run test:coverage`               | Runs the tests and shows which lines they cover (full report in `coverage/`) |
+| `npm run typecheck`                   | Checks the TypeScript types                                                  |
+| `npm run db:deploy`                   | Applies new migrations to your database                                      |
+| `npm run db:migrate -- --name <name>` | Creates a migration after you change the schema                              |
+| `npm run db:studio`                   | Opens a web page where you can browse and edit the tables                    |
 
 ## Changing the database
 

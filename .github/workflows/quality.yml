@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+name: Code quality
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-format:
+    name: Lint and format (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [app, api]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.project }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: npm run format:check
+
+  web-build:
+    name: App web build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build app for web
+        env:
+          # Static rendering initializes Firebase. These dummy values need no
+          # secrets or live services, so fork PRs can run this build too.
+          EXPO_NO_DOTENV: "1"
+          EXPO_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: rally-ci.invalid
+          EXPO_PUBLIC_FIREBASE_PROJECT_ID: rally-ci
+          EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: rally-ci.invalid
+          EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          EXPO_PUBLIC_FIREBASE_APP_ID: ci-placeholder
+        run: npm run build:web

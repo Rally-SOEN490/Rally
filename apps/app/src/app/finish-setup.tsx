@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { signOut } from "firebase/auth";
 import { useState } from "react";
@@ -21,8 +20,7 @@ export default function FinishSetup() {
   const save = () => {
     if (!user) return;
     if (!name.trim()) return alert("Please enter your name.");
-    if (!isOldEnough)
-      return alert("You must be 14 or older to create a Rally account.");
+    if (!isOldEnough) return alert("You must be 14 or older to create a Rally account.");
     saveNewUser(user, name)
       .then(setAccount)
       .catch((e) => alert(apiErrorMessage(e)));

@@ -1,9 +1,8 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii } from '@/constants/rallyTheme';
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, radii } from "@/constants/rallyTheme";
 
 type Props<T extends string> = {
   options: readonly { value: T; label: string }[];
@@ -11,11 +10,7 @@ type Props<T extends string> = {
   onChange: (value: T) => void;
 };
 
-export function SegmentedToggle<T extends string>({
-  options,
-  selected,
-  onChange,
-}: Props<T>) {
+export function SegmentedToggle<T extends string>({ options, selected, onChange }: Props<T>) {
   return (
     <View style={styles.track} accessibilityRole="tablist">
       {options.map((option) => {
@@ -40,7 +35,7 @@ export function SegmentedToggle<T extends string>({
 
 const styles = StyleSheet.create({
   track: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.forest,
     borderRadius: radii.pill,
     padding: 5,
@@ -49,15 +44,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   segmentActive: {
     backgroundColor: colors.white,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   labelActive: {
     color: colors.forest,

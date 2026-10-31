@@ -34,6 +34,11 @@ model User {
   ageConfirmedAt DateTime @map("age_confirmed_at") @db.Timestamptz
   lookingForTeam Boolean  @default(false) @map("looking_for_team")
   shownBadgeKeys String[] @default([]) @map("shown_badges")
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+  language             String  @default("EN") // "EN" or "FR"
+  colorTheme           String  @default("green") @map("color_theme") // "green", "blue" or "pink"
+  colorBlindMode       Boolean @default(false) @map("color_blind_mode")
+  darkMode             Boolean @default(false) @map("dark_mode")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]

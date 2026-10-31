@@ -1,11 +1,13 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+
 import { StyleSheet } from "react-native";
 
 const green = "#2F5D46";
 export const yellow = "#F2C230";
 
 export const styles = StyleSheet.create({
-  screen: { 
-    flex: 1
+  screen: {
+    flex: 1,
   },
   // On the web the photo is drawn at its full size (1838 × 3840) unless we
   // say otherwise, so only its black top-left corner is visible.
@@ -13,13 +15,13 @@ export const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  content: { 
-    padding: 16, 
-    paddingTop: 85 
+  content: {
+    padding: 16,
+    paddingTop: 85,
   },
-  center: { 
-    alignItems: "center", 
-    justifyContent: "center" 
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   logo: {
     width: 60,
@@ -33,11 +35,11 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 16,
   },
-  hero: { 
-    color: "#fff", 
-    fontSize: 34, 
-    fontWeight: "700", 
-    textAlign: "center" 
+  hero: {
+    color: "#fff",
+    fontSize: 34,
+    fontWeight: "700",
+    textAlign: "center",
   },
   highlight: {
     color: yellow,
@@ -51,10 +53,10 @@ export const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  muted: { 
-    color: "#777", 
-    fontSize: 12, 
-    textAlign: "center" 
+  muted: {
+    color: "#777",
+    fontSize: 12,
+    textAlign: "center",
   },
   title: {
     color: "#222",
@@ -70,10 +72,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
   },
-  input: { 
-    flex: 1, 
-    paddingVertical: 12, 
-    color: "#222" 
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    color: "#222",
   },
   button: {
     backgroundColor: green,
@@ -81,9 +83,9 @@ export const styles = StyleSheet.create({
     padding: 12,
     alignItems: "center",
   },
-  buttonText: { 
-    color: yellow, 
-    fontWeight: "600" 
+  buttonText: {
+    color: yellow,
+    fontWeight: "600",
   },
   googleButton: {
     width: 44,
@@ -115,8 +117,8 @@ export const styles = StyleSheet.create({
     flex: 1,
     color: "#222",
   },
-  link: { 
-    color: green, 
-    fontWeight: "700" 
+  link: {
+    color: green,
+    fontWeight: "700",
   },
 });

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import type { ProfileChanges, UserRepository } from "./repository.ts";
+import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
 
@@ -19,6 +19,12 @@ export type UserResponse = {
     formats: string[];
     positions: string[];
   };
+  // App settings. Only sent to the person themselves (the directory leaves them out).
+  notificationsEnabled: boolean;
+  language: Language;
+  colorTheme: ColorTheme;
+  colorBlindMode: boolean;
+  darkMode: boolean;
   createdAt: string;
   badges: Array<{
     key: string;
@@ -44,10 +50,46 @@ export type Gender = "male" | "female";
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
 
-const toResponse = async (user: UserWithBadges, photos?: ProfilePhotoStorage): Promise<UserResponse> => ({
+// Turns one of the user's badges into what the API sends back.
+const toBadgeResponse = ({
+  badgeType,
+  receivedCount,
+  awardedAt,
+}: UserWithBadges["badges"][number]): UserResponse["badges"][number] => {
+  const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
+  const availableTiers = definition?.availableTiers ?? ["Bronze"];
+  const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
+  const tier = getBadgeTier(badgeType.tier, receivedCount, availableTiers, tierThresholds);
+  const completion = getBadgeCompletion(
+    badgeType.tier as "Bronze" | "Silver" | "Gold",
+    tier,
+    availableTiers,
+    tierThresholds,
+    receivedCount,
+  );
+
+  return {
+    key: badgeType.key,
+    name: badgeType.name,
+    tier,
+    description: badgeType.description,
+    imageUrl: badgeType.imageUrl,
+    image: badgeType.imageUrl ?? "badge-gold-placeholder",
+    availableTiers: [...availableTiers],
+    ...completion,
+    receivedCount,
+    awardedAt: awardedAt.toISOString(),
+  };
+};
+
+const toResponse = async (
+  user: UserWithBadges,
+  photos?: ProfilePhotoStorage,
+): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
-  profilePhotoUrl: user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
+  profilePhotoUrl:
+    user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
   lookingForTeam: user.lookingForTeam,
   shownBadgeKeys: [...user.shownBadgeKeys],
   instagramUrl: user.instagramUrl,
@@ -55,8 +97,16 @@ const toResponse = async (user: UserWithBadges, photos?: ProfilePhotoStorage): P
   thoughtText: user.thoughtText,
   interests: {
     formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
-    positions: user.interests.filter(({ category }) => category === "position").map(({ key }) => key),
+    positions: user.interests
+      .filter(({ category }) => category === "position")
+      .map(({ key }) => key),
   },
+  notificationsEnabled: user.notificationsEnabled,
+  // The route only stores the allowed values, so these casts are safe.
+  language: user.language as Language,
+  colorTheme: user.colorTheme as ColorTheme,
+  colorBlindMode: user.colorBlindMode,
+  darkMode: user.darkMode,
   createdAt: user.createdAt.toISOString(),
   badges: [...user.badges]
     .sort(
@@ -64,37 +114,7 @@ const toResponse = async (user: UserWithBadges, photos?: ProfilePhotoStorage): P
         right.receivedCount - left.receivedCount ||
         left.badgeType.key.localeCompare(right.badgeType.key),
     )
-    .map(({ badgeType, receivedCount, awardedAt }) => {
-      const definition = badgeCatalog.find((badge) => badge.key === badgeType.key);
-      const availableTiers = definition?.availableTiers ?? ["Bronze"];
-      const tierThresholds = definition?.tierThresholds ?? { Bronze: 0 };
-      const tier = getBadgeTier(
-        badgeType.tier,
-        receivedCount,
-        availableTiers,
-        tierThresholds,
-      );
-      const completion = getBadgeCompletion(
-        badgeType.tier as "Bronze" | "Silver" | "Gold",
-        tier,
-        availableTiers,
-        tierThresholds,
-        receivedCount,
-      );
-
-      return {
-        key: badgeType.key,
-        name: badgeType.name,
-        tier,
-        description: badgeType.description,
-        imageUrl: badgeType.imageUrl,
-        image: badgeType.imageUrl ?? "badge-gold-placeholder",
-        availableTiers: [...availableTiers],
-        ...completion,
-        receivedCount,
-        awardedAt: awardedAt.toISOString(),
-      };
-    }),
+    .map(toBadgeResponse),
 });
 
 const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryResponse> => {
@@ -154,8 +174,7 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
     if (!photos) throw new Error("Profile photo uploads are not configured.");
     const existing = await users.findByFirebaseUid(firebaseUid);
     if (!existing) return null;
-    if (existing.profilePhotoKey)
-      await photos.delete(existing.profilePhotoKey);
+    if (existing.profilePhotoKey) await photos.delete(existing.profilePhotoKey);
     await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: null });
     const updated = await users.findByFirebaseUid(firebaseUid);
     return updated ? toResponse(updated, photos) : null;
@@ -164,9 +183,7 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
   update: async (firebaseUid: string, changes: ProfileChanges) => {
     const user = await users.updateByFirebaseUid(firebaseUid, {
       ...changes,
-      ...(changes.displayName !== undefined
-        ? { displayName: changes.displayName.trim() }
-        : {}),
+      ...(changes.displayName !== undefined ? { displayName: changes.displayName.trim() } : {}),
     });
     return user ? toResponse(user, photos) : null;
   },

@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally contributors
+// AI contribution: 50% or more AI-generated
 // SPDX-License-Identifier: MIT
 
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";

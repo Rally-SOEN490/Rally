@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 const messages: Record<string, string> = {
   "auth/invalid-credential": "Wrong email or password.",
@@ -8,14 +7,12 @@ const messages: Record<string, string> = {
   "auth/invalid-email": "That email address doesn't look right.",
   "auth/missing-email": "Please enter your email address.",
   "auth/missing-password": "Please enter your password.",
-  "auth/email-already-in-use":
-    "An account with this email already exists. Try logging in instead.",
+  "auth/email-already-in-use": "An account with this email already exists. Try logging in instead.",
   "auth/weak-password": "Your password must be at least 6 characters long.",
   "auth/password-does-not-meet-requirements":
     "Your password doesn't meet the password requirements.",
   "auth/user-disabled": "This account has been disabled.",
-  "auth/too-many-requests":
-    "Too many attempts. Please wait a few minutes and try again.",
+  "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
   "auth/network-request-failed":
     "Can't reach the server. Check your internet connection and try again.",
 };

@@ -8,6 +8,9 @@ import { Platform } from "react-native";
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+export type Language = "EN" | "FR";
+export type ColorTheme = "green" | "blue" | "pink";
+
 export type RallyUser = {
   id: string;
   displayName: string;
@@ -21,6 +24,12 @@ export type RallyUser = {
     formats: string[];
     positions: string[];
   };
+  // App settings from the Settings screen.
+  notificationsEnabled?: boolean;
+  language?: Language;
+  colorTheme?: ColorTheme;
+  colorBlindMode?: boolean;
+  darkMode?: boolean;
   createdAt: string;
   badges: {
     key: string;
@@ -44,12 +53,18 @@ export type RallyPlayer = Pick<
 
 export type Gender = "male" | "female";
 export type ProfileChanges =
+  | { displayName: string }
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
   | { facebookUrl: string | null }
   | { thoughtText: string | null }
-  | { interests: { formats: string[]; positions: string[] } };
+  | { interests: { formats: string[]; positions: string[] } }
+  | { notificationsEnabled: boolean }
+  | { language: Language }
+  | { colorTheme: ColorTheme }
+  | { colorBlindMode: boolean }
+  | { darkMode: boolean };
 
 // The longest name the API accepts.
 export const NAME_MAX_LENGTH = 100;
@@ -84,7 +99,10 @@ const request = async (
     },
     body: body && JSON.stringify(body),
   }).catch(() => {
-    throw new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again.");
+    throw new ApiError(
+      0,
+      "Can't reach the Rally server. Check your internet connection and try again.",
+    );
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
@@ -103,10 +121,8 @@ export const getMyAccount = (user: User): Promise<RallyUser | null> =>
     throw e;
   });
 
-export const updateMyDisplayName = (
-  user: User,
-  displayName: string,
-): Promise<RallyUser> => request(user, "PATCH", "/users/me", { displayName });
+export const updateMyDisplayName = (user: User, displayName: string): Promise<RallyUser> =>
+  request(user, "PATCH", "/users/me", { displayName });
 
 export const uploadMyProfilePhoto = async (
   user: User,
@@ -133,7 +149,10 @@ export const uploadMyProfilePhoto = async (
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   }).catch(() => {
-    throw new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again.");
+    throw new ApiError(
+      0,
+      "Can't reach the Rally server. Check your internet connection and try again.",
+    );
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
@@ -144,8 +163,7 @@ export const uploadMyProfilePhoto = async (
 export const removeMyProfilePhoto = (user: User): Promise<RallyUser> =>
   request(user, "DELETE", "/users/me/photo");
 
-export const getPlayers = (user: User): Promise<RallyPlayer[]> =>
-  request(user, "GET", "/users");
+export const getPlayers = (user: User): Promise<RallyPlayer[]> => request(user, "GET", "/users");
 
 export const updateMyAccount = (user: User, changes: ProfileChanges): Promise<RallyUser> =>
   request(user, "PATCH", "/users/me", changes);

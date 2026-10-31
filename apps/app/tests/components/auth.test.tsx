@@ -1,18 +1,10 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { renderRouter } from "expo-router/testing-library";
 import { useState } from "react";
 import { Text } from "react-native";
-import {
-  AuthScreen,
-  Button,
-  Checkbox,
-  Field,
-  Footer,
-  SocialLogin,
-} from "@/components/auth";
+import { AuthScreen, Button, Checkbox, Field, Footer, SocialLogin } from "@/components/auth";
 
 describe("AuthScreen", () => {
   it("shows the title, greeting and subtitle", async () => {

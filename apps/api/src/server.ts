@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 // Starts the API. Run it with `npm run dev`. This file only connects the pieces;
 // tests build the API with buildApp() instead.
@@ -23,8 +22,7 @@ const app = await buildApp({
 app.addHook("onClose", () => db.$disconnect());
 
 // On Ctrl+C or a redeploy, finish open requests and close database connections first.
-for (const signal of ["SIGINT", "SIGTERM"])
-  process.once(signal, () => void app.close());
+for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => void app.close());
 
 // 0.0.0.0 lets phones and emulators on your network reach the API, not just this computer.
 await app.listen({ port: config.port, host: "0.0.0.0" });
