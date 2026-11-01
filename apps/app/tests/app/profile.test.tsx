@@ -133,13 +133,18 @@ it("uploads a selected profile photo immediately", async () => {
   await render(<Profile />);
 
   await userEvent.press(screen.getByRole("button", { name: "Change profile photo" }));
-  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({
-    mediaTypes: ["images"],
-    allowsEditing: true,
-    aspect: [1, 1],
-  }));
+  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+    expect.objectContaining({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+    }),
+  );
 
-  expect(uploadMyProfilePhoto).toHaveBeenCalledWith(user, { uri: "blob:avatar", mimeType: "image/png" });
+  expect(uploadMyProfilePhoto).toHaveBeenCalledWith(user, {
+    uri: "blob:avatar",
+    mimeType: "image/png",
+  });
   expect(setAccount).toHaveBeenCalledWith(photoAccount);
 });
 

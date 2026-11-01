@@ -116,7 +116,8 @@ describe("uploadMyProfilePhoto", () => {
   it("uploads the selected browser image with the user's token", async () => {
     const photoResponse = { ok: true, blob: jest.fn().mockResolvedValue(new Blob(["photo"])) };
     const uploadedAccount = { ...account, profilePhotoUrl: "https://signed.example/photo" };
-    jest.mocked(fetch)
+    jest
+      .mocked(fetch)
       .mockResolvedValueOnce(photoResponse as unknown as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -124,15 +125,20 @@ describe("uploadMyProfilePhoto", () => {
         json: () => Promise.resolve(uploadedAccount),
       } as Response);
 
-    await expect(uploadMyProfilePhoto(user, { uri: "blob:photo", mimeType: "image/png" }))
-      .resolves.toEqual(uploadedAccount);
+    await expect(
+      uploadMyProfilePhoto(user, { uri: "blob:photo", mimeType: "image/png" }),
+    ).resolves.toEqual(uploadedAccount);
 
     expect(fetch).toHaveBeenNthCalledWith(1, "blob:photo");
-    expect(fetch).toHaveBeenNthCalledWith(2, "http://localhost:3000/users/me/photo", expect.objectContaining({
-      method: "POST",
-      headers: { Authorization: "Bearer the-token" },
-      body: expect.any(FormData),
-    }));
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "http://localhost:3000/users/me/photo",
+      expect.objectContaining({
+        method: "POST",
+        headers: { Authorization: "Bearer the-token" },
+        body: expect.any(FormData),
+      }),
+    );
   });
 
   it("explains when the selected file can't be read", async () => {
@@ -144,18 +150,29 @@ describe("uploadMyProfilePhoto", () => {
   });
 
   it("explains when the photo request can't reach the API", async () => {
-    jest.mocked(fetch)
-      .mockResolvedValueOnce({ ok: true, blob: jest.fn().mockResolvedValue(new Blob(["photo"])) } as unknown as Response)
+    jest
+      .mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: jest.fn().mockResolvedValue(new Blob(["photo"])),
+      } as unknown as Response)
       .mockRejectedValueOnce(new TypeError("Network request failed"));
 
     await expect(uploadMyProfilePhoto(user, { uri: "blob:photo" })).rejects.toEqual(
-      new ApiError(0, "Can't reach the Rally server. Check your internet connection and try again."),
+      new ApiError(
+        0,
+        "Can't reach the Rally server. Check your internet connection and try again.",
+      ),
     );
   });
 
   it("passes the API's upload validation message to the caller", async () => {
-    jest.mocked(fetch)
-      .mockResolvedValueOnce({ ok: true, blob: jest.fn().mockResolvedValue(new Blob(["photo"])) } as unknown as Response)
+    jest
+      .mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: jest.fn().mockResolvedValue(new Blob(["photo"])),
+      } as unknown as Response)
       .mockResolvedValueOnce({
         ok: false,
         status: 400,

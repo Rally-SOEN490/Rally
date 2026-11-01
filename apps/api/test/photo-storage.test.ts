@@ -19,15 +19,21 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
   DeleteObjectCommand: class {
     readonly input: unknown;
-    constructor(input: unknown) { this.input = input; }
+    constructor(input: unknown) {
+      this.input = input;
+    }
   },
   GetObjectCommand: class {
     readonly input: unknown;
-    constructor(input: unknown) { this.input = input; }
+    constructor(input: unknown) {
+      this.input = input;
+    }
   },
   PutObjectCommand: class {
     readonly input: unknown;
-    constructor(input: unknown) { this.input = input; }
+    constructor(input: unknown) {
+      this.input = input;
+    }
   },
 }));
 
@@ -35,7 +41,11 @@ vi.mock("@aws-sdk/s3-request-presigner", () => ({
   getSignedUrl: mocks.getSignedUrl,
 }));
 
-import { createProfilePhotoStorage, profilePhotoMaxBytes, profilePhotoTypes } from "../src/modules/users/photo-storage.ts";
+import {
+  createProfilePhotoStorage,
+  profilePhotoMaxBytes,
+  profilePhotoTypes,
+} from "../src/modules/users/photo-storage.ts";
 
 const settings = {
   accountId: "account-id",
@@ -73,14 +83,16 @@ describe("R2 profile photo storage", () => {
     const key = await storage.put("alice", body);
 
     expect(key).toMatch(/^profile-photos\/alice\/[0-9a-f-]+\.png$/);
-    expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.objectContaining({
-        Bucket: "profile-photos",
-        Key: key,
-        Body: body,
-        ContentType: "image/png",
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          Bucket: "profile-photos",
+          Key: key,
+          Body: body,
+          ContentType: "image/png",
+        }),
       }),
-    }));
+    );
   });
 
   test("rejects data that is not a supported image", async () => {
@@ -100,7 +112,9 @@ describe("R2 profile photo storage", () => {
     );
     expect(mocks.getSignedUrl).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ input: { Bucket: "profile-photos", Key: "profile-photos/alice/photo.png" } }),
+      expect.objectContaining({
+        input: { Bucket: "profile-photos", Key: "profile-photos/alice/photo.png" },
+      }),
       { expiresIn: 900 },
     );
   });
@@ -111,7 +125,9 @@ describe("R2 profile photo storage", () => {
     await storage.delete("profile-photos/alice/photo.png");
 
     expect(mocks.send).toHaveBeenCalledWith(
-      expect.objectContaining({ input: { Bucket: "profile-photos", Key: "profile-photos/alice/photo.png" } }),
+      expect.objectContaining({
+        input: { Bucket: "profile-photos", Key: "profile-photos/alice/photo.png" },
+      }),
     );
   });
 });

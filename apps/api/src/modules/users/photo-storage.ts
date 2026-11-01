@@ -2,7 +2,12 @@
 // AI contribution: 50% or more AI-generated
 // SPDX-License-Identifier: MIT
 
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
@@ -41,19 +46,20 @@ export const createProfilePhotoStorage = ({
       const extension = contentType ? extensions[contentType] : undefined;
       if (!extension) throw new Error("Use a JPEG, PNG, or WebP image.");
       const key = `profile-photos/${uid}/${randomUUID()}.${extension}`;
-      await client.send(new PutObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-      }));
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+        }),
+      );
       return key;
     },
-    getUrl: (key: string) => getSignedUrl(
-      client,
-      new GetObjectCommand({ Bucket: bucketName, Key: key }),
-      { expiresIn: 900 },
-    ),
+    getUrl: (key: string) =>
+      getSignedUrl(client, new GetObjectCommand({ Bucket: bucketName, Key: key }), {
+        expiresIn: 900,
+      }),
     delete: (key: string) => client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key })),
   };
 };

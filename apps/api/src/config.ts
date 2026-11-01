@@ -31,11 +31,14 @@ export const loadConfig = (env: NodeJS.ProcessEnv): Config => {
     firebaseProjectId: required("FIREBASE_PROJECT_ID"),
     port: Number(env.PORT ?? 3000),
     corsOrigins: (env.CORS_ORIGINS ?? "http://localhost:8081").split(","),
-    r2: configuredR2Names.length === 0 ? null : {
-      accountId: env.R2_ACCOUNT_ID!,
-      accessKeyId: env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
-      bucketName: env.R2_BUCKET_NAME!,
-    },
+    r2:
+      configuredR2Names.length === 0
+        ? null
+        : {
+            accountId: env.R2_ACCOUNT_ID!,
+            accessKeyId: env.R2_ACCESS_KEY_ID!,
+            secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
+            bucketName: env.R2_BUCKET_NAME!,
+          },
   };
 };

@@ -31,10 +31,15 @@ const register = (uid = "alice") =>
     payload: { displayName: "Alice", ageConfirmed: true },
   });
 
-const upload = (uid = "alice", contents = Buffer.from("89504e470d0a1a0a0000000d49484452", "hex")) => {
+const upload = (
+  uid = "alice",
+  contents = Buffer.from("89504e470d0a1a0a0000000d49484452", "hex"),
+) => {
   const boundary = "rally-photo-boundary";
   const body = Buffer.concat([
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="avatar.png"\r\nContent-Type: image/png\r\n\r\n`),
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="avatar.png"\r\nContent-Type: image/png\r\n\r\n`,
+    ),
     contents,
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
@@ -70,8 +75,9 @@ test("uploads the photo, persists its key, and returns a signed URL", async () =
   expect(response.statusCode).toBe(200);
   expect(response.json().profilePhotoUrl).toBe("https://signed.example/new.png");
   expect(photos.put).toHaveBeenCalledWith("alice", expect.any(Buffer));
-  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } }))
-    .toMatchObject({ profilePhotoKey: "profile-photos/alice/new.png" });
+  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } })).toMatchObject({
+    profilePhotoKey: "profile-photos/alice/new.png",
+  });
 });
 
 test("deletes the old photo after replacing it", async () => {
@@ -103,8 +109,9 @@ test("removes the current photo from the account and storage", async () => {
   expect(response.statusCode).toBe(200);
   expect(response.json().profilePhotoUrl).toBeNull();
   expect(photos.delete).toHaveBeenCalledWith("profile-photos/alice/old.png");
-  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } }))
-    .toMatchObject({ profilePhotoKey: null });
+  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } })).toMatchObject({
+    profilePhotoKey: null,
+  });
 });
 
 test("returns not found when removing a photo for a missing Rally account", async () => {
@@ -132,8 +139,9 @@ test("keeps the stored photo when storage deletion fails", async () => {
   });
 
   expect(response.statusCode).toBe(500);
-  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } }))
-    .toMatchObject({ profilePhotoKey: "profile-photos/alice/old.png" });
+  expect(await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } })).toMatchObject({
+    profilePhotoKey: "profile-photos/alice/old.png",
+  });
 });
 
 test("rejects requests without a file", async () => {
