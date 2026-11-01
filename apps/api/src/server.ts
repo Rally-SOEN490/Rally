@@ -7,13 +7,16 @@ import { buildApp } from "./app.ts";
 import { firebaseTokenVerifier } from "./auth.ts";
 import { loadConfig } from "./config.ts";
 import { connectDatabase } from "./db.ts";
+import { createProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 
 const config = loadConfig(process.env);
 const db = connectDatabase(config.databaseUrl);
+const photos = config.r2 ? createProfilePhotoStorage(config.r2) : undefined;
 const app = await buildApp({
   db,
   verifyIdToken: firebaseTokenVerifier(config.firebaseProjectId),
   corsOrigins: config.corsOrigins,
+  photos,
   logger: true,
 });
 app.addHook("onClose", () => db.$disconnect());

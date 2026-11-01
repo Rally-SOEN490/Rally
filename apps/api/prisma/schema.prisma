@@ -22,9 +22,10 @@ datasource db {
 // what Rally knows about the person. Field names are camelCase in TypeScript and
 // snake_case in the database.
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  firebaseUid    String   @unique @map("firebase_uid")
-  displayName    String   @map("display_name")
+  id              String   @id @default(uuid()) @db.Uuid
+  firebaseUid     String   @unique @map("firebase_uid")
+  displayName     String   @map("display_name")
+  profilePhotoKey String? @map("profile_photo_key")
   gender         String?
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")

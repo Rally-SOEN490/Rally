@@ -2,6 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +19,13 @@ import {
 import * as Linking from "expo-linking";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiErrorMessage, updateMyAccount, type RallyUser } from "@/lib/api";
+import {
+  apiErrorMessage,
+  removeMyProfilePhoto,
+  updateMyAccount,
+  uploadMyProfilePhoto,
+} from "@/lib/api";
+import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 const stats = [
@@ -119,6 +126,9 @@ export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
   const [selectedBadge, setSelectedBadge] = useState<RallyUser["badges"][number] | null>(null);
+  const [photoActionsVisible, setPhotoActionsVisible] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [photoSaving, setPhotoSaving] = useState(false);
   const hasSavedShownBadges = account?.shownBadgeKeys !== undefined;
   const lookingForTeam = account?.lookingForTeam ?? false;
   // The switch shows this right away; the badge waits for the server.
@@ -142,6 +152,57 @@ export default function Profile() {
     setThoughtEditorVisible(true);
   };
 
+  const choosePhoto = async () => {
+    if (!user || photoSaving) return;
+    setPhotoActionsVisible(false);
+    setPhotoError("");
+    setPhotoSaving(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        setPhotoError("Choose a photo smaller than 5 MB.");
+        return;
+      }
+      if (asset.mimeType && !["image/jpeg", "image/png", "image/webp"].includes(asset.mimeType)) {
+        setPhotoError("Use a JPEG, PNG, or WebP image.");
+        return;
+      }
+
+      setAccount(
+        await uploadMyProfilePhoto(user, {
+          uri: asset.uri,
+          mimeType: asset.mimeType ?? null,
+        }),
+      );
+    } catch (error) {
+      setPhotoError(apiErrorMessage(error));
+    } finally {
+      setPhotoSaving(false);
+    }
+  };
+
+  const deletePhoto = async () => {
+    if (!user || photoSaving) return;
+    setPhotoError("");
+    setPhotoSaving(true);
+    try {
+      setAccount(await removeMyProfilePhoto(user));
+      setPhotoActionsVisible(false);
+    } catch (error) {
+      setPhotoError(apiErrorMessage(error));
+    } finally {
+      setPhotoSaving(false);
+    }
+  };
+
   const saveThought = async () => {
     if (!user) return;
     const text = thoughtText.trim();
@@ -152,11 +213,7 @@ export default function Profile() {
     setThoughtSaving(true);
     setThoughtError("");
     try {
-      setAccount(
-        await updateMyAccount(user, {
-          thoughtText: text || null,
-        }),
-      );
+      setAccount(await updateMyAccount(user, { thoughtText: text || null }));
       setThoughtEditorVisible(false);
     } catch (error) {
       setThoughtError(apiErrorMessage(error));
@@ -170,21 +227,13 @@ export default function Profile() {
     setThoughtSaving(true);
     setThoughtError("");
     try {
-      setAccount(
-        await updateMyAccount(user, {
-          thoughtText: null,
-        }),
-      );
+      setAccount(await updateMyAccount(user, { thoughtText: null }));
       setThoughtEditorVisible(false);
     } catch (error) {
       setThoughtError(apiErrorMessage(error));
     } finally {
       setThoughtSaving(false);
     }
-  };
-
-  const openProfilePictureEditor = () => {
-    Alert.alert("Edit profile picture", "Profile picture selection will be available here.");
   };
 
   const changeLookingForTeam = async (value: boolean) => {
@@ -253,17 +302,38 @@ export default function Profile() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Edit profile picture"
-            onPress={openProfilePictureEditor}
-            style={styles.avatarWithThought}
+            accessibilityLabel={
+              account?.profilePhotoUrl ? "Profile photo options" : "Change profile photo"
+            }
+            onPress={() => {
+              if (account?.profilePhotoUrl) setPhotoActionsVisible(true);
+              else void choosePhoto();
+            }}
+            disabled={photoSaving}
+            style={styles.avatarPicker}
           >
-            <View style={styles.avatarBadge}>
-              <Text style={styles.avatarText}>M</Text>
+            <View
+              style={[
+                styles.avatarBadge,
+                account?.profilePhotoUrl ? styles.avatarBadgeWithPhoto : styles.avatarBadgeEmpty,
+              ]}
+            >
+              {account?.profilePhotoUrl ? (
+                <Image source={{ uri: account.profilePhotoUrl }} style={styles.profilePhoto} />
+              ) : (
+                <View style={styles.avatarSilhouette}>
+                  <View style={styles.avatarHead} />
+                  <View style={styles.avatarBody} />
+                </View>
+              )}
             </View>
-            <View style={styles.profilePictureEditBadge}>
-              <Text style={styles.profilePictureEditText}>✎</Text>
+            <View style={styles.photoActionBadge}>
+              <Text style={styles.photoActionIcon}>{account?.profilePhotoUrl ? "✎" : "📷"}</Text>
             </View>
           </Pressable>
+          {!photoActionsVisible && !!photoError && (
+            <Text style={styles.photoError}>{photoError}</Text>
+          )}
           <Text style={styles.playerName}>{account?.displayName}</Text>
           <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
           <View style={styles.socialLinks}>
@@ -492,13 +562,65 @@ export default function Profile() {
       </ScrollView>
 
       <Modal
+        visible={photoActionsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoActionsVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close profile photo options"
+            onPress={() => setPhotoActionsVisible(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.photoActions}>
+            <Text style={styles.photoActionsTitle}>Profile photo</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void choosePhoto()}
+              disabled={photoSaving}
+              style={styles.photoActionButton}
+            >
+              <Text style={styles.photoActionButtonText}>Update photo</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void deletePhoto()}
+              disabled={photoSaving}
+              style={styles.removePhotoButton}
+            >
+              <Text style={styles.removePhotoButtonText}>
+                {photoSaving ? "Removing..." : "Remove photo"}
+              </Text>
+            </Pressable>
+            {!!photoError && <Text style={styles.photoError}>{photoError}</Text>}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setPhotoActionsVisible(false)}
+              disabled={photoSaving}
+              style={styles.cancelPhotoAction}
+            >
+              <Text style={styles.cancelPhotoActionText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={selectedBadge !== null}
         transparent
         animationType="fade"
         onRequestClose={() => setSelectedBadge(null)}
       >
-        <Pressable onPress={() => setSelectedBadge(null)} style={styles.modalBackdrop}>
-          <Pressable onPress={(event) => event.stopPropagation()} style={styles.badgeDetails}>
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss badge details"
+            onPress={() => setSelectedBadge(null)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.badgeDetails}>
             <Text style={styles.badgeDetailsTitle}>{selectedBadge?.name}</Text>
             <Text style={styles.badgeDetailsTier}>{selectedBadge?.tier} tier</Text>
             <Text style={styles.badgeDetailsDescription}>{selectedBadge?.description}</Text>
@@ -510,8 +632,8 @@ export default function Profile() {
             >
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Modal
@@ -520,8 +642,14 @@ export default function Profile() {
         animationType="slide"
         onRequestClose={() => setThoughtEditorVisible(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setThoughtEditorVisible(false)}>
-          <Pressable style={styles.thoughtEditor} onPress={(event) => event.stopPropagation()}>
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close thought editor backdrop"
+            onPress={() => setThoughtEditorVisible(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.thoughtEditor}>
             <View style={styles.thoughtEditorHeader}>
               <View style={styles.thoughtEditorIcon}>
                 <Text style={styles.thoughtEditorIconText}>✦</Text>
@@ -585,45 +713,9 @@ export default function Profile() {
                 )}
               </Pressable>
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
-
-      <View style={styles.navBar}>
-        {[
-          { label: "Home" },
-          { label: "Events" },
-          { label: "Search" },
-          { label: "Notifications" },
-          { label: "You", active: true },
-        ].map((item) => (
-          <Pressable
-            key={item.label}
-            style={[styles.navItem, item.active && styles.navItemActive]}
-            onPress={() => {
-              if (item.label === "Home") router.replace("/home");
-              if (item.label === "Search") router.replace("/search");
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-          >
-            <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home"
-                ? "⌂"
-                : item.label === "Events"
-                  ? "◫"
-                  : item.label === "Search"
-                    ? "⌕"
-                    : item.label === "Notifications"
-                      ? "◔"
-                      : "◉"}
-            </Text>
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
     </SafeAreaView>
   );
 }
@@ -635,7 +727,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingBottom: 110,
+    paddingBottom: 110, // room for the floating nav bar
   },
   profileHeader: {
     alignItems: "flex-end",
@@ -667,19 +759,78 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 16 }],
   },
   avatarBadge: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: "#d5d9d1",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    overflow: "hidden",
+  },
+  avatarPicker: {
+    width: 88,
+    height: 88,
+  },
+  avatarBadgeEmpty: {
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#a9b6ae",
+  },
+  avatarBadgeWithPhoto: {
+    borderWidth: 2,
+    borderColor: "#1d5c4d",
+  },
+  avatarSilhouette: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  avatarHead: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: "#a4aea8",
+  },
+  avatarBody: {
+    width: 34,
+    height: 17,
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
+    backgroundColor: "#a4aea8",
+  },
+  photoActionBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: 1,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    borderWidth: 2,
     borderColor: "#f7f4f1",
+    backgroundColor: "#1d5c4d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoActionIcon: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  photoError: {
+    marginTop: 8,
+    color: "#a12f25",
+    fontSize: 13,
+    textAlign: "center",
   },
   avatarText: {
     fontSize: 52,
     fontWeight: "700",
     color: "#12382d",
+  },
+  profilePhoto: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 100,
   },
   thoughtBubble: {
     maxWidth: 260,
@@ -751,6 +902,50 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 15,
     color: "#536761",
+  },
+  photoActions: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#f7f4f1",
+    borderRadius: 18,
+    padding: 20,
+  },
+  photoActionsTitle: {
+    color: "#12382d",
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+  photoActionButton: {
+    backgroundColor: "#12382d",
+    borderRadius: 12,
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  photoActionButtonText: {
+    color: "#f7f4f1",
+    fontWeight: "700",
+  },
+  removePhotoButton: {
+    backgroundColor: "#fbe9e7",
+    borderRadius: 12,
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  removePhotoButtonText: {
+    color: "#a12f25",
+    fontWeight: "700",
+  },
+  cancelPhotoAction: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  cancelPhotoActionText: {
+    color: "#536761",
+    fontWeight: "700",
   },
   socialLinks: {
     flexDirection: "row",
@@ -1277,45 +1472,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#5d6c68",
     fontWeight: "600",
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 14,
-    left: 20,
-    right: 20,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navItem: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#dfe9e4",
-  },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: "#4d5d58",
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: "#12382d",
   },
 });

@@ -1,18 +1,9 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
-import { router, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BottomNavigation } from "@/components/bottomNavigation";
 import { useSession } from "@/lib/session";
-
-const navItems: { label: string; active: boolean; action?: Href }[] = [
-  { label: "Home", active: true },
-  { label: "Events", active: false },
-  { label: "Search", active: false, action: "/search" },
-  { label: "Notifications", active: false },
-  { label: "You", active: false, action: "/profile" },
-];
 
 const sponsoredTournament = {
   name: "Con Khi Volleyball Tournament",
@@ -144,8 +135,6 @@ export default function Home() {
           </View>
         </View>
       </ScrollView>
-
-      <BottomNavigation items={navItems} styles={styles} onNavigate={(href) => router.push(href)} />
     </SafeAreaView>
   );
 }
@@ -156,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8e4df",
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 110, // room for the floating nav bar
   },
   phoneShell: {
     width: "100%",
@@ -437,45 +426,5 @@ const styles = StyleSheet.create({
     color: "#687872",
     marginLeft: 8,
     marginTop: 4,
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 14,
-    left: 20,
-    right: 20,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navItem: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#dfe9e4",
-  },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: "#4d5d58",
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: "#12382d",
   },
 });
