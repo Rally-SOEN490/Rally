@@ -123,9 +123,11 @@ describe("POST /users/me", () => {
       "language",
       "lookingForTeam",
       "notificationsEnabled",
+      "profilePhotoUrl",
       "shownBadgeKeys",
       "thoughtText",
     ]);
+    expect(response.json().profilePhotoUrl).toBeNull();
   });
 
   test("starts with 'looking for a team' turned off", async () => {
@@ -469,6 +471,33 @@ describe("PATCH /users/me", () => {
 
   beforeEach(() => register("alice", { displayName: "Alice", ageConfirmed: true }));
 
+  test("updates the logged-in user's display name", async () => {
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    const response = await update("alice", { displayName: " Alice Smith " });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ displayName: "Alice Smith" });
+    expect(
+      (await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "bob" } })).displayName,
+    ).toBe("Bob");
+  });
+
+  test("returns 404 when the Rally account does not exist", async () => {
+    const response = await update("missing", { displayName: "Alice" });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  test.each([
+    ["a blank display name", { displayName: "  " }],
+    ["a display name over 100 characters", { displayName: "a".repeat(101) }],
+  ])("rejects %s", async (_, body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+  });
+
   test("turns 'looking for a team' on and off", async () => {
     const on = await update("alice", { lookingForTeam: true });
 
@@ -788,6 +817,8 @@ describe("PATCH /users/me", () => {
     ["the value is null", { lookingForTeam: null }],
     ["the value is text", { lookingForTeam: "true" }],
     ["the value is a number", { lookingForTeam: 1 }],
+    ["it has an unsupported field", { lookingForTeam: true, unsupported: true }],
+    ["it only has an unsupported field", { unsupported: true }],
     ["it has another field", { lookingForTeam: true, firebaseUid: "mallory" }],
     ["it only has another field", { firebaseUid: "mallory" }],
     ["it tries to change the gender", { gender: "male" }],
@@ -798,6 +829,51 @@ describe("PATCH /users/me", () => {
     expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false, gender: null });
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      payload: { displayName: "Alice Smith" },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("POST /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "POST",
+      url: "/users/me/photo",
+      headers: { ...authHeader("alice"), "content-type": "multipart/form-data; boundary=photo" },
+      payload: "--photo--\r\n",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({ method: "POST", url: "/users/me/photo" });
+
+    expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("DELETE /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/users/me/photo",
+      headers: authHeader("alice"),
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
   });
 });
 

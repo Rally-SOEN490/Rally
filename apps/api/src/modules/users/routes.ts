@@ -2,8 +2,11 @@
 // AI contribution: 50% or more AI-generated
 
 import type { FastifyPluginAsync } from "fastify";
+import { fileTypeFromBuffer } from "file-type";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import type { Database } from "../../db.ts";
+import type { ProfilePhotoStorage } from "./photo-storage.ts";
+import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
 import type { Gender } from "./service.ts";
@@ -45,8 +48,9 @@ const noAccount = { message: "No Rally account found." };
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
   verifyIdToken: VerifyIdToken;
-}> = async (app, { db, verifyIdToken }) => {
-  const users = createUserService(createUserRepository(db));
+  photos?: ProfilePhotoStorage;
+}> = async (app, { db, verifyIdToken, photos }) => {
+  const users = createUserService(createUserRepository(db), photos);
 
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));
@@ -173,7 +177,7 @@ export const userRoutes: FastifyPluginAsync<{
     const gender = await users.getGender(request.firebaseUid);
     if (gender === null) {
       const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send({ message: "No Rally account found." });
+      if (!account) return reply.code(404).send(noAccount);
     }
     return { gender };
   });
@@ -185,6 +189,7 @@ export const userRoutes: FastifyPluginAsync<{
         body: {
           type: "object",
           required: ["gender"],
+          additionalProperties: false,
           properties: {
             gender: { anyOf: [{ type: "string", enum: ["male", "female"] }, { type: "null" }] },
           },
@@ -193,10 +198,30 @@ export const userRoutes: FastifyPluginAsync<{
     },
     async (request, reply) => {
       const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send({ message: "No Rally account found." });
+      if (!account) return reply.code(404).send(noAccount);
       return { gender: await users.setGender(request.firebaseUid, request.body.gender) };
     },
   );
+
+  app.delete("/me/photo", async (request, reply) => {
+    if (!photos)
+      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
+    const user = await users.removePhoto(request.firebaseUid);
+    return user ?? reply.code(404).send({ message: "No Rally account found." });
+  });
+
+  app.post("/me/photo", async (request, reply) => {
+    if (!photos)
+      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
+    const file = await request.file({ limits: { files: 1, fileSize: profilePhotoMaxBytes } });
+    if (!file) return reply.code(400).send({ message: "Choose a profile photo to upload." });
+    const body = await file.toBuffer();
+    const detected = await fileTypeFromBuffer(body);
+    if (!detected || !profilePhotoTypes.includes(detected.mime))
+      return reply.code(400).send({ message: "Use a JPEG, PNG, or WebP image." });
+    const user = await users.uploadPhoto(request.firebaseUid, body);
+    return user ?? reply.code(404).send({ message: "No Rally account found." });
+  });
 
   // Deletes the logged-in person's Rally data. The app then deletes their Firebase login.
   app.delete("/me", async (request, reply) => {
