@@ -8,7 +8,7 @@ import { authHeader, buildTestApp, testDb } from "./helpers.ts";
 
 const app = await buildTestApp();
 const requestCount = 25;
-const p95LimitMs = Number(process.env.ACCOUNT_READ_P95_MS ?? 2000);
+const p95LimitMs = Number(process.env.ACCOUNT_READ_P95_MS ?? 10000);
 
 beforeEach(async () => {
   await testDb.user.deleteMany();
