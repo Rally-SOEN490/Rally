@@ -716,42 +716,6 @@ export default function Profile() {
           </View>
         </View>
       </Modal>
-
-      <View style={styles.navBar}>
-        {[
-          { label: "Home" },
-          { label: "Events" },
-          { label: "Search" },
-          { label: "Notifications" },
-          { label: "You", active: true },
-        ].map((item) => (
-          <Pressable
-            key={item.label}
-            style={[styles.navItem, item.active && styles.navItemActive]}
-            onPress={() => {
-              if (item.label === "Home") router.replace("/home");
-              if (item.label === "Search") router.replace("/search");
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-          >
-            <Text style={[styles.navIcon, item.active && styles.navIconActive]}>
-              {item.label === "Home"
-                ? "⌂"
-                : item.label === "Events"
-                  ? "◫"
-                  : item.label === "Search"
-                    ? "⌕"
-                    : item.label === "Notifications"
-                      ? "◔"
-                      : "◉"}
-            </Text>
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
     </SafeAreaView>
   );
 }
@@ -763,7 +727,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingBottom: 110,
+    paddingBottom: 110, // room for the floating nav bar
   },
   profileHeader: {
     alignItems: "flex-end",
@@ -1508,45 +1472,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#5d6c68",
     fontWeight: "600",
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 14,
-    left: 20,
-    right: 20,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navItem: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#dfe9e4",
-  },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: "#4d5d58",
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: "#12382d",
   },
 });

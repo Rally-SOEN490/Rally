@@ -5,13 +5,13 @@ import { act, fireEvent, render, screen, userEvent, waitFor } from "@testing-lib
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import { useState } from "react";
-import Profile from "@/app/profile";
+import Profile from "@/app/(tabs)/profile";
 import { ApiError, updateMyAccount, type RallyUser } from "@/lib/api";
 import { removeMyProfilePhoto, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
-jest.mock("expo-router", () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
+jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: null }),
 }));
@@ -328,21 +328,6 @@ it("shows badge details when a badge is pressed", async () => {
 
   await userEvent.press(screen.getByRole("button", { name: "Close badge details" }));
   expect(screen.queryByText("Placeholder championship badge")).not.toBeOnTheScreen();
-});
-
-it("goes back Home from the Home tab", async () => {
-  await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Home" }));
-
-  expect(router.replace).toHaveBeenCalledWith("/home");
-});
-
-it("ignores the tabs that aren't built yet", async () => {
-  await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Events" }));
-
-  expect(router.replace).not.toHaveBeenCalled();
-  expect(router.push).not.toHaveBeenCalled();
 });
 
 describe("Profile thought", () => {

@@ -1,13 +1,12 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
-import { render, screen, userEvent } from "@testing-library/react-native";
-import { router } from "expo-router";
+import { render, screen } from "@testing-library/react-native";
 import type { User } from "firebase/auth";
-import Home from "@/app/home";
+import Home from "@/app/(tabs)/home";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
-jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 
 const user = { email: "sam@example.com", emailVerified: true } as User;
@@ -47,25 +46,4 @@ it("leaves out the member line if the account isn't there", async () => {
   await render(<Home />);
 
   expect(screen.queryByText(/Member since/)).not.toBeOnTheScreen();
-});
-
-it("opens the profile from the You tab", async () => {
-  await render(<Home />);
-  await userEvent.press(screen.getByRole("button", { name: "You" }));
-
-  expect(router.push).toHaveBeenCalledWith("/profile");
-});
-
-it("opens Search without replacing the Home history entry", async () => {
-  await render(<Home />);
-  await userEvent.press(screen.getByRole("button", { name: "Search" }));
-
-  expect(router.push).toHaveBeenCalledWith("/search");
-});
-
-it.each(["Home", "Events", "Notifications"])("does not navigate from the %s tab", async (tab) => {
-  await render(<Home />);
-  await userEvent.press(screen.getByRole("button", { name: tab }));
-
-  expect(router.push).not.toHaveBeenCalled();
 });

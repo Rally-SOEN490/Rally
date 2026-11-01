@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { act, renderRouter } from "expo-router/testing-library";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { Text } from "react-native";
+import TabsLayout from "@/app/(tabs)/_layout";
 import RootLayout from "@/app/_layout";
 import Index from "@/app/index";
 import { ApiError, getMyAccount, type RallyUser } from "@/lib/api";
@@ -13,6 +15,10 @@ import { auth } from "@/lib/firebase";
 jest.mock("firebase/auth", () => ({ onAuthStateChanged: jest.fn(), signOut: jest.fn() }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getMyAccount: jest.fn() }));
+jest.mock("expo-blur", () => {
+  const { View } = jest.requireActual("react-native");
+  return { BlurView: (props: object) => <View {...props} /> };
+});
 
 const account = {
   id: "1",
@@ -33,8 +39,9 @@ beforeEach(() => {
   jest.mocked(getMyAccount).mockResolvedValue(account);
 });
 
-// The real layout and index decide where to go. The other screens are
-// replaced by simple placeholders so we can see which one is shown.
+// The real layouts and index decide where to go. The other screens are
+// replaced by simple placeholders so we can see which one is shown. Like the
+// real app, the main screens sit in the (tabs) folder with the nav bar.
 const renderApp = (initialUrl = "/") =>
   renderRouter(
     {
@@ -45,8 +52,12 @@ const renderApp = (initialUrl = "/") =>
       "recover-account": () => <Text>Recover account screen</Text>,
       "verify-email": () => <Text>Verify email screen</Text>,
       "finish-setup": () => <Text>Finish setup screen</Text>,
-      home: () => <Text>Home screen</Text>,
-      profile: () => <Text>Profile screen</Text>,
+      "(tabs)/_layout": TabsLayout,
+      "(tabs)/home": () => <Text>Home screen</Text>,
+      "(tabs)/events": () => <Text>Events screen</Text>,
+      "(tabs)/search": () => <Text>Search screen</Text>,
+      "(tabs)/notifications": () => <Text>Notifications screen</Text>,
+      "(tabs)/profile": () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
     },
     { initialUrl },
@@ -87,6 +98,18 @@ it.each([
   ["a verified user away from Sign up", "/sign-up", verified, "Home screen"],
   ["a signed-out user away from Verify email", "/verify-email", signedOut, "Login screen"],
   ["a signed-out user away from Profile", "/profile", signedOut, "Login screen"],
+  ["a signed-out user away from Events", "/events", signedOut, "Login screen"],
+  ["a signed-out user away from Search", "/search", signedOut, "Login screen"],
+  ["a signed-out user away from Notifications", "/notifications", signedOut, "Login screen"],
+  ["an unverified user away from Events", "/events", unverified, "Verify email screen"],
+  ["an unverified user away from Search", "/search", unverified, "Verify email screen"],
+  [
+    "an unverified user away from Notifications",
+    "/notifications",
+    unverified,
+    "Verify email screen",
+  ],
+  ["an unverified user away from Profile", "/profile", unverified, "Verify email screen"],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -146,7 +169,7 @@ describe("the Rally account", () => {
     expect(await screen.findByText("Finish setup screen")).toBeOnTheScreen();
   });
 
-  it.each(["/home", "/profile", "/settings"])(
+  it.each(["/home", "/events", "/search", "/notifications", "/profile", "/settings"])(
     "keeps a user without an account away from %s",
     async (url) => {
       jest.mocked(getMyAccount).mockResolvedValue(null);
@@ -167,6 +190,9 @@ describe("the Rally account", () => {
   describe("when the app is reloaded", () => {
     it.each([
       ["/home", "Home screen"],
+      ["/events", "Events screen"],
+      ["/search", "Search screen"],
+      ["/notifications", "Notifications screen"],
       ["/profile", "Profile screen"],
       ["/settings", "Settings screen"],
     ])("stays on %s", async (url, expected) => {
@@ -204,6 +230,9 @@ describe("the Rally account", () => {
   });
 
   it.each([
+    ["/events", "Events screen"],
+    ["/search", "Search screen"],
+    ["/notifications", "Notifications screen"],
     ["/profile", "Profile screen"],
     ["/settings", "Settings screen"],
   ] as const)("lets a user with an account open %s", async (url, expected) => {

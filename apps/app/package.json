@@ -6,6 +6,7 @@
     "@expo/ui": "~57.0.22",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.27",
+    "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.21",
     "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
