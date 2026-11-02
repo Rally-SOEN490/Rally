@@ -31,7 +31,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 
 | Feature | Stories and pull requests | AI-contribution level |
 | --- | --- | --- |
-| | | |
+| Player filtering | RALLY-115 / #137; PR pending | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -48,6 +48,13 @@ Verification: <tests or substantive review comments that check the behaviour, wi
 
 Problems and rejected suggestions: <generated code that was wrong, corrected, or rejected, or "None found">
 ```
+
+### RALLY-115: Player filtering
+
+Issue: [#137](https://github.com/Rally-SOEN490/Rally/issues/137). Pull request pending publication.
+OpenAI Codex generated the Players filter sheet, applied chips/count, name/level filtering, shared-interest sorting, profile level and competition preferences, API support, migration and tests. The contributor selected **50% or more AI-generated**. Existing declarations were preserved. Vincent's separate positions and existing saved formats remain the basis; the user rejected a grouped Hitter option and the older story's additional looking-for-team filter in favor of the approved scope.
+
+Verification covers every level, position and derived interest; combined selections, text search, Apply/dismiss/remove, missing preferences, stable sorting, profile save/failure, public response fields and older-client preservation. The feature checkout passed 318 app and 167 API tests; an independent latest-main/#309 integration copy passed 323 app and 163 API tests. Both projects passed type, lint and formatting checks, and the app web export passed. Test/build evidence is recorded in the proposed PR. Phone-width web checks used actual Search/Profile components and the actual API with isolated fixture accounts/database; only authentication and the unavailable native image-picker module were replaced in the ignored preview. Corrections included strict level/competition-array validation, the newly supported format's old invalid-test fixture, navigation placeholder expectations, and test-state types. Overloaded parallel test runs caused unrelated timeouts, so those suites were rerun separately. Native visual interaction and real Firebase sign-in remain unverified; the native-control service could not start. Figma's call limit prevented a fresh export after the initial specified-frame capture.
 
 ## Additional assisted work
 

@@ -575,18 +575,18 @@ describe("Profile interests", () => {
       .mocked(updateMyAccount)
       .mockResolvedValueOnce({
         ...account,
-        interests: { formats: ["beach-2s"], positions: [] },
+        interests: { formats: ["beach-2s"], positions: [], competitionTypes: [] },
       })
       .mockResolvedValueOnce({
         ...account,
-        interests: { formats: [], positions: [] },
+        interests: { formats: [], positions: [], competitionTypes: [] },
       });
     await render(<Profile />);
 
     await userEvent.press(screen.getByRole("button", { name: "Beach 2s" }));
     await waitFor(() =>
       expect(updateMyAccount).toHaveBeenCalledWith(user, {
-        interests: { formats: ["beach-2s"], positions: [] },
+        interests: { formats: ["beach-2s"], positions: [], competitionTypes: [] },
       }),
     );
     expect(screen.getByRole("button", { name: "Beach 2s selected" })).toBeOnTheScreen();
@@ -594,7 +594,7 @@ describe("Profile interests", () => {
     await userEvent.press(screen.getByRole("button", { name: "Beach 2s selected" }));
     await waitFor(() =>
       expect(updateMyAccount).toHaveBeenLastCalledWith(user, {
-        interests: { formats: [], positions: [] },
+        interests: { formats: [], positions: [], competitionTypes: [] },
       }),
     );
     expect(screen.getByRole("button", { name: "Beach 2s" })).toBeOnTheScreen();
@@ -614,5 +614,56 @@ describe("Profile interests", () => {
     expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState).toEqual(
       expect.objectContaining({ selected: false }),
     );
+  });
+});
+
+it("saves and clears a skill level without replacing other preferences", async () => {
+  jest.mocked(useSession).mockImplementation(function useFakeSession() {
+    const [shown, setShown] = useState<RallyUser>(account);
+    return fakeSession({ user, account: shown, setAccount: setShown });
+  });
+  jest
+    .mocked(updateMyAccount)
+    .mockResolvedValueOnce({ ...account, skillLevel: "B-" })
+    .mockResolvedValueOnce({ ...account, skillLevel: null });
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("radio", { name: "B-" }));
+  expect(updateMyAccount).toHaveBeenCalledWith(user, { skillLevel: "B-" });
+  expect(screen.getByRole("radio", { name: "B-" })).toBeChecked();
+  await userEvent.press(screen.getByRole("radio", { name: "Not set" }));
+  expect(updateMyAccount).toHaveBeenLastCalledWith(user, { skillLevel: null });
+  expect(screen.getByRole("radio", { name: "Not set" })).toBeChecked();
+});
+
+it("restores a saved level after a failure and allows another attempt", async () => {
+  jest.mocked(useSession).mockImplementation(function useFakeSession() {
+    const [shown, setShown] = useState<RallyUser>({ ...account, skillLevel: "C" });
+    return fakeSession({ user, account: shown, setAccount: setShown });
+  });
+  jest
+    .mocked(updateMyAccount)
+    .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."))
+    .mockResolvedValueOnce({ ...account, skillLevel: "B" });
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("radio", { name: "B" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
+  expect(screen.getByRole("radio", { name: "C" })).toBeChecked();
+  await userEvent.press(screen.getByRole("radio", { name: "B" }));
+  expect(screen.getByRole("radio", { name: "B" })).toBeChecked();
+});
+
+it("saves competition preferences together with existing format and position choices", async () => {
+  const interests = { formats: ["beach-4s"], positions: ["opposite"], competitionTypes: [] };
+  jest
+    .mocked(useSession)
+    .mockReturnValue(fakeSession({ user, account: { ...account, interests } }));
+  jest.mocked(updateMyAccount).mockResolvedValueOnce({
+    ...account,
+    interests: { ...interests, competitionTypes: ["mixed"] },
+  });
+  await render(<Profile />);
+  await userEvent.press(screen.getByRole("button", { name: "Mixed" }));
+  expect(updateMyAccount).toHaveBeenCalledWith(user, {
+    interests: { ...interests, competitionTypes: ["mixed"] },
   });
 });

@@ -6,6 +6,9 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PlayerDirectory } from "@/components/playerDirectory";
+import { PlayerFilterBar } from "@/components/playerFilterBar";
+import { PlayerFiltersSheet } from "@/components/playerFilters";
+import { usePlayerFilters } from "@/hooks/usePlayerFilters";
 import { useSearchFonts } from "@/lib/search-fonts";
 import { searchCopy as copy } from "@/translations/search.en";
 
@@ -39,7 +42,8 @@ export default function SearchScreen() {
   const [players, setPlayers] = useState<RallyPlayer[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<string>();
-  const { user } = useSession();
+  const { user, account } = useSession();
+  const playerFilters = usePlayerFilters();
 
   useEffect(() => {
     if (tab !== "players" || !user) return;
@@ -86,7 +90,14 @@ export default function SearchScreen() {
         />
 
         <View style={styles.controls}>
-          <SearchBar value={query} onChangeText={setQuery} mode={tab} fontFamily={fonts.regular} />
+          <SearchBar
+            value={query}
+            onChangeText={setQuery}
+            mode={tab}
+            fontFamily={fonts.regular}
+            onPressFilter={tab === "players" ? playerFilters.open : undefined}
+            activeFilterCount={tab === "players" ? playerFilters.count : 0}
+          />
           <SegmentedToggle
             options={TABS}
             selected={tab}
@@ -108,6 +119,15 @@ export default function SearchScreen() {
         )}
 
         {tab === "players" && (
+          <PlayerFilterBar
+            filters={playerFilters.filters}
+            sort={playerFilters.sort}
+            fonts={fonts}
+            onRemove={playerFilters.remove}
+            onSort={playerFilters.setSort}
+          />
+        )}
+        {tab === "players" && (
           <PlayerDirectory
             players={players}
             query={query}
@@ -116,9 +136,20 @@ export default function SearchScreen() {
             retry={() => setRetryAttempt((attempt) => attempt + 1)}
             clearSearch={() => setQuery("")}
             fonts={fonts}
+            filters={playerFilters.filters}
+            sort={playerFilters.sort}
+            viewerInterests={account?.interests}
           />
         )}
       </ScrollView>
+      <PlayerFiltersSheet
+        visible={tab === "players" && playerFilters.visible}
+        filters={playerFilters.draft}
+        onChange={playerFilters.setDraft}
+        onClose={playerFilters.close}
+        onApply={playerFilters.apply}
+        fonts={fonts}
+      />
     </SafeAreaView>
   );
 }

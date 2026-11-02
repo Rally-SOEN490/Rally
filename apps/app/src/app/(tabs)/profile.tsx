@@ -27,6 +27,9 @@ import {
 } from "@/lib/api";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { COMPETITION_TYPES, PLAYER_POSITIONS, PROFILE_FORMATS } from "@/lib/player-preferences";
+import { ProfileSkillLevel } from "@/components/profileSkillLevel";
+import { playerFilterCopy } from "@/translations/player-filters.en";
 
 const stats = [
   { label: "Matches", value: "132" },
@@ -35,20 +38,10 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const interestFormats = [
-  { key: "indoor-6s", label: "Indoor 6s" },
-  { key: "beach-2s", label: "Beach 2s" },
-  { key: "9-man", label: "9-man" },
-] as const;
-const interestPositions = [
-  { key: "libero", label: "Libero" },
-  { key: "outside", label: "Outside" },
-  { key: "setter", label: "Setter" },
-  { key: "middle", label: "Middle" },
-  { key: "opposite", label: "Opposite" },
-] as const;
-type InterestCategory = "formats" | "positions";
-type InterestOption = (typeof interestFormats)[number] | (typeof interestPositions)[number];
+const interestFormats = PROFILE_FORMATS;
+const interestPositions = PLAYER_POSITIONS;
+type InterestCategory = "formats" | "positions" | "competitionTypes";
+type InterestOption = { readonly key: string; readonly label: string };
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -142,6 +135,7 @@ export default function Profile() {
   const [interestSelection, setInterestSelection] = useState(() => ({
     formats: account?.interests?.formats ?? [],
     positions: account?.interests?.positions ?? [],
+    competitionTypes: account?.interests?.competitionTypes ?? [],
   }));
   const [interestSaving, setInterestSaving] = useState(false);
   const [interestError, setInterestError] = useState("");
@@ -516,6 +510,7 @@ export default function Profile() {
         </View>
 
         <View style={styles.tagSection}>
+          <ProfileSkillLevel />
           <Text style={styles.sectionTitle}>Interested in</Text>
           <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
           <InterestPills
@@ -530,6 +525,14 @@ export default function Profile() {
             category="positions"
             options={interestPositions}
             selectedKeys={interestSelection.positions}
+            saving={interestSaving}
+            onToggle={toggleInterest}
+          />
+          <Text style={styles.tagGroupLabel}>{playerFilterCopy.competitionTypes}</Text>
+          <InterestPills
+            category="competitionTypes"
+            options={COMPETITION_TYPES}
+            selectedKeys={interestSelection.competitionTypes}
             saving={interestSaving}
             onToggle={toggleInterest}
           />

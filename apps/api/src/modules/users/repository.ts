@@ -3,6 +3,7 @@
 
 import type { Database } from "../../db.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
+import type { SkillLevel } from "./preferences.ts";
 
 export type NewUser = {
   firebaseUid: string;
@@ -15,6 +16,7 @@ export type ColorTheme = "green" | "blue" | "pink";
 
 export type ProfileChanges = {
   displayName?: string;
+  skillLevel?: SkillLevel | null;
   profilePhotoKey?: string | null;
   lookingForTeam?: boolean;
   shownBadgeKeys?: string[];
@@ -24,6 +26,7 @@ export type ProfileChanges = {
   interests?: {
     formats: string[];
     positions: string[];
+    competitionTypes?: string[];
   };
   notificationsEnabled?: boolean;
   language?: Language;
@@ -136,11 +139,22 @@ export const createUserRepository = (db: Database) => {
       const updatedUser = await db.$transaction(async (transaction) => {
         await transaction.user.update({ where: { id: user.id }, data: userChanges });
         if (interests) {
-          await transaction.userInterest.deleteMany({ where: { userId: user.id } });
+          // Older clients send only formats/positions. Keep the new category unless
+          // it was explicitly supplied, including an empty array to clear it.
+          const categories = ["format", "position"];
+          if (interests.competitionTypes !== undefined) categories.push("competitionType");
+          await transaction.userInterest.deleteMany({
+            where: { userId: user.id, category: { in: categories } },
+          });
           await transaction.userInterest.createMany({
             data: [
               ...interests.formats.map((key) => ({ userId: user.id, category: "format", key })),
               ...interests.positions.map((key) => ({ userId: user.id, category: "position", key })),
+              ...(interests.competitionTypes ?? []).map((key) => ({
+                userId: user.id,
+                category: "competitionType",
+                key,
+              })),
             ],
           });
         }

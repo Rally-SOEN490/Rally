@@ -10,11 +10,15 @@ import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
 import type { Gender } from "./service.ts";
+import {
+  competitionTypes,
+  interestFormats,
+  interestPositions,
+  skillLevels,
+} from "./preferences.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 type GenderBody = { gender: Gender | null };
-const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
-const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
 const languages = ["EN", "FR"] as const;
 const colorThemes = ["green", "blue", "pink"] as const;
 
@@ -30,6 +34,7 @@ const displayNameSchema = {
 // Fields the app may change with PATCH /users/me.
 const editableFields = [
   "displayName",
+  "skillLevel",
   "lookingForTeam",
   "shownBadgeKeys",
   "instagramUrl",
@@ -95,6 +100,13 @@ export const userRoutes: FastifyPluginAsync<{
   app.patch<{ Body: ProfileChanges }>(
     "/me",
     {
+      // Check the new array before AJV can coerce a single string into an array.
+      preValidation: async (request, reply) => {
+        const values = request.body?.interests?.competitionTypes;
+        if (values !== undefined && !Array.isArray(values)) {
+          return reply.code(400).send({ message: "Competition preferences must be an array." });
+        }
+      },
       schema: {
         body: {
           type: "object",
@@ -104,6 +116,7 @@ export const userRoutes: FastifyPluginAsync<{
           anyOf: editableFields.map((field) => ({ required: [field] })),
           properties: {
             displayName: displayNameSchema,
+            skillLevel: { enum: [...skillLevels, null] },
             lookingForTeam: { enum: [true, false] },
             shownBadgeKeys: {
               type: "array",
@@ -155,6 +168,11 @@ export const userRoutes: FastifyPluginAsync<{
                   type: "array",
                   uniqueItems: true,
                   items: { enum: interestPositions },
+                },
+                competitionTypes: {
+                  type: "array",
+                  uniqueItems: true,
+                  items: { enum: competitionTypes },
                 },
               },
             },

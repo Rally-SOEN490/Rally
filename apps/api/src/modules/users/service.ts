@@ -4,11 +4,13 @@
 import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
+import type { SkillLevel } from "./preferences.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
   id: string;
   displayName: string;
+  skillLevel: SkillLevel | null;
   profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys: string[];
@@ -18,6 +20,7 @@ export type UserResponse = {
   interests: {
     formats: string[];
     positions: string[];
+    competitionTypes: string[];
   };
   // App settings. Only sent to the person themselves (the directory leaves them out).
   notificationsEnabled: boolean;
@@ -43,7 +46,7 @@ export type UserResponse = {
 
 export type UserDirectoryResponse = Pick<
   UserResponse,
-  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+  "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
 export type Gender = "male" | "female";
@@ -88,6 +91,8 @@ const toResponse = async (
 ): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
+  // The route and database check constraint restrict the stored values.
+  skillLevel: user.skillLevel as SkillLevel | null,
   profilePhotoUrl:
     user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
   lookingForTeam: user.lookingForTeam,
@@ -99,6 +104,9 @@ const toResponse = async (
     formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
     positions: user.interests
       .filter(({ category }) => category === "position")
+      .map(({ key }) => key),
+    competitionTypes: user.interests
+      .filter(({ category }) => category === "competitionType")
       .map(({ key }) => key),
   },
   notificationsEnabled: user.notificationsEnabled,
@@ -122,6 +130,8 @@ const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryR
   return {
     id: response.id,
     displayName: response.displayName,
+    skillLevel: response.skillLevel,
+    interests: response.interests,
     lookingForTeam: response.lookingForTeam,
     createdAt: response.createdAt,
     badges: response.badges,

@@ -53,7 +53,9 @@ describe("GET /users", () => {
         "createdAt",
         "displayName",
         "id",
+        "interests",
         "lookingForTeam",
+        "skillLevel",
       ]);
     }
     expect(
@@ -155,6 +157,7 @@ describe("POST /users/me", () => {
       "notificationsEnabled",
       "profilePhotoUrl",
       "shownBadgeKeys",
+      "skillLevel",
       "thoughtText",
     ]);
     expect(response.json().profilePhotoUrl).toBeNull();
@@ -568,6 +571,7 @@ describe("PATCH /users/me", () => {
     expect(updated.json().interests).toEqual({
       formats: ["indoor-6s", "beach-2s"],
       positions: ["libero", "setter"],
+      competitionTypes: [],
     });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(
@@ -588,12 +592,13 @@ describe("PATCH /users/me", () => {
     expect(replaced.json().interests).toEqual({
       formats: ["9-man"],
       positions: ["outside"],
+      competitionTypes: [],
     });
     expect(await testDb.userInterest.count({ where: { userId: saved.id } })).toBe(2);
   });
 
   test.each([
-    { interests: { formats: ["beach-4s"], positions: [] } },
+    { interests: { formats: ["beach-3s"], positions: [] } },
     { interests: { formats: [], positions: ["defensive-specialist"] } },
     { interests: { formats: ["indoor-6s", "indoor-6s"], positions: [] } },
   ])("rejects invalid interest payloads: %j", async (body) => {

@@ -3,6 +3,7 @@
 
 import type { User } from "firebase/auth";
 import { Platform } from "react-native";
+import type { SavedInterests, SkillLevel } from "@/lib/player-preferences";
 
 // Where the Rally API runs. On an Android emulator or a phone, set
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
@@ -14,16 +15,14 @@ export type ColorTheme = "green" | "blue" | "pink";
 export type RallyUser = {
   id: string;
   displayName: string;
+  skillLevel?: SkillLevel | null;
   profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys?: string[];
   instagramUrl?: string | null;
   facebookUrl?: string | null;
   thoughtText?: string | null;
-  interests?: {
-    formats: string[];
-    positions: string[];
-  };
+  interests?: SavedInterests;
   // App settings from the Settings screen.
   notificationsEnabled?: boolean;
   language?: Language;
@@ -48,18 +47,19 @@ export type RallyUser = {
 
 export type RallyPlayer = Pick<
   RallyUser,
-  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+  "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
 export type Gender = "male" | "female";
 export type ProfileChanges =
   | { displayName: string }
+  | { skillLevel: SkillLevel | null }
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
   | { facebookUrl: string | null }
   | { thoughtText: string | null }
-  | { interests: { formats: string[]; positions: string[] } }
+  | { interests: SavedInterests }
   | { notificationsEnabled: boolean }
   | { language: Language }
   | { colorTheme: ColorTheme }
