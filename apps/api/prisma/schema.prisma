@@ -27,7 +27,6 @@ model User {
   displayName     String   @map("display_name")
   skillLevel      String?  @map("skill_level")
   profilePhotoKey String? @map("profile_photo_key")
-  gender         String?
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")
   thoughtText    String?  @map("thought_text")

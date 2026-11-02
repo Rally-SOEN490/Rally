@@ -49,8 +49,6 @@ export type UserDirectoryResponse = Pick<
   "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
-export type Gender = "male" | "female";
-
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
 
 // Turns one of the user's badges into what the API sends back.
@@ -204,8 +202,4 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
   remove: async (firebaseUid: string) => {
     await users.deleteByFirebaseUid(firebaseUid);
   },
-
-  getGender: (firebaseUid: string) => users.getGender(firebaseUid),
-
-  setGender: (firebaseUid: string, gender: Gender | null) => users.setGender(firebaseUid, gender),
 });
