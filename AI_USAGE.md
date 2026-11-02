@@ -13,6 +13,7 @@ Tools named in Rally's acknowledgments so far. Add any other tool you used.
 | Claude Code | To be completed by the contributors who used it |
 | OpenAI Codex | RALLY-149 (#171): lint/format configuration, PR quality checks, formatting baseline, documentation, and local verification |
 | GitHub Copilot | Automated pull request review comments |
+| OpenAI | RALLY-115 player cards, directory states, tests, and visual validation |
 
 ## Tooling contributions
 
@@ -47,6 +48,49 @@ Verification: <tests or substantive review comments that check the behaviour, wi
 
 Problems and rejected suggestions: <generated code that was wrong, corrected, or rejected, or "None found">
 ```
+
+## Additional assisted work
+
+### RALLY-115: Player browsing
+
+Issue: #137. Pull request: [#262](https://github.com/Rally-SOEN490/Rally/pull/262).
+This browsing-only increment leaves filtering open; displaying records and styling
+are not counted as a separate substantive feature under rubric §1. The local
+integration incorporates current main, including #256 and the shared tab navigation.
+
+OpenAI Codex generated the player-card presentation, directory loading/error/empty
+states, retry behavior, translations, tests, and stable directory ordering. The
+contributor selected **50% or more AI-generated**. The updated Figma card has four
+statistic tiles, one interests section with overflow, and View profile/Message
+actions. Unavailable data remains explicit and unavailable actions stay disabled.
+Codex also resolved the main integration conflicts and applied the shared review-pr
+checklist. Main's navigation, account, profile, settings, and API contracts were preserved.
+
+Verification: [card tests](apps/app/tests/components/playerCard.test.tsx),
+[search tests](apps/app/tests/app/search.test.tsx),
+[shared navigation tests](apps/app/tests/app/tabs-layout.test.tsx), and
+[directory integration tests](apps/api/test/users.test.ts). The integrated local app
+passed 285 tests; the API passed 147 tests. Both projects passed type, lint, and
+format checks, with existing size/complexity warnings. Android API 29 testing used
+the supplied navigation development build, actual Search/Home/shared navigation,
+and an isolated session/database fixture. It covered case-insensitive search,
+loading, empty/no-match states, retry preserving input, keyboard dismissal, disabled
+actions, scrolling, and Home/Search state retention. Separate native card fixtures
+verified interest overflow, Android Back, and narrow-width long names. The supplied
+APK lacks main's image-picker module, so Profile alone was replaced in the ignored
+preview harness; Profile and real Firebase sign-in are not end-to-end verified.
+No web or iOS checks were run for this revision.
+
+Corrections: fixed a broad font mock, asynchronous test cleanup, narrow-width
+wrapping, clipped chip text, and native SVG button-edge artifacts using exact Figma
+3x PNG exports. Current assets and typography were compared with the specified
+Figma card; platform rasterization differences remain. The initial parallel test
+run hit resource-contention timeouts; API rerun and the full serial app run passed
+without increasing timeouts. Committed screenshots were removed from the proposed
+tree and fresh Android Search captures prepared as PR attachments. Existing
+contribution levels were preserved, including extracted styles. Three inherited
+Search Toggle commits lack AI acknowledgments; their authors' history was not
+rewritten. Human review, current remote CI, and stakeholder signoff remain pending.
 
 ## AI-use acknowledgment
 

@@ -2,14 +2,24 @@
 // AI contribution: 50% or more AI-generated
 
 import { Image, StyleSheet, Text, View } from "react-native";
-import { colors, radii } from "@/constants/rallyTheme";
+import { searchCopy as copy } from "@/translations/search.en";
+import { colors } from "@/constants/rallyTheme";
 
 type Props = {
   title?: string;
   subtitle?: string;
+  fontFamily?: string;
+  regularFontFamily?: string;
+  mediumFontFamily?: string;
 };
 
-export function SearchBanner({ title = "Search", subtitle = "Find your next game" }: Props) {
+export function SearchBanner({
+  title = copy.banner.title,
+  subtitle = copy.banner.subtitle,
+  fontFamily,
+  regularFontFamily,
+  mediumFontFamily,
+}: Props) {
   return (
     <View style={styles.banner}>
       <Image
@@ -17,9 +27,13 @@ export function SearchBanner({ title = "Search", subtitle = "Find your next game
         style={styles.ball}
         resizeMode="contain"
       />
-      <Text style={styles.brand}>RALLY</Text>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Text style={[styles.brand, { fontFamily: mediumFontFamily ?? fontFamily }]}>
+        {copy.banner.brand}
+      </Text>
+      <Text style={[styles.title, { fontFamily }]}>{title}</Text>
+      <Text style={[styles.subtitle, { fontFamily: regularFontFamily ?? fontFamily }]}>
+        {subtitle}
+      </Text>
     </View>
   );
 }
@@ -27,11 +41,11 @@ export function SearchBanner({ title = "Search", subtitle = "Find your next game
 const styles = StyleSheet.create({
   banner: {
     backgroundColor: colors.forest,
-    borderRadius: radii.card,
+    borderRadius: 15,
     paddingHorizontal: 20,
-    paddingVertical: 22,
+    paddingVertical: 16,
     overflow: "hidden",
-    minHeight: 150,
+    minHeight: 118,
     justifyContent: "center",
   },
   ball: {
@@ -43,19 +57,19 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.lime,
-    fontSize: 20,
+    fontSize: 16,
     letterSpacing: 1.5,
     fontWeight: "500",
   },
   title: {
     color: colors.white,
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     marginTop: 6,
   },
   subtitle: {
     color: colors.lime,
-    fontSize: 16,
-    marginTop: 12,
+    fontSize: 12,
+    marginTop: 8,
   },
 });

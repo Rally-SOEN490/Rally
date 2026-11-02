@@ -43,9 +43,10 @@ describe("GET /users", () => {
 
     expect(response.statusCode).toBe(200);
     expect(users).toHaveLength(2);
-    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual(
-      expect.arrayContaining(["Alice", "Zoe"]),
-    );
+    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual([
+      "Alice",
+      "Zoe",
+    ]);
     for (const user of users) {
       expect(Object.keys(user).sort()).toEqual([
         "badges",
@@ -66,6 +67,35 @@ describe("GET /users", () => {
         })
       ).json().badges,
     );
+  });
+
+  test("keeps duplicate display names in a stable ID order", async () => {
+    const ids = ["00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000001"];
+    await testDb.user.createMany({
+      data: ids.map((id) => ({
+        id,
+        firebaseUid: `duplicate-${id}`,
+        displayName: "Sam Lee",
+        ageConfirmedAt: new Date(),
+      })),
+    });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users",
+      headers: authHeader("viewer"),
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().map((user: { id: string }) => user.id)).toEqual([...ids].sort());
+  });
+
+  test("rejects an invalid directory token", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/users",
+      headers: { authorization: "Bearer invalid" },
+    });
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({ message: "Your session has expired. Log in again." });
   });
 
   test("rejects a request without a token", async () => {

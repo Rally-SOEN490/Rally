@@ -8,9 +8,15 @@ type Props<T extends string> = {
   options: readonly { value: T; label: string }[];
   selected: T;
   onChange: (value: T) => void;
+  fontFamily?: string;
 };
 
-export function SegmentedToggle<T extends string>({ options, selected, onChange }: Props<T>) {
+export function SegmentedToggle<T extends string>({
+  options,
+  selected,
+  onChange,
+  fontFamily,
+}: Props<T>) {
   return (
     <View style={styles.track} accessibilityRole="tablist">
       {options.map((option) => {
@@ -23,7 +29,13 @@ export function SegmentedToggle<T extends string>({ options, selected, onChange 
             accessibilityState={{ selected: isActive }}
             style={[styles.segment, isActive && styles.segmentActive]}
           >
-            <Text style={[styles.label, isActive ? styles.labelActive : styles.labelInactive]}>
+            <Text
+              style={[
+                styles.label,
+                { fontFamily },
+                isActive ? styles.labelActive : styles.labelInactive,
+              ]}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -38,11 +50,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: colors.forest,
     borderRadius: radii.pill,
-    padding: 5,
+    padding: 4,
   },
   segment: {
     flex: 1,
-    height: 40,
+    height: 27,
     borderRadius: radii.pill,
     alignItems: "center",
     justifyContent: "center",
@@ -51,7 +63,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   label: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "600",
   },
   labelActive: {
