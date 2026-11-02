@@ -9,10 +9,8 @@ import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
-import type { Gender } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
-type GenderBody = { gender: Gender | null };
 const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
 const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
 const languages = ["EN", "FR"] as const;
@@ -170,36 +168,6 @@ export const userRoutes: FastifyPluginAsync<{
     async (request, reply) => {
       const user = await users.update(request.firebaseUid, request.body);
       return user ?? reply.code(404).send(noAccount);
-    },
-  );
-
-  app.get("/me/gender", async (request, reply) => {
-    const gender = await users.getGender(request.firebaseUid);
-    if (gender === null) {
-      const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send(noAccount);
-    }
-    return { gender };
-  });
-
-  app.patch<{ Body: GenderBody }>(
-    "/me/gender",
-    {
-      schema: {
-        body: {
-          type: "object",
-          required: ["gender"],
-          additionalProperties: false,
-          properties: {
-            gender: { anyOf: [{ type: "string", enum: ["male", "female"] }, { type: "null" }] },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const account = await users.getCurrent(request.firebaseUid);
-      if (!account) return reply.code(404).send(noAccount);
-      return { gender: await users.setGender(request.firebaseUid, request.body.gender) };
     },
   );
 
