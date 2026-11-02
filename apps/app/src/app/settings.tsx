@@ -366,6 +366,7 @@ export default function Settings() {
               onChangeText={setNewValue}
               maxLength={NAME_MAX_LENGTH}
               placeholder="Full name"
+              selectTextOnFocus
               style={styles.modalInput}
             />
             {errorText}
@@ -628,7 +629,7 @@ export default function Settings() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Save Instagram link"
+              accessibilityLabel={instagramSaving ? "Saving Instagram link" : "Save Instagram link"}
               disabled={instagramSaving}
               onPress={saveInstagram}
               style={[styles.socialSaveButton, instagramSaving && styles.disabled]}
@@ -651,7 +652,7 @@ export default function Settings() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Save Facebook link"
+              accessibilityLabel={facebookSaving ? "Saving Facebook link" : "Save Facebook link"}
               disabled={facebookSaving}
               onPress={saveFacebook}
               style={[styles.socialSaveButton, facebookSaving && styles.disabled]}

@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { Link } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -35,7 +36,7 @@ export default function Login() {
           </Link>
         }
       />
-      <Button title="Log in" onPress={login} />
+      <Button title="Log in" testID="login-submit" onPress={login} />
       <SocialLogin />
       <Footer text="New to Rally?" label="Sign up" href="/sign-up" />
     </AuthScreen>

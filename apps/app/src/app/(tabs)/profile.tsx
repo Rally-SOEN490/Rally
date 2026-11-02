@@ -278,6 +278,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open settings"
+            testID="open-profile-settings"
             onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
