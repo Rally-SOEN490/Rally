@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 export const badgeTiers = ["Bronze", "Silver", "Gold"] as const;
 export type BadgeTier = (typeof badgeTiers)[number];
@@ -27,10 +22,7 @@ export type BadgeDefinition = {
 
 type BadgeDefinitionInput = Pick<BadgeDefinition, "key" | "name" | "description"> &
   Partial<
-    Pick<
-      BadgeDefinition,
-      "tier" | "availableTiers" | "tierThresholds" | "image" | "autoAward"
-    >
+    Pick<BadgeDefinition, "tier" | "availableTiers" | "tierThresholds" | "image" | "autoAward">
   >;
 
 const createBadge = (definition: BadgeDefinitionInput): BadgeDefinition => ({
@@ -47,10 +39,7 @@ type BadgeCatalogRow = [
   name: string,
   description: string,
   overrides?: Partial<
-    Pick<
-      BadgeDefinition,
-      "tier" | "availableTiers" | "tierThresholds" | "image" | "autoAward"
-    >
+    Pick<BadgeDefinition, "tier" | "availableTiers" | "tierThresholds" | "image" | "autoAward">
   >,
 ];
 
@@ -65,11 +54,11 @@ export const getBadgeTier = (
     availableTiers[0] ??
     "Bronze";
   const baseIndex = availableTiers.indexOf(normalizedBaseTier);
-  const earnedTiers = availableTiers.slice(baseIndex).filter(
-    (tier) =>
-      receivedCount >=
-      getRelativeTierThreshold(normalizedBaseTier, tier, tierThresholds),
-  );
+  const earnedTiers = availableTiers
+    .slice(baseIndex)
+    .filter(
+      (tier) => receivedCount >= getRelativeTierThreshold(normalizedBaseTier, tier, tierThresholds),
+    );
 
   return earnedTiers.at(-1) ?? normalizedBaseTier;
 };
@@ -88,13 +77,11 @@ export const getBadgeCompletion = (
     : null;
   const completionThreshold =
     availableTiers.length === 1
-      ? tierThresholds[tier] ?? 0
+      ? (tierThresholds[tier] ?? 0)
       : getRelativeTierThreshold(baseTier, tier, tierThresholds);
 
   return {
-    isComplete:
-      nextTier === undefined &&
-      receivedCount >= completionThreshold,
+    isComplete: nextTier === undefined && receivedCount >= completionThreshold,
     nextTierThreshold,
   };
 };

@@ -40,15 +40,10 @@ export function SearchBar({
       <Pressable
         onPress={onPressFilter}
         accessibilityRole="button"
-        accessibilityLabel={
-          onPressFilter ? copy.openFilters : copy.filtersUnavailable
-        }
+        accessibilityLabel={onPressFilter ? copy.openFilters : copy.filtersUnavailable}
         accessibilityState={{ disabled: !onPressFilter }}
         disabled={!onPressFilter}
-        style={({ pressed }) => [
-          styles.filterButton,
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
       >
         <Ionicons name="options-outline" size={22} color={colors.gold} />
       </Pressable>

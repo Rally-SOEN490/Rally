@@ -1,13 +1,9 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import type { FastifyPluginAsync } from "fastify";
 import type { Database } from "./db.ts";
 
-export const healthRoutes: FastifyPluginAsync<{ db: Database }> = async (
-  app,
-  { db },
-) => {
+export const healthRoutes: FastifyPluginAsync<{ db: Database }> = async (app, { db }) => {
   // Lets you (and later the hosting service) check that the API is up and can reach the database.
   app.get("/health", async (request, reply) => {
     try {

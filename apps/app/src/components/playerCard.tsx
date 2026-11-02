@@ -3,22 +3,21 @@
 
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import type { RallyPlayer } from "@/lib/api";
 import type { SearchFonts } from "@/lib/search-fonts";
+import { playerCardStyles as styles } from "./playerCard.styles";
 import { searchCopy as copy } from "@/translations/search.en";
 
-// Presentation contract only. Preference/statistics owners can supply these when their APIs exist.
-export type PlayerCardData = Pick<
-  RallyPlayer,
-  "id" | "displayName" | "lookingForTeam"
-> & {
+// Presentation contract only; unavailable API fields stay unknown.
+export type PlayerCardData = Pick<RallyPlayer, "id" | "displayName" | "lookingForTeam"> & {
   level?: string | null;
   positions?: readonly string[];
   formats?: readonly string[];
   stats?: {
     matches?: number | null;
     wins?: number | null;
+    topFour?: number | null;
     events?: number | null;
   };
 };
@@ -26,17 +25,63 @@ type Props = {
   player: PlayerCardData;
   fonts?: SearchFonts;
   onViewProfile?: (id: string) => void;
-  onInvite?: (id: string) => void;
+  onMessage?: (id: string) => void;
+  // Only highlight a supplied active preference; the directory has no active filters yet.
+  highlightedFormat?: string;
 };
-const icons = {
-  matches: require("@/assets/images/player-card/match.svg"),
-  wins: require("@/assets/images/player-card/wins.svg"),
-  events: require("@/assets/images/player-card/events.svg"),
+const metrics = [
+  {
+    key: "matches",
+    icon: require("@/assets/images/player-card/match.svg"),
+    width: 14,
+    height: 14,
+  },
+  {
+    key: "wins",
+    icon: require("@/assets/images/player-card/wins.svg"),
+    width: 14,
+    height: 12,
+  },
+  {
+    key: "topFour",
+    icon: require("@/assets/images/player-card/top-four.svg"),
+    width: 12,
+    height: 15,
+  },
+  {
+    key: "events",
+    icon: require("@/assets/images/player-card/events.svg"),
+    width: 12,
+    height: 14,
+  },
+] as const;
+const dots = {
+  format: {
+    source: require("@/assets/images/player-card/format-dot.svg"),
+    width: 9.4,
+    height: 8,
+  },
+  position: {
+    source: require("@/assets/images/player-card/position-dot.svg"),
+    width: 8.41558,
+    height: 8.8055,
+  },
+  level: {
+    source: require("@/assets/images/player-card/level-dot.svg"),
+    width: 9,
+    height: 9.04639,
+  },
+  category: {
+    source: require("@/assets/images/player-card/gender-dot.svg"),
+    width: 7.83117,
+    height: 8.04124,
+  },
 };
+type Interest = { label: string; kind: keyof typeof dots; selected?: boolean };
+
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/u).filter(Boolean);
-  const selected =
-    parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+  const selected = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
   return (
     selected
       .map((part) => Array.from(part)[0])
@@ -45,7 +90,35 @@ const initials = (name: string) => {
   );
 };
 
-function PlayerHeader({ player, fonts = {} }: Props) {
+function PlayerMetrics({ player, fonts = {} }: Props) {
+  return (
+    <View style={styles.metrics}>
+      {metrics.map(({ key, icon, width, height }) => {
+        const value = player.stats?.[key];
+        const known = typeof value === "number" && Number.isInteger(value) && value >= 0;
+        return (
+          <View
+            key={key}
+            style={styles.metric}
+            accessible
+            accessibilityLabel={`${copy[key]}: ${known ? value : copy.unknown}`}
+          >
+            <View style={styles.metricValue}>
+              <Image source={icon} style={{ width, height }} contentFit="contain" />
+              <Text style={[styles.count, { fontFamily: fonts.semibold }]}>
+                {known ? value : "—"}
+              </Text>
+            </View>
+            <Text style={[styles.metricLabel, { fontFamily: fonts.medium }]}>{copy[key]}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function PlayerHeader(props: Props) {
+  const { player, fonts = {} } = props;
   const name = player.displayName.trim() || copy.player;
   return (
     <View style={styles.header}>
@@ -62,199 +135,225 @@ function PlayerHeader({ player, fonts = {} }: Props) {
         >
           {name}
         </Text>
-        <View style={styles.metadata}>
-          <View style={styles.level}>
-            <Text
-              style={[styles.pillText, { fontFamily: fonts.semibold }]}
-              accessibilityLabel={player.level || copy.unknown}
-            >
-              {player.level || "—"}
-            </Text>
-          </View>
-          <View style={styles.position}>
-            <Text
-              style={[styles.pillText, { fontFamily: fonts.semibold }]}
-              numberOfLines={1}
-            >
-              {player.positions?.join(" / ") || copy.positionsNotSet}
-            </Text>
-          </View>
-        </View>
+        <PlayerMetrics {...props} />
       </View>
     </View>
   );
 }
 
-function FormatChips({
-  player,
-  fonts = {},
-  onMore,
-}: Props & { onMore: () => void }) {
-  const formats = player.formats ?? [];
+function getInterests({ player, highlightedFormat }: Props): Interest[] {
+  const formats = [...new Set(player.formats?.map((label) => label.trim()).filter(Boolean))];
+  const positions = [...new Set(player.positions?.map((label) => label.trim()).filter(Boolean))];
+  const first = formats[0];
+  const level = player.level?.trim();
+  return [
+    ...(first
+      ? [
+          {
+            label: first,
+            kind: "format" as const,
+            selected: first === highlightedFormat,
+          },
+        ]
+      : []),
+    ...positions.map((label) => ({ label, kind: "position" as const })),
+    ...(level ? [{ label: level, kind: "level" as const }] : []),
+    ...formats.slice(1).map((label) => ({ label, kind: "category" as const })),
+  ];
+}
+
+function InterestChip({ interest, fonts }: { interest: Interest; fonts: SearchFonts }) {
+  const dot = dots[interest.kind];
   return (
-    <View style={styles.formats}>
-      {formats.slice(0, 3).map((format, index) => (
-        <View key={format} style={styles.format}>
-          <View
-            style={[
-              styles.dot,
-              { backgroundColor: ["#e3aecf", "#985365", "#913d96"][index] },
-            ]}
-          />
-          <Text
-            style={[styles.pillText, { fontFamily: fonts.semibold }]}
-            numberOfLines={1}
-          >
-            {format}
-          </Text>
-        </View>
-      ))}
-      {formats.length > 3 && (
-        <Pressable
-          style={styles.overflow}
-          onPress={onMore}
-          accessibilityRole="button"
-          accessibilityLabel={copy.moreFormats}
-          hitSlop={6}
-        >
-          <Text style={styles.pillText}>+{formats.length - 3}</Text>
-        </Pressable>
+    <View style={[styles.chip, styles[interest.kind], interest.selected && styles.selectedChip]}>
+      {interest.selected && (
+        <Image
+          source={require("@/assets/images/player-card/selected-interest.svg")}
+          style={styles.selectedBackground}
+          contentFit="contain"
+        />
       )}
-      {formats.length === 0 && (
-        <Text style={[styles.unset, { fontFamily: fonts.regular }]}>
-          {copy.preferencesNotSet}
-        </Text>
-      )}
-      {player.lookingForTeam && (
-        <Text style={[styles.availability, { fontFamily: fonts.medium }]}>
-          {copy.lookingForTeam}
-        </Text>
+      <Image
+        source={dot.source}
+        style={{ width: dot.width, height: dot.height }}
+        contentFit="contain"
+      />
+      <Text style={[styles.chipText, { fontFamily: fonts.semibold }]} numberOfLines={1}>
+        {interest.label}
+      </Text>
+      {interest.selected && (
+        <Image
+          source={require("@/assets/images/player-card/check.svg")}
+          style={styles.check}
+          contentFit="contain"
+        />
       )}
     </View>
   );
 }
 
-function PlayerMetrics({ player, fonts = {} }: Props) {
-  return (
-    <View style={styles.metrics}>
-      {(["matches", "wins", "events"] as const).map((key) => {
-        const value = player.stats?.[key];
-        const known =
-          typeof value === "number" && Number.isInteger(value) && value >= 0;
-        return (
-          <View
-            key={key}
-            style={styles.metric}
-            accessible
-            accessibilityLabel={`${copy[key]}: ${known ? value : copy.unknown}`}
-          >
-            <View style={styles.metricValue}>
-              <Image
-                source={icons[key]}
-                style={styles.metricIcon}
-                contentFit="contain"
-              />
-              <Text style={[styles.count, { fontFamily: fonts.semibold }]}>
-                {known ? value : "—"}
-              </Text>
-            </View>
-            <Text style={[styles.metricLabel, { fontFamily: fonts.regular }]}>
-              {copy[key]}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function CardActions({ player, fonts = {}, onViewProfile, onInvite }: Props) {
-  return (
-    <View style={styles.actions}>
-      <Pressable
-        style={[styles.profileButton, !onViewProfile && styles.disabled]}
-        disabled={!onViewProfile}
-        onPress={() => onViewProfile?.(player.id)}
-        accessibilityRole="button"
-        accessibilityLabel={`${copy.viewProfile}: ${player.displayName}`}
-        accessibilityHint={!onViewProfile ? copy.profileHint : undefined}
-        accessibilityState={{ disabled: !onViewProfile }}
-        hitSlop={{ top: 6, bottom: 6 }}
-      >
-        <Image
-          source={require("@/assets/images/player-card/profile-button.svg")}
-          style={styles.profileBackground}
-          contentFit="contain"
-        />
-        <Text style={[styles.actionLabel, { fontFamily: fonts.semibold }]}>
-          {copy.viewProfile}
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.inviteButton, !onInvite && styles.disabled]}
-        disabled={!onInvite}
-        onPress={() => onInvite?.(player.id)}
-        accessibilityRole="button"
-        accessibilityLabel={`${copy.invite}: ${player.displayName}`}
-        accessibilityHint={!onInvite ? copy.inviteHint : undefined}
-        accessibilityState={{ disabled: !onInvite }}
-        hitSlop={{ top: 6, bottom: 6 }}
-      >
-        <Image
-          source={require("@/assets/images/player-card/invite-button.svg")}
-          style={styles.inviteBackground}
-          contentFit="contain"
-        />
-        <Image
-          source={require("@/assets/images/player-card/invite.svg")}
-          style={styles.inviteIcon}
-          contentFit="contain"
-        />
-        <Text
-          style={[
-            styles.actionLabel,
-            styles.inviteLabel,
-            { fontFamily: fonts.medium },
-          ]}
-        >
-          {copy.invite}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function FormatDialog({
-  formats,
-  visible,
-  close,
+function MoreInterests({
+  count,
+  fonts,
+  onPress,
 }: {
-  formats: readonly string[];
-  visible: boolean;
-  close: () => void;
+  count: number;
+  fonts: SearchFonts;
+  onPress: () => void;
 }) {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={close}
+    <Pressable
+      style={styles.more}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={copy.moreInterests}
+      hitSlop={10}
     >
+      <Text
+        style={[styles.chipText, styles.moreText, { fontFamily: fonts.semibold }]}
+        numberOfLines={1}
+      >
+        {copy.moreCount(count)}
+      </Text>
+      <Image
+        source={require("@/assets/images/player-card/dropdown.svg")}
+        style={styles.dropdown}
+        contentFit="contain"
+      />
+    </Pressable>
+  );
+}
+
+function Interests({
+  interests,
+  fonts = {},
+  onMore,
+}: {
+  interests: Interest[];
+  fonts?: SearchFonts;
+  onMore: () => void;
+}) {
+  return (
+    <View style={styles.interests}>
+      <Text style={[styles.interestTitle, { fontFamily: fonts.semibold }]}>
+        {copy.interestedIn}
+      </Text>
+      <View style={styles.chips}>
+        {interests.slice(0, 4).map((interest) => (
+          <InterestChip
+            key={`${interest.kind}:${interest.label}`}
+            interest={interest}
+            fonts={fonts}
+          />
+        ))}
+        {interests.length > 4 && (
+          <MoreInterests count={interests.length - 4} fonts={fonts} onPress={onMore} />
+        )}
+        {interests.length === 0 && (
+          <Text style={[styles.unset, { fontFamily: fonts.regular }]}>
+            {copy.preferencesNotSet}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+type ActionProps = {
+  label: string;
+  name: string;
+  hint: string;
+  onPress?: () => void;
+  message?: boolean;
+  fonts: SearchFonts;
+};
+
+function CardAction({ label, name, hint, onPress, message, fonts }: ActionProps) {
+  const intrinsicWidth = message ? 147 : 164;
+  return (
+    <Pressable
+      style={[styles.action, { flexGrow: intrinsicWidth }]}
+      disabled={!onPress}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${name}`}
+      accessibilityHint={!onPress ? hint : undefined}
+      accessibilityState={{ disabled: !onPress }}
+      hitSlop={{ top: 6, bottom: 6 }}
+    >
+      <Image
+        source={
+          message
+            ? require("@/assets/images/player-card/message-button.png")
+            : require("@/assets/images/player-card/profile-button.png")
+        }
+        style={styles.actionBackground}
+        contentFit="fill"
+      />
+      <Text
+        style={[styles.actionLabel, message && styles.messageLabel, { fontFamily: fonts.semibold }]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function CardActions({ player, fonts = {}, onViewProfile, onMessage }: Props) {
+  const name = player.displayName.trim() || copy.player;
+  return (
+    <View style={styles.actions}>
+      <CardAction
+        label={copy.viewProfile}
+        name={name}
+        hint={copy.profileHint}
+        onPress={onViewProfile ? () => onViewProfile(player.id) : undefined}
+        fonts={fonts}
+      />
+      <CardAction
+        label={copy.message}
+        name={name}
+        hint={copy.messageHint}
+        onPress={onMessage ? () => onMessage(player.id) : undefined}
+        fonts={fonts}
+        message
+      />
+    </View>
+  );
+}
+
+function InterestDialog({
+  interests,
+  visible,
+  close,
+  fonts = {},
+}: {
+  interests: Interest[];
+  visible: boolean;
+  close: () => void;
+  fonts?: SearchFonts;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}>
         <View style={styles.dialog} accessibilityViewIsModal>
-          <Text style={styles.dialogTitle} accessibilityRole="header">
-            {copy.formats}
-          </Text>
-          {formats.map((format) => (
-            <Text key={format} style={styles.dialogFormat}>
-              {format}
-            </Text>
-          ))}
-          <Pressable
-            onPress={close}
-            style={styles.close}
-            accessibilityRole="button"
+          <Text
+            style={[styles.dialogTitle, { fontFamily: fonts.semibold }]}
+            accessibilityRole="header"
           >
+            {copy.interestedIn}
+          </Text>
+          <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 12 }}>
+            {interests.map(({ kind, label }) => (
+              <Text
+                key={`${kind}:${label}`}
+                style={[styles.dialogInterest, { fontFamily: fonts.regular }]}
+              >
+                {label}
+              </Text>
+            ))}
+          </ScrollView>
+          <Pressable onPress={close} style={styles.close} accessibilityRole="button">
             <Text>{copy.close}</Text>
           </Pressable>
         </View>
@@ -264,167 +363,24 @@ function FormatDialog({
 }
 
 export function PlayerCard(props: Props) {
-  const [formatsOpen, setFormatsOpen] = useState(false);
+  const [interestsOpen, setInterestsOpen] = useState(false);
+  const interests = getInterests(props);
   return (
     <View style={styles.card}>
       <PlayerHeader {...props} />
-      <FormatChips {...props} onMore={() => setFormatsOpen(true)} />
-      <View style={styles.footer}>
-        <PlayerMetrics {...props} />
-        <CardActions {...props} />
-      </View>
-      <FormatDialog
-        formats={props.player.formats ?? []}
-        visible={formatsOpen}
-        close={() => setFormatsOpen(false)}
+      <Interests interests={interests} fonts={props.fonts} onMore={() => setInterestsOpen(true)} />
+      {props.player.lookingForTeam && (
+        <Text style={[styles.availability, { fontFamily: props.fonts?.medium }]}>
+          {copy.lookingForTeam}
+        </Text>
+      )}
+      <CardActions {...props} />
+      <InterestDialog
+        interests={interests}
+        visible={interestsOpen}
+        close={() => setInterestsOpen(false)}
+        fonts={props.fonts}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d4d4d4",
-    borderWidth: 1,
-    borderRadius: 15,
-    padding: 12,
-    minHeight: 161,
-    gap: 8,
-  },
-  header: { flexDirection: "row", gap: 13, alignItems: "center" },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#24402f",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initials: { fontSize: 24, fontWeight: "600", color: "#ffffff" },
-  identity: { flex: 1, gap: 5, minWidth: 0 },
-  name: { fontSize: 14, lineHeight: 21, fontWeight: "600", color: "#000000" },
-  metadata: { flexDirection: "row", gap: 6, alignItems: "center" },
-  level: {
-    minWidth: 34,
-    minHeight: 29,
-    borderRadius: 15,
-    backgroundColor: "#d9ec7a",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  position: {
-    borderWidth: 1,
-    borderColor: "#cacaca",
-    borderRadius: 15,
-    minHeight: 28,
-    paddingHorizontal: 12,
-    justifyContent: "center",
-    maxWidth: "80%",
-  },
-  pillText: {
-    fontSize: 10,
-    lineHeight: 14,
-    color: "#000000",
-    fontWeight: "600",
-  },
-  formats: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
-    minHeight: 25,
-  },
-  format: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-    minHeight: 25,
-    paddingHorizontal: 9,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#d5d5d5",
-    maxWidth: "42%",
-  },
-  dot: { width: 9, height: 9, borderRadius: 5 },
-  overflow: {
-    paddingHorizontal: 8,
-    minHeight: 25,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#d5d5d5",
-    borderRadius: 15,
-  },
-  unset: { fontSize: 10, color: "#666666" },
-  availability: {
-    fontSize: 10,
-    color: "#24402f",
-    backgroundColor: "#e8efd9",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  metrics: {
-    width: 116,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  metric: { alignItems: "center", gap: 2 },
-  metricValue: { flexDirection: "row", gap: 3, alignItems: "center" },
-  metricIcon: { width: 14, height: 14 },
-  count: { fontSize: 12, color: "#000000", fontWeight: "600" },
-  metricLabel: { fontSize: 8, color: "#666666" },
-  actions: { flexDirection: "row", gap: 5, alignItems: "center" },
-  profileButton: {
-    width: 100,
-    minHeight: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inviteButton: {
-    width: 93,
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-  },
-  profileBackground: { position: "absolute", width: 100, height: 30.716 },
-  inviteBackground: { position: "absolute", width: 93, height: 30.716 },
-  inviteIcon: { width: 16.306, height: 16.306 },
-  actionLabel: { fontSize: 12, fontWeight: "600", color: "#000000" },
-  inviteLabel: { color: "#ffffff" },
-  disabled: { opacity: 0.5 },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    padding: 28,
-  },
-  dialog: {
-    backgroundColor: "#ffffff",
-    borderRadius: 15,
-    padding: 20,
-    gap: 12,
-    maxWidth: 420,
-    width: "100%",
-    alignSelf: "center",
-  },
-  dialogTitle: { fontSize: 18, fontWeight: "600", color: "#24402f" },
-  dialogFormat: { fontSize: 14, color: "#24402f" },
-  close: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e8efd9",
-    borderRadius: 10,
-  },
-});

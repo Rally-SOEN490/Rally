@@ -12,24 +12,37 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write --ignore-path ../../.prettierignore .",
+    "format:check": "prettier --check --ignore-path ../../.prettierignore .",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1153.0",
+    "@aws-sdk/s3-request-presigner": "^3.1153.0",
     "@fastify/cors": "11.3.1",
+    "@fastify/multipart": "^10.1.4",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "dotenv": "18.0.5",
     "fastify": "5.12.7",
+    "file-type": "^22.2.0",
     "firebase-admin": "14.5.0"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
     "@types/node": "24.19.2",
     "@vitest/coverage-v8": "5.0.5",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
     "prisma": "7.10.0",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
     "vitest": "5.0.5"
   }
 }

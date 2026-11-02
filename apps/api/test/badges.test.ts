@@ -1,17 +1,8 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { describe, expect, test } from "vitest";
-import {
-  badgeCatalog,
-  getBadgeCompletion,
-  getBadgeTier,
-} from "../src/modules/badges/catalog.ts";
+import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../src/modules/badges/catalog.ts";
 
 describe("getBadgeTier", () => {
   test.each([
@@ -51,12 +42,14 @@ describe("getBadgeTier", () => {
     const availableTiers = ["Bronze"] as const;
     const tierThresholds = { Bronze: 10 };
 
-    expect(
-      getBadgeCompletion("Bronze", "Bronze", availableTiers, tierThresholds, 9),
-    ).toEqual({ isComplete: false, nextTierThreshold: null });
-    expect(
-      getBadgeCompletion("Bronze", "Bronze", availableTiers, tierThresholds, 10),
-    ).toEqual({ isComplete: true, nextTierThreshold: null });
+    expect(getBadgeCompletion("Bronze", "Bronze", availableTiers, tierThresholds, 9)).toEqual({
+      isComplete: false,
+      nextTierThreshold: null,
+    });
+    expect(getBadgeCompletion("Bronze", "Bronze", availableTiers, tierThresholds, 10)).toEqual({
+      isComplete: true,
+      nextTierThreshold: null,
+    });
   });
 
   test("catalogs streak as a single-tier badge", () => {

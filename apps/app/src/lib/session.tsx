@@ -1,25 +1,9 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { onAuthStateChanged, type User } from "firebase/auth";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  apiErrorMessage,
-  getMyAccount,
-  updateMyAccount,
-  type RallyUser,
-} from "@/lib/api";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { apiErrorMessage, getMyAccount, updateMyAccount, type RallyUser } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
 export type Session = {
@@ -48,18 +32,15 @@ type LoadedAccount = { key: string; account?: RallyUser | null; error?: string }
 const SessionContext = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ user: User | null; isLoading: boolean }>(
-    { user: auth.currentUser, isLoading: true },
-  );
+  const [state, setState] = useState<{ user: User | null; isLoading: boolean }>({
+    user: auth.currentUser,
+    isLoading: true,
+  });
   const [loaded, setLoaded] = useState<LoadedAccount>();
   const [attempt, setAttempt] = useState(0);
   const [selectedBadgeKeys, setSelectedBadgeKeys] = useState<string[]>([]);
 
-  useEffect(
-    () =>
-      onAuthStateChanged(auth, (user) => setState({ user, isLoading: false })),
-    [],
-  );
+  useEffect(() => onAuthStateChanged(auth, (user) => setState({ user, isLoading: false })), []);
 
   const { user } = state;
   // Only look for the Rally account once the email is verified. Sign-up is still
@@ -87,12 +68,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const account = current?.account;
     if (!account) return;
+    // Reconcile editable badge choices after the asynchronous account refresh;
+    // deriving them on every render would overwrite the user's optimistic selection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedBadgeKeys((keys) => {
       const availableKeys = new Set(account.badges.map((badge) => badge.key));
       if (account.shownBadgeKeys && account.shownBadgeKeys.length > 0) {
-        return account.shownBadgeKeys
-          .filter((badgeKey) => availableKeys.has(badgeKey))
-          .slice(0, 4);
+        return account.shownBadgeKeys.filter((badgeKey) => availableKeys.has(badgeKey)).slice(0, 4);
       }
       const validKeys = keys.filter((badgeKey) => availableKeys.has(badgeKey));
       if (validKeys.length > 0) return validKeys.slice(0, 4);
@@ -100,8 +82,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .slice()
         .sort(
           (left, right) =>
-            right.receivedCount - left.receivedCount ||
-            left.key.localeCompare(right.key),
+            right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
         )
         .slice(0, 4)
         .map((badge) => badge.key);

@@ -35,6 +35,7 @@ beforeEach(() => {
       account: {
         id: "1",
         displayName: "Sam Lee",
+        profilePhotoUrl: null,
         lookingForTeam: false,
         createdAt: "2026-10-17T12:00:00.000Z",
         badges,
@@ -78,6 +79,7 @@ it("hides progress for a completed single-tier award", async () => {
       account: {
         id: "1",
         displayName: "Sam Lee",
+        profilePhotoUrl: null,
         lookingForTeam: false,
         createdAt: "2026-10-17T12:00:00.000Z",
         badges: [{ ...badges[0], isComplete: true, availableTiers: ["Bronze"] }],

@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
 
 import { authErrorMessage } from "@/lib/auth-errors";
 
@@ -9,7 +8,10 @@ describe("authErrorMessage", () => {
     ["auth/wrong-password", "Wrong email or password."],
     ["auth/user-not-found", "Wrong email or password."],
     ["auth/invalid-email", "That email address doesn't look right."],
-    ["auth/email-already-in-use", "An account with this email already exists. Try logging in instead."],
+    [
+      "auth/email-already-in-use",
+      "An account with this email already exists. Try logging in instead.",
+    ],
     ["auth/too-many-requests", "Too many attempts. Please wait a few minutes and try again."],
   ])("turns %s into a friendly sentence", (code, message) => {
     expect(authErrorMessage({ code })).toBe(message);

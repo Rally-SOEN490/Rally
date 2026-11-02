@@ -1,0 +1,113 @@
+#AI declaration:
+#50% or more AI-generated
+
+appId: com.rally.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "DEVELOPMENT SERVERS"
+    timeout: 10000
+- tapOn: "http://.*:8081"
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          point: "92%,13%"
+
+- assertVisible: "Sign up"
+- tapOn: "Sign up"
+- tapOn: "Full Name"
+- inputText: ${MAESTRO_TEST_NAME}
+- tapOn: "E-mail address"
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: "sign-up-password"
+- waitForAnimationToEnd
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-up-confirm-password"
+- waitForAnimationToEnd
+- longPressOn:
+    id: "sign-up-confirm-password"
+- runFlow:
+    when:
+      visible: "Select all"
+    commands:
+      - tapOn: "Select all"
+- eraseText: 1
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-up-age-confirmation"
+- tapOn:
+    id: "sign-up-submit"
+    waitToSettleTimeoutMs: 1000
+
+- extendedWaitUntil:
+    visible: "Verify your email"
+    timeout: 15000
+
+- stopApp: com.android.chrome
+- stopApp: com.google.android.gm
+- launchApp: com.google.android.gm
+- runFlow:
+    when:
+      visible: "Inbox"
+    commands:
+      - tapOn: "Inbox"
+- extendedWaitUntil:
+    visible: "Verify your email for rally-490"
+    timeout: 60000
+- tapOn:
+    text: "Verify your email for rally-490"
+    waitToSettleTimeoutMs: 1000
+- extendedWaitUntil:
+    visible: "Follow this link to verify your email address."
+    timeout: 60000
+- scrollUntilVisible:
+    element:
+      text: "https://rally-490.firebaseapp.*"
+    direction: DOWN
+    timeout: 60000
+- tapOn:
+    text: "https://rally-490.firebaseapp.*"
+- extendedWaitUntil:
+    visible: "COMPLETE VERIFICATION"
+    timeout: 60000
+- tapOn: "COMPLETE VERIFICATION"
+- extendedWaitUntil:
+    visible: "Your email has been verified"
+    timeout: 60000
+
+- launchApp:
+    appId: com.rally.app
+    stopApp: false
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          point: "92%,13%"
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      - tapOn: "http://.*:8081"
+      - runFlow:
+          when:
+            visible: "Continue"
+          commands:
+            - tapOn:
+                point: "92%,13%"
+- extendedWaitUntil:
+    visible: "Verify your email"
+    timeout: 15000
+- tapOn: "I've verified my email"
+
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 15000
+- assertVisible: "Welcome back,"

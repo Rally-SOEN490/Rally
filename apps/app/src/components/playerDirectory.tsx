@@ -1,13 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import type { RallyPlayer } from "@/lib/api";
 import type { SearchFonts } from "@/lib/search-fonts";
 import { PlayerCard } from "@/components/playerCard";
@@ -42,11 +36,7 @@ function Message({
       <Text style={styles.title}>{title}</Text>
       {detail && <Text style={styles.detail}>{detail}</Text>}
       {action && (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onAction}
-          style={styles.button}
-        >
+        <Pressable accessibilityRole="button" onPress={onAction} style={styles.button}>
           <Text style={styles.buttonText}>{action}</Text>
         </Pressable>
       )}
@@ -68,10 +58,8 @@ export function PlayerDirectory({
     player.displayName.toLocaleLowerCase().includes(normalized),
   );
   if (loading) return <Message title={copy.loading} loading />;
-  if (error)
-    return <Message title={error} action={copy.retry} onAction={retry} />;
-  if (players.length === 0)
-    return <Message title={copy.empty} detail={copy.emptyDetail} />;
+  if (error) return <Message title={error} action={copy.retry} onAction={retry} />;
+  if (players.length === 0) return <Message title={copy.empty} detail={copy.emptyDetail} />;
   if (visible.length === 0)
     return (
       <Message

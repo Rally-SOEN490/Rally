@@ -27,18 +27,11 @@ export function SearchBanner({
         style={styles.ball}
         resizeMode="contain"
       />
-      <Text
-        style={[styles.brand, { fontFamily: mediumFontFamily ?? fontFamily }]}
-      >
+      <Text style={[styles.brand, { fontFamily: mediumFontFamily ?? fontFamily }]}>
         {copy.banner.brand}
       </Text>
       <Text style={[styles.title, { fontFamily }]}>{title}</Text>
-      <Text
-        style={[
-          styles.subtitle,
-          { fontFamily: regularFontFamily ?? fontFamily },
-        ]}
-      >
+      <Text style={[styles.subtitle, { fontFamily: regularFontFamily ?? fontFamily }]}>
         {subtitle}
       </Text>
     </View>

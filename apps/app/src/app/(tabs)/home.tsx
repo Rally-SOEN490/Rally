@@ -1,15 +1,9 @@
-import { router, type Href } from "expo-router";
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "@/lib/session";
-
-const navItems: { label: string; active: boolean; action?: Href }[] = [
-  { label: "Home", active: true },
-  { label: "Events", active: false },
-  { label: "Search", active: false, action: "/search"},
-  { label: "Notifications", active: false },
-  { label: "You", active: false, action: "/profile" },
-];
 
 const sponsoredTournament = {
   name: "Con Khi Volleyball Tournament",
@@ -24,8 +18,16 @@ const recruitingCards = [
 ];
 
 const announcements = [
-  { title: "Fall Classic bracket released", detail: "Pool play groups are now live — check your team’s schedule", time: "2h ago" },
-  { title: "Practice times updated", detail: "Wednesday night session moved to 7:30 PM", time: "1d ago" },
+  {
+    title: "Fall Classic bracket released",
+    detail: "Pool play groups are now live — check your team’s schedule",
+    time: "2h ago",
+  },
+  {
+    title: "Practice times updated",
+    detail: "Wednesday night session moved to 7:30 PM",
+    time: "1d ago",
+  },
 ];
 
 export default function Home() {
@@ -133,28 +135,6 @@ export default function Home() {
           </View>
         </View>
       </ScrollView>
-
-      <View style={styles.navBar}>
-        {navItems.map((item) => {
-          const isActive = item.active;
-          return (
-            <Pressable
-              key={item.label}
-              style={[styles.navItem, isActive && styles.navItemActive]}
-              onPress={() => {
-                if (item.action) router.push(item.action);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.label === "Home" ? "⌂" : item.label === "Events" ? "◫" : item.label === "Search" ? "⌕" : item.label === "Notifications" ? "◔" : "◉"}
-              </Text>
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
     </SafeAreaView>
   );
 }
@@ -165,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8e4df",
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 110, // room for the floating nav bar
   },
   phoneShell: {
     width: "100%",
@@ -446,45 +426,5 @@ const styles = StyleSheet.create({
     color: "#687872",
     marginLeft: 8,
     marginTop: 4,
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 14,
-    left: 20,
-    right: 20,
-    backgroundColor: "#f2f0ed",
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navItem: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#dfe9e4",
-  },
-  navIcon: {
-    fontSize: 18,
-    color: "#4d5d58",
-  },
-  navIconActive: {
-    color: "#12382d",
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: "#4d5d58",
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: "#12382d",
   },
 });

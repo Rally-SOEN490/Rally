@@ -14,6 +14,14 @@ afterAll(async () => {
 const register = (uid: string, body: object) =>
   app.inject({ method: "POST", url: "/users/me", headers: authHeader(uid), payload: body });
 
+const defaultSettings = {
+  notificationsEnabled: true,
+  language: "EN",
+  colorTheme: "green",
+  colorBlindMode: false,
+  darkMode: false,
+};
+
 describe("GET /users", () => {
   test("returns every other user with only directory fields", async () => {
     await register("zoe", { displayName: "Zoe", ageConfirmed: true });
@@ -35,9 +43,10 @@ describe("GET /users", () => {
 
     expect(response.statusCode).toBe(200);
     expect(users).toHaveLength(2);
-    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual(
-      ["Alice", "Zoe"],
-    );
+    expect(users.map((user: { displayName: string }) => user.displayName)).toEqual([
+      "Alice",
+      "Zoe",
+    ]);
     for (const user of users) {
       expect(Object.keys(user).sort()).toEqual([
         "badges",
@@ -47,20 +56,21 @@ describe("GET /users", () => {
         "lookingForTeam",
       ]);
     }
-    expect(users.find((user: { displayName: string }) => user.displayName === "Alice").badges).toEqual(
-      (await app.inject({
-        method: "GET",
-        url: "/users/me",
-        headers: authHeader("alice"),
-      })).json().badges,
+    expect(
+      users.find((user: { displayName: string }) => user.displayName === "Alice").badges,
+    ).toEqual(
+      (
+        await app.inject({
+          method: "GET",
+          url: "/users/me",
+          headers: authHeader("alice"),
+        })
+      ).json().badges,
     );
   });
 
   test("keeps duplicate display names in a stable ID order", async () => {
-    const ids = [
-      "00000000-0000-4000-8000-000000000002",
-      "00000000-0000-4000-8000-000000000001",
-    ];
+    const ids = ["00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000001"];
     await testDb.user.createMany({
       data: ids.map((id) => ({
         id,
@@ -93,7 +103,6 @@ describe("GET /users", () => {
 
     expect(response.statusCode).toBe(401);
   });
-
 });
 
 describe("POST /users/me", () => {
@@ -102,21 +111,25 @@ describe("POST /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ displayName: "Alice" });
-    expect(response.json().badges).toContainEqual(expect.objectContaining({
-      key: "champion",
-      name: "Champion",
-      receivedCount: 1,
-    }));
-    expect(response.json().badges).toContainEqual(expect.objectContaining({
-      key: "streak",
-      availableTiers: ["Bronze"],
-      isComplete: false,
-      nextTierThreshold: null,
-    }));
+    expect(response.json().badges).toContainEqual(
+      expect.objectContaining({
+        key: "champion",
+        name: "Champion",
+        receivedCount: 1,
+      }),
+    );
+    expect(response.json().badges).toContainEqual(
+      expect.objectContaining({
+        key: "streak",
+        availableTiers: ["Bronze"],
+        isComplete: false,
+        nextTierThreshold: null,
+      }),
+    );
     expect(response.json().badges).toHaveLength(12);
-    expect(response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount)).toEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]);
+    expect(
+      response.json().badges.map((badge: { receivedCount: number }) => badge.receivedCount),
+    ).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(saved.displayName).toBe("Alice");
     expect(saved.ageConfirmedAt).toBeInstanceOf(Date);
@@ -128,18 +141,35 @@ describe("POST /users/me", () => {
 
     expect(Object.keys(response.json()).sort()).toEqual([
       "badges",
+      "colorBlindMode",
+      "colorTheme",
       "createdAt",
+      "darkMode",
       "displayName",
+      "facebookUrl",
       "id",
+      "instagramUrl",
+      "interests",
+      "language",
       "lookingForTeam",
+      "notificationsEnabled",
+      "profilePhotoUrl",
       "shownBadgeKeys",
+      "thoughtText",
     ]);
+    expect(response.json().profilePhotoUrl).toBeNull();
   });
 
   test("starts with 'looking for a team' turned off", async () => {
     const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
 
     expect(response.json().lookingForTeam).toBe(false);
+  });
+
+  test("starts with the default app settings", async () => {
+    const response = await register("alice", { displayName: "Alice", ageConfirmed: true });
+
+    expect(response.json()).toMatchObject(defaultSettings);
   });
 
   test("is safe to retry and keeps the first record", async () => {
@@ -153,7 +183,9 @@ describe("POST /users/me", () => {
   test("is safe when the same sign-up arrives several times at once", async () => {
     // For example, a double tap on "Continue".
     const responses = await Promise.all(
-      Array.from({ length: 5 }, () => register("alice", { displayName: "Alice", ageConfirmed: true })),
+      Array.from({ length: 5 }, () =>
+        register("alice", { displayName: "Alice", ageConfirmed: true }),
+      ),
     );
 
     expect(responses.map((response) => response.statusCode)).toEqual([200, 200, 200, 200, 200]);
@@ -208,7 +240,11 @@ describe("POST /users/me", () => {
 
 describe("GET /users/me", () => {
   test("returns 404 before the user is saved", async () => {
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(404);
   });
@@ -305,7 +341,11 @@ describe("GET /users/me", () => {
     const alice = (await register("alice", { displayName: "Alice", ageConfirmed: true })).json();
     await register("bob", { displayName: "Bob", ageConfirmed: true });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(alice);
@@ -315,7 +355,11 @@ describe("GET /users/me", () => {
     await register("alice", { displayName: "Alice", ageConfirmed: true });
     await testDb.userBadge.deleteMany();
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().badges).toHaveLength(12);
@@ -337,7 +381,11 @@ describe("GET /users/me", () => {
       },
     });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().badges).toHaveLength(12);
@@ -375,10 +423,10 @@ describe("GET /users/me", () => {
       data: { receivedCount: 10 },
     });
     for (const [key, receivedCount] of [
-    ["champion", 25],
-    ["winner", 22],
-    ["competitor", 17],
-    ["defender", 6],
+      ["champion", 25],
+      ["winner", 22],
+      ["competitor", 17],
+      ["defender", 6],
     ] as const) {
       const badgeType = await testDb.badgeType.findUniqueOrThrow({ where: { key } });
       await testDb.userBadge.update({
@@ -390,18 +438,18 @@ describe("GET /users/me", () => {
       data: { userId: user.id, badgeTypeId: extra.id, receivedCount: 1 },
     });
 
-    const response = await app.inject({ method: "GET", url: "/users/me", headers: authHeader("alice") });
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
     const badges = response.json().badges;
 
     expect(response.statusCode).toBe(200);
     expect(badges).toHaveLength(13);
-    expect(badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5)).toEqual([
-      25,
-      22,
-      17,
-      10,
-      6,
-    ]);
+    expect(
+      badges.map((badge: { receivedCount: number }) => badge.receivedCount).slice(0, 5),
+    ).toEqual([25, 22, 17, 10, 6]);
     expect(badges[0]).toMatchObject({ key: "champion", receivedCount: 25, tier: "Gold" });
     expect(badges[1]).toMatchObject({ key: "winner", receivedCount: 22, tier: "Gold" });
     expect(badges.find((badge: { key: string }) => badge.key === "podium")).toMatchObject({
@@ -453,6 +501,33 @@ describe("PATCH /users/me", () => {
 
   beforeEach(() => register("alice", { displayName: "Alice", ageConfirmed: true }));
 
+  test("updates the logged-in user's display name", async () => {
+    await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+    const response = await update("alice", { displayName: " Alice Smith " });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ displayName: "Alice Smith" });
+    expect(
+      (await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "bob" } })).displayName,
+    ).toBe("Bob");
+  });
+
+  test("returns 404 when the Rally account does not exist", async () => {
+    const response = await update("missing", { displayName: "Alice" });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  test.each([
+    ["a blank display name", { displayName: "  " }],
+    ["a display name over 100 characters", { displayName: "a".repeat(101) }],
+  ])("rejects %s", async (_, body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+  });
+
   test("turns 'looking for a team' on and off", async () => {
     const on = await update("alice", { lookingForTeam: true });
 
@@ -463,6 +538,128 @@ describe("PATCH /users/me", () => {
 
     expect(off.statusCode).toBe(200);
     expect(off.json().lookingForTeam).toBe(false);
+  });
+
+  test("saves an Instagram link and returns it on the profile", async () => {
+    const updated = await update("alice", { instagramUrl: "https://instagram.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().instagramUrl).toBe("https://instagram.com/alice");
+    expect((await getMe("alice")).json().instagramUrl).toBe("https://instagram.com/alice");
+  });
+
+  test("saves a Facebook link and returns it on the profile", async () => {
+    const updated = await update("alice", { facebookUrl: "https://facebook.com/alice" });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().facebookUrl).toBe("https://facebook.com/alice");
+    expect((await getMe("alice")).json().facebookUrl).toBe("https://facebook.com/alice");
+  });
+
+  test("saves formats and positions without duplicate rows", async () => {
+    const updated = await update("alice", {
+      interests: {
+        formats: ["indoor-6s", "beach-2s"],
+        positions: ["libero", "setter"],
+      },
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().interests).toEqual({
+      formats: ["indoor-6s", "beach-2s"],
+      positions: ["libero", "setter"],
+    });
+    const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+    expect(
+      await testDb.userInterest.findMany({
+        where: { userId: saved.id },
+        orderBy: [{ category: "asc" }, { key: "asc" }],
+      }),
+    ).toEqual([
+      { userId: saved.id, category: "format", key: "beach-2s" },
+      { userId: saved.id, category: "format", key: "indoor-6s" },
+      { userId: saved.id, category: "position", key: "libero" },
+      { userId: saved.id, category: "position", key: "setter" },
+    ]);
+
+    const replaced = await update("alice", {
+      interests: { formats: ["9-man"], positions: ["outside"] },
+    });
+    expect(replaced.json().interests).toEqual({
+      formats: ["9-man"],
+      positions: ["outside"],
+    });
+    expect(await testDb.userInterest.count({ where: { userId: saved.id } })).toBe(2);
+  });
+
+  test.each([
+    { interests: { formats: ["beach-4s"], positions: [] } },
+    { interests: { formats: [], positions: ["defensive-specialist"] } },
+    { interests: { formats: ["indoor-6s", "indoor-6s"], positions: [] } },
+  ])("rejects invalid interest payloads: %j", async (body) => {
+    const response = await update("alice", body);
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("trims whitespace before saving and clears blank profile thoughts", async () => {
+    const updated = await update("alice", { thoughtText: "  Bring good energy.  " });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({
+      thoughtText: "Bring good energy.",
+    });
+    expect((await getMe("alice")).json().thoughtText).toBe("Bring good energy.");
+
+    const cleared = await update("alice", { thoughtText: "   " });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().thoughtText).toBeNull();
+
+    const clearedAgain = await update("alice", { thoughtText: null });
+    expect(clearedAgain.json().thoughtText).toBeNull();
+  });
+
+  test("accepts multiline profile thoughts", async () => {
+    const response = await update("alice", { thoughtText: "First line.\nSecond line." });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().thoughtText).toBe("First line.\nSecond line.");
+  });
+
+  test.each(["instagram.com/alice", "https://example.com/alice", "javascript:alert(1)"])(
+    "rejects an invalid Instagram link: %s",
+    async (instagramUrl) => {
+      const response = await update("alice", { instagramUrl });
+
+      expect(response.statusCode).toBe(400);
+    },
+  );
+
+  test.each(["facebook.com/alice", "https://example.com/alice", "javascript:alert(1)"])(
+    "rejects an invalid Facebook link: %s",
+    async (facebookUrl) => {
+      const response = await update("alice", { facebookUrl });
+
+      expect(response.statusCode).toBe(400);
+    },
+  );
+
+  test("allows removing an Instagram link", async () => {
+    await update("alice", { instagramUrl: "https://www.instagram.com/alice/" });
+
+    const response = await update("alice", { instagramUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().instagramUrl).toBeNull();
+  });
+
+  test("allows removing a Facebook link", async () => {
+    await update("alice", { facebookUrl: "https://www.facebook.com/alice/" });
+
+    const response = await update("alice", { facebookUrl: null });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().facebookUrl).toBeNull();
   });
 
   test("saves shown badges and returns them on later account loads", async () => {
@@ -486,6 +683,113 @@ describe("PATCH /users/me", () => {
     });
 
     expect(response.statusCode).toBe(400);
+  });
+
+  describe("name", () => {
+    test("changes the name, trimming spaces, and other players see it", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      const updated = await update("alice", { displayName: "  Alice Smith " });
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json().displayName).toBe("Alice Smith");
+      expect((await getMe("alice")).json().displayName).toBe("Alice Smith");
+      const directory = await app.inject({
+        method: "GET",
+        url: "/users",
+        headers: authHeader("bob"),
+      });
+      expect(directory.json().map((user: { displayName: string }) => user.displayName)).toEqual([
+        "Alice Smith",
+      ]);
+    });
+
+    test("accepts accents and emoji", async () => {
+      const response = await update("alice", { displayName: "Zoé 🏐 Nguyễn" });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().displayName).toBe("Zoé 🏐 Nguyễn");
+    });
+
+    test.each([
+      ["blank", "   "],
+      ["empty", ""],
+      ["too long", "a".repeat(101)],
+      ["has an invisible character", "a\u0000b"],
+      ["has a line break", "Alice\nBob"],
+      ["is null", null],
+    ])("rejects a name that is %s", async (_, displayName) => {
+      const response = await update("alice", { displayName });
+
+      expect(response.statusCode).toBe(400);
+      expect((await getMe("alice")).json().displayName).toBe("Alice");
+    });
+  });
+
+  describe("app settings", () => {
+    test.each([
+      { notificationsEnabled: false },
+      { language: "FR" },
+      { colorTheme: "blue" },
+      { colorTheme: "pink" },
+      { colorBlindMode: true },
+      { darkMode: true },
+    ])("saves %j and returns it on later account loads", async (body) => {
+      const updated = await update("alice", body);
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toMatchObject(body);
+      expect((await getMe("alice")).json()).toMatchObject(body);
+    });
+
+    test("saves several settings at once and leaves the others alone", async () => {
+      const updated = await update("alice", { language: "FR", darkMode: true });
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toMatchObject({
+        ...defaultSettings,
+        language: "FR",
+        darkMode: true,
+      });
+      const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
+      expect(saved).toMatchObject({ language: "FR", darkMode: true, colorTheme: "green" });
+    });
+
+    test.each([
+      ["an unsupported language", { language: "ES" }],
+      ["a lower-case language", { language: "fr" }],
+      ["an unsupported colour", { colorTheme: "red" }],
+      ["notifications as text", { notificationsEnabled: "false" }],
+      ["colour blind mode as a number", { colorBlindMode: 1 }],
+      ["dark mode as null", { darkMode: null }],
+    ])("rejects %s", async (_, body) => {
+      const response = await update("alice", body);
+
+      expect(response.statusCode).toBe(400);
+      expect((await getMe("alice")).json()).toMatchObject(defaultSettings);
+    });
+
+    test("changes only the logged-in user's settings", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+
+      await update("alice", { darkMode: true, colorTheme: "pink" });
+
+      expect((await getMe("bob")).json()).toMatchObject(defaultSettings);
+    });
+
+    test("keeps settings out of the player directory", async () => {
+      await register("bob", { displayName: "Bob", ageConfirmed: true });
+      await update("alice", { darkMode: true });
+
+      const directory = await app.inject({
+        method: "GET",
+        url: "/users",
+        headers: authHeader("bob"),
+      });
+
+      expect(directory.json()[0]).not.toHaveProperty("darkMode");
+      expect(directory.json()[0]).not.toHaveProperty("language");
+    });
   });
 
   test("saves the change, so it's still there when the profile loads again", async () => {
@@ -536,21 +840,70 @@ describe("PATCH /users/me", () => {
     expect(response.statusCode).toBe(401);
   });
 
+  // firebaseUid and gender are real columns, but this route must never change them.
   test.each([
     ["the body is empty", {}],
     ["the body isn't an object", [true]],
     ["the value is null", { lookingForTeam: null }],
     ["the value is text", { lookingForTeam: "true" }],
     ["the value is a number", { lookingForTeam: 1 }],
-    ["it has another field", { lookingForTeam: true, displayName: "Mallory" }],
-    ["it only has another field", { displayName: "Mallory" }],
+    ["it has an unsupported field", { lookingForTeam: true, unsupported: true }],
+    ["it only has an unsupported field", { unsupported: true }],
+    ["it has another field", { lookingForTeam: true, firebaseUid: "mallory" }],
+    ["it only has another field", { firebaseUid: "mallory" }],
+    ["it tries to change the gender", { gender: "male" }],
   ])("rejects the request when %s", async (_, body) => {
     const response = await update("alice", body);
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toEqual({ message: "Some of the details you sent aren't valid." });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
-    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false });
+    expect(saved).toMatchObject({ displayName: "Alice", lookingForTeam: false, gender: null });
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      payload: { displayName: "Alice Smith" },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("POST /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "POST",
+      url: "/users/me/photo",
+      headers: { ...authHeader("alice"), "content-type": "multipart/form-data; boundary=photo" },
+      payload: "--photo--\r\n",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
+  });
+
+  test("rejects requests without a token", async () => {
+    const response = await app.inject({ method: "POST", url: "/users/me/photo" });
+
+    expect(response.statusCode).toBe(401);
+  });
+});
+
+describe("DELETE /users/me/photo", () => {
+  test("explains when R2 photo storage is not configured", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/users/me/photo",
+      headers: authHeader("alice"),
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ message: "Profile photo uploads are not configured." });
   });
 });
 
