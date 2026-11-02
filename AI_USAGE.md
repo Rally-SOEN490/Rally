@@ -8,12 +8,12 @@ Each contributor records their own use. Do not guess another contributor's AI us
 
 Tools named in Rally's acknowledgments so far. Add any other tool you used.
 
-| Tool | Used for |
-| --- | --- |
-| Claude Code | To be completed by the contributors who used it |
-| OpenAI Codex | RALLY-149 (#171): lint/format configuration, PR quality checks, formatting baseline, documentation, and local verification |
-| GitHub Copilot | Automated pull request review comments |
-| OpenAI | RALLY-115 player cards, directory states, tests, and visual validation |
+| Tool           | Used for                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code    | To be completed by the contributors who used it                                                                            |
+| OpenAI Codex   | RALLY-149 (#171): lint/format configuration, PR quality checks, formatting baseline, documentation, and local verification |
+| GitHub Copilot | Automated pull request review comments; RALLY-112 (#134): tournament search, cards, filters, and tests                     |
+| OpenAI         | RALLY-115 player cards, directory states, tests, and visual validation                                                     |
 
 ## Tooling contributions
 
@@ -29,9 +29,9 @@ Problems and corrections: the first web export failed without Firebase configura
 
 List every substantive feature, as defined in [rubric §1](docs/course/soen-490/CODE-QUALITY.md#1-feature-implementation-and-volume-of-work), whose implementation had substantial AI assistance.
 
-| Feature | Stories and pull requests | AI-contribution level |
-| --- | --- | --- |
-| | | |
+| Feature                       | Stories and pull requests                                                    | AI-contribution level    |
+| ----------------------------- | ---------------------------------------------------------------------------- | ------------------------ |
+| Tournament search and filters | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309) | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -48,6 +48,16 @@ Verification: <tests or substantive review comments that check the behaviour, wi
 
 Problems and rejected suggestions: <generated code that was wrong, corrected, or rejected, or "None found">
 ```
+
+### RALLY-112: Tournament search and filters
+
+Pull request: [#309](https://github.com/Rally-SOEN490/Rally/pull/309).
+
+GitHub Copilot contributed the tournament directory, search and filter behavior, filter sheet, tournament cards, translations, and behavior tests. The contributor reviewed the implementation against the story criteria and refined the tests to isolate each filter and verify multiple selections.
+
+Verification: the app search tests cover tournament search, the filter UI, registration feedback, loading/error states, and cards; the tournament utility tests cover each filter independently and multiple selections. Native emulator/simulator comparison against Figma remains pending; use `Refs #134` rather than `Closes #134` in the PR description until that criterion is complete.
+
+Problems and rejected suggestions: the original registration feedback used `Alert.alert`, which does not display on web; it is now an accessible inline notice on web while native retains its alert.
 
 ## Additional assisted work
 

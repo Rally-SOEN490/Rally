@@ -2,10 +2,12 @@
 // AI contribution: 50% or more AI-generated
 
 import { act, render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import type { User } from "firebase/auth";
 import SearchScreen from "@/app/(tabs)/search";
 import { SearchBar } from "@/components/searchBar";
 import { ApiError, getPlayers } from "@/lib/api";
+import { getTournaments, type Tournament } from "@/lib/tournaments";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
@@ -21,6 +23,10 @@ jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
   getPlayers: jest.fn(),
+}));
+jest.mock("@/lib/tournaments", () => ({
+  ...jest.requireActual("@/lib/tournaments"),
+  getTournaments: jest.fn(),
 }));
 
 const user = { getIdToken: jest.fn() } as unknown as User;
@@ -38,6 +44,49 @@ const players = [
     lookingForTeam: false,
     createdAt: "2026-10-18T12:00:00.000Z",
     badges: [],
+  },
+];
+const tournaments: Tournament[] = [
+  {
+    id: "spring-open",
+    name: "Montreal Spring Open",
+    date: "2026-11-07",
+    startTime: "9:00 AM",
+    endTime: "5:00 PM",
+    venue: "Parc Jean-Drapeau",
+    organizer: "Montreal Volleyball Club",
+    format: "Beach 4s",
+    level: "Intermediate",
+    surface: "Beach",
+    teamSize: 4,
+    pricePerTeam: 80,
+    spotsLeft: 8,
+    spotsTotal: 16,
+  },
+  {
+    id: "fall-classic",
+    name: "Concordia Fall Classic",
+    date: "2026-11-20",
+    startTime: "8:30 AM",
+    endTime: "6:00 PM",
+    venue: "Concordia University Gym",
+    organizer: "Concordia Recreation",
+    format: "Indoor 6s",
+    level: "Competitive",
+    surface: "Indoor",
+    teamSize: 6,
+    pricePerTeam: 140,
+    spotsLeft: 0,
+    spotsTotal: 12,
+  },
+  {
+    id: "open-gym",
+    name: "Open Gym Tournament",
+    organizer: "Rally Community",
+    format: "Indoor 6s",
+    level: "Recreational",
+    surface: "Indoor",
+    teamSize: 6,
   },
 ];
 
@@ -68,6 +117,7 @@ it("uses the player placeholder and invokes the optional filter action", async (
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user }));
   jest.mocked(getPlayers).mockReset();
+  jest.mocked(getTournaments).mockReset().mockResolvedValue(tournaments);
 });
 
 it("fetches and displays players when the Players tab is selected", async () => {
@@ -125,6 +175,12 @@ it("shows and searches mock tournament names", async () => {
 
   expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
   expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
+  expect(screen.getByText("9:00 AM – 5:00 PM")).toBeOnTheScreen();
+  expect(screen.getByText("Parc Jean-Drapeau")).toBeOnTheScreen();
+  expect(screen.getByText("Beach 4s")).toBeOnTheScreen();
+  expect(screen.getByText("$80 per team")).toBeOnTheScreen();
+  expect(screen.getByText("8 of 16 spots left")).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Full" })).toBeDisabled();
 
   await userEvent.type(
     screen.getByPlaceholderText("Search for events, venue, organizer"),
@@ -133,6 +189,127 @@ it("shows and searches mock tournament names", async () => {
 
   expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
   expect(screen.queryByText("Montreal Spring Open")).not.toBeOnTheScreen();
+});
+
+it("shows registration unavailability after clicking Register on web", async () => {
+  const originalOS = Platform.OS;
+  const platformOS = jest.replaceProperty(Platform, "OS", "web");
+  jest.mocked(getTournaments).mockResolvedValueOnce([tournaments[0]]);
+
+  try {
+    await render(<SearchScreen />);
+    await screen.findByText("Montreal Spring Open");
+    await userEvent.press(screen.getByRole("button", { name: "Register" }));
+
+    expect(await screen.findByText("Registration isn't available yet.")).toBeOnTheScreen();
+  } finally {
+    platformOS.restore();
+    expect(Platform.OS).toBe(originalOS);
+  }
+});
+
+it("searches tournament names, venues, and organizers without case sensitivity", async () => {
+  await render(<SearchScreen />);
+  await screen.findByText("Montreal Spring Open");
+  const search = screen.getByPlaceholderText("Search for events, venue, organizer");
+
+  await userEvent.type(search, "CONCORDIA UNIVERSITY");
+  expect(screen.getByText("Concordia Fall Classic")).toBeOnTheScreen();
+  expect(screen.queryByText("Montreal Spring Open")).not.toBeOnTheScreen();
+
+  await userEvent.clear(search);
+  await userEvent.type(search, "rAlLy CoMmUnItY");
+  expect(screen.getByText("Open Gym Tournament")).toBeOnTheScreen();
+  expect(screen.queryByText("Concordia Fall Classic")).not.toBeOnTheScreen();
+});
+
+it("combines text search and filters, applies them, and supports chips and Clear all", async () => {
+  await render(<SearchScreen />);
+  await screen.findByText("Montreal Spring Open");
+  const search = screen.getByPlaceholderText("Search for events, venue, organizer");
+  await userEvent.type(search, "montreal");
+  await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
+  await userEvent.press(screen.getByRole("checkbox", { name: "Intermediate" }));
+  expect(screen.getByRole("button", { name: "Show 1 result" })).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Show 1 result" }));
+
+  expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
+  expect(screen.getByText("1 result")).toBeOnTheScreen();
+  expect(screen.getByText("Intermediate ×")).toBeOnTheScreen();
+  expect(screen.getByLabelText("1 active filter")).toBeOnTheScreen();
+
+  await userEvent.press(screen.getByRole("button", { name: "Remove Intermediate filter" }));
+  expect(screen.queryByText("Intermediate ×")).not.toBeOnTheScreen();
+  expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
+
+  await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
+  await userEvent.press(screen.getByRole("checkbox", { name: "Indoor 6s" }));
+  await userEvent.press(screen.getByRole("button", { name: "Show 0 results" }));
+  expect(screen.getByText("No matching tournaments")).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Clear all" }));
+  expect(screen.getByText("Montreal Spring Open")).toBeOnTheScreen();
+});
+
+it("shows loading, empty, and retryable failure states without losing query or filters", async () => {
+  jest.mocked(getPlayers).mockResolvedValue(players);
+  let resolveTournaments!: (result: Tournament[]) => void;
+  jest.mocked(getTournaments).mockReturnValue(
+    new Promise((resolve) => {
+      resolveTournaments = resolve;
+    }),
+  );
+  await render(<SearchScreen />);
+  expect(screen.getByText("Loading tournaments…")).toBeOnTheScreen();
+  await act(async () => resolveTournaments(tournaments));
+  expect(await screen.findByText("Montreal Spring Open")).toBeOnTheScreen();
+
+  jest.mocked(getTournaments).mockResolvedValueOnce([]);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
+  expect(await screen.findByText("No tournaments are available yet.")).toBeOnTheScreen();
+
+  jest
+    .mocked(getTournaments)
+    .mockRejectedValueOnce(new ApiError(503, "Tournament directory unavailable"))
+    .mockResolvedValueOnce(tournaments);
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
+  expect(await screen.findByText("Tournament directory unavailable")).toBeOnTheScreen();
+  const search = screen.getByPlaceholderText("Search for events, venue, organizer");
+  await userEvent.type(search, "concordia");
+  await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
+  await userEvent.press(screen.getByRole("checkbox", { name: "Competitive" }));
+  await userEvent.press(screen.getByRole("button", { name: "Show 0 results" }));
+  await userEvent.press(screen.getByRole("button", { name: "Try again" }));
+
+  expect(await screen.findByText("Concordia Fall Classic")).toBeOnTheScreen();
+  expect(screen.getByDisplayValue("concordia")).toBeOnTheScreen();
+  expect(screen.getByText("Competitive ×")).toBeOnTheScreen();
+});
+
+it("keeps cards readable when tournament details are missing", async () => {
+  await render(<SearchScreen />);
+  await screen.findByText("Montreal Spring Open");
+  await userEvent.type(
+    screen.getByPlaceholderText("Search for events, venue, organizer"),
+    "open gym",
+  );
+
+  expect(screen.getByText("Open Gym Tournament")).toBeOnTheScreen();
+  expect(screen.getByText("Date TBA")).toBeOnTheScreen();
+  expect(screen.getByText("Price TBA")).toBeOnTheScreen();
+  expect(screen.getByText("Spots not available")).toBeOnTheScreen();
+  expect(screen.queryByRole("progressbar")).not.toBeOnTheScreen();
+});
+
+it("renders complete long tournament names and venues", async () => {
+  const name = "Montreal Community Volleyball Tournament for All Levels";
+  const venue = "Centre Sportif Universitaire de l'Université de Montréal";
+  jest.mocked(getTournaments).mockResolvedValue([{ ...tournaments[0], name, venue }]);
+  await render(<SearchScreen />);
+
+  expect(await screen.findByText(name)).toBeOnTheScreen();
+  expect(screen.getByText(venue)).toBeOnTheScreen();
 });
 
 it("remembers the selected tab after leaving and reopening Search", async () => {

@@ -2,10 +2,12 @@
 // AI contribution: 50% or more AI-generated
 
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PlayerDirectory } from "@/components/playerDirectory";
+import { TournamentDirectory } from "@/components/tournamentDirectory";
+import { TournamentFiltersSheet } from "@/components/tournamentFilters";
 import { useSearchFonts } from "@/lib/search-fonts";
 import { searchCopy as copy } from "@/translations/search.en";
 
@@ -15,17 +17,19 @@ import { SegmentedToggle } from "@/components/searchToggle";
 import { colors } from "@/constants/rallyTheme";
 import { apiErrorMessage, getPlayers, type RallyPlayer } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import {
+  EMPTY_TOURNAMENT_FILTERS,
+  filterTournaments,
+  getActiveTournamentFilterCount,
+  getTournaments,
+  type Tournament,
+  type TournamentFilters,
+} from "@/lib/tournaments";
 
 const TABS = [
   { value: "tournaments", label: copy.tabs.tournaments },
   { value: "players", label: copy.tabs.players },
 ] as const;
-
-const MOCK_TOURNAMENTS = [
-  { id: "montreal-spring-open", name: "Montreal Spring Open" },
-  { id: "concordia-fall-classic", name: "Concordia Fall Classic" },
-  { id: "laval-beach-invitational", name: "Laval Beach Invitational" },
-];
 
 type SearchTab = (typeof TABS)[number]["value"];
 
@@ -39,6 +43,17 @@ export default function SearchScreen() {
   const [players, setPlayers] = useState<RallyPlayer[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<string>();
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentsLoading, setTournamentsLoading] = useState(false);
+  const [tournamentsError, setTournamentsError] = useState<string>();
+  const [tournamentFilters, setTournamentFilters] = useState<TournamentFilters>({
+    ...EMPTY_TOURNAMENT_FILTERS,
+  });
+  const [draftTournamentFilters, setDraftTournamentFilters] = useState<TournamentFilters>({
+    ...EMPTY_TOURNAMENT_FILTERS,
+  });
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [registrationNotice, setRegistrationNotice] = useState<string>();
   const { user } = useSession();
 
   useEffect(() => {
@@ -67,13 +82,71 @@ export default function SearchScreen() {
     };
   }, [tab, user, retryAttempt]);
 
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const visibleTournaments = MOCK_TOURNAMENTS.filter((tournament) =>
-    tournament.name.toLocaleLowerCase().includes(normalizedQuery),
-  );
+  useEffect(() => {
+    if (tab !== "tournaments") return;
+
+    let isCurrent = true;
+    // Reset stale results when a retry request starts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTournaments([]);
+    setTournamentsError(undefined);
+    setTournamentsLoading(true);
+
+    getTournaments()
+      .then((result) => {
+        if (isCurrent) setTournaments(result);
+      })
+      .catch((error) => {
+        if (isCurrent) setTournamentsError(apiErrorMessage(error));
+      })
+      .finally(() => {
+        if (isCurrent) setTournamentsLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [tab, retryAttempt]);
+
+  const activeFilterCount = getActiveTournamentFilterCount(tournamentFilters);
+  const draftResultCount = filterTournaments(tournaments, query, draftTournamentFilters).length;
   const selectTab = (nextTab: SearchTab) => {
     lastSelectedTab = nextTab;
     setTab(nextTab);
+  };
+  const openFilters = () => {
+    setDraftTournamentFilters({
+      ...tournamentFilters,
+      formats: [...tournamentFilters.formats],
+      levels: [...tournamentFilters.levels],
+      surfaces: [...tournamentFilters.surfaces],
+      teamSizes: [...tournamentFilters.teamSizes],
+    });
+    setFilterSheetVisible(true);
+  };
+  const clearFilters = () =>
+    setTournamentFilters({
+      ...EMPTY_TOURNAMENT_FILTERS,
+      formats: [],
+      levels: [],
+      surfaces: [],
+      teamSizes: [],
+    });
+  const clearDraftFilters = () =>
+    setDraftTournamentFilters({
+      ...EMPTY_TOURNAMENT_FILTERS,
+      formats: [],
+      levels: [],
+      surfaces: [],
+      teamSizes: [],
+    });
+  const handleRegister = () => {
+    if (Platform.OS === "web") {
+      setRegistrationNotice(copy.registrationUnavailable);
+      return;
+    }
+
+    Alert.alert(copy.register, copy.registrationUnavailable);
   };
 
   return (
@@ -86,7 +159,14 @@ export default function SearchScreen() {
         />
 
         <View style={styles.controls}>
-          <SearchBar value={query} onChangeText={setQuery} mode={tab} fontFamily={fonts.regular} />
+          <SearchBar
+            value={query}
+            onChangeText={setQuery}
+            mode={tab}
+            fontFamily={fonts.regular}
+            onPressFilter={tab === "tournaments" ? openFilters : undefined}
+            activeFilterCount={tab === "tournaments" ? activeFilterCount : 0}
+          />
           <SegmentedToggle
             options={TABS}
             selected={tab}
@@ -96,15 +176,20 @@ export default function SearchScreen() {
         </View>
 
         {tab === "tournaments" && (
-          <View>
-            {visibleTournaments.length > 0 ? (
-              visibleTournaments.map((tournament) => (
-                <Text key={tournament.id}>{tournament.name}</Text>
-              ))
-            ) : (
-              <Text>{copy.noTournaments}</Text>
-            )}
-          </View>
+          <TournamentDirectory
+            tournaments={tournaments}
+            query={query}
+            filters={tournamentFilters}
+            loading={tournamentsLoading}
+            error={tournamentsError}
+            retry={() => setRetryAttempt((attempt) => attempt + 1)}
+            fonts={fonts}
+            clearSearch={() => setQuery("")}
+            clearFilters={clearFilters}
+            removeFilter={(update) => setTournamentFilters(update)}
+            registrationNotice={registrationNotice}
+            onRegister={handleRegister}
+          />
         )}
 
         {tab === "players" && (
@@ -119,6 +204,18 @@ export default function SearchScreen() {
           />
         )}
       </ScrollView>
+      <TournamentFiltersSheet
+        visible={filterSheetVisible}
+        filters={draftTournamentFilters}
+        resultCount={draftResultCount}
+        onClose={() => setFilterSheetVisible(false)}
+        onChange={setDraftTournamentFilters}
+        onApply={() => {
+          setTournamentFilters(draftTournamentFilters);
+          setFilterSheetVisible(false);
+        }}
+        onClear={clearDraftFilters}
+      />
     </SafeAreaView>
   );
 }
