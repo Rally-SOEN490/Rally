@@ -64,9 +64,16 @@ export default function SignUp() {
           autoCapitalize="none"
           onChangeText={setEmail}
         />
-        <Field icon="lock" placeholder="Password" secureTextEntry onChangeText={setPassword} />
         <Field
           icon="lock"
+          testID="sign-up-password"
+          placeholder="Password"
+          secureTextEntry
+          onChangeText={setPassword}
+        />
+        <Field
+          icon="lock"
+          testID="sign-up-confirm-password"
           placeholder="Confirm Password"
           secureTextEntry
           onChangeText={setConfirmPassword}
@@ -75,8 +82,9 @@ export default function SignUp() {
           checked={isOldEnough}
           onChange={setIsOldEnough}
           label="I confirm that I am 14 years of age or older"
+          testID="sign-up-age-confirmation"
         />
-        <Button title="Sign up" onPress={signUp} />
+        <Button title="Sign up" onPress={signUp} testID="sign-up-submit" />
         <SocialLogin />
         <Footer text="Already a member?" label="Log in" href="/login" />
       </AuthScreen>
