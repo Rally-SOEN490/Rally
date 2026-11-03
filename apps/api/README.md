@@ -7,12 +7,14 @@ The backend is written in TypeScript with Fastify. It stores data in PostgreSQL 
 - Node.js 22.18 or newer (the LTS is fine). Node runs the TypeScript files directly, so there is no build step.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/), to run PostgreSQL. Open it before the steps below.
 
+To run the API, the app and the database together in Docker with one command, see [Run the project with Docker](../../README.md#run-the-project-with-docker). The steps below run the API directly on your computer.
+
 ## Setup (once)
 
 From the repo root:
 
 ```bash
-docker compose up -d        # start PostgreSQL in the background
+docker compose up -d postgres   # start PostgreSQL in the background
 cd apps/api
 cp .env.example .env        # then fill in FIREBASE_PROJECT_ID (see the comment in the file)
 npm install
@@ -24,7 +26,7 @@ To enable profile photo uploads, create a private Cloudflare R2 bucket and an R2
 ## Every day
 
 ```bash
-docker compose up -d        # from the repo root, if PostgreSQL isn't running
+docker compose up -d postgres   # from the repo root, if PostgreSQL isn't running
 cd apps/api
 npm run dev                 # start the API on http://localhost:3000, restarts when you save a file
 ```
@@ -78,15 +80,17 @@ New features (teams, events…) get their own folder in `src/modules/` with the 
 
 The app calls `http://localhost:3000` by default. That works on the web and the iOS simulator. For other devices, add `EXPO_PUBLIC_API_URL` to `apps/app/.env.local` and restart Expo:
 
-- Android emulator: `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000`
+- Android emulator: run `adb reverse tcp:3000 tcp:3000` each time the emulator starts, as in the [Android emulator steps](../../README.md#android-emulator-windows). Or set `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000`.
 - A real phone: `EXPO_PUBLIC_API_URL=http://<your computer's IP address>:3000`. The phone must be on the same Wi-Fi network. On a Mac, find the IP with `ipconfig getifaddr en0`.
 
 ## Troubleshooting
 
-**`Can't reach database server`:** PostgreSQL isn't running. Open Docker Desktop, then run `docker compose up -d` from the repo root.
+**`Can't reach database server`:** PostgreSQL isn't running. Open Docker Desktop, then run `docker compose up -d postgres` from the repo root.
+
+**`EADDRINUSE` on port 3000:** the API is already running, probably in Docker. Stop it with `docker compose stop api`, or use the Docker setup instead.
 
 **`port 5432 is already allocated`:** Another PostgreSQL is already running on your computer. If you installed it with Homebrew, stop it with `brew services stop postgresql@17`.
 
-**The app says "Can't reach the Rally server":** Start the API with `npm run dev`. On a phone or the Android emulator, check `EXPO_PUBLIC_API_URL` above.
+**The app says "Can't reach the Rally server":** Start the API, with `npm run dev` or the Docker setup. On the Android emulator, run `adb reverse tcp:3000 tcp:3000` again if the emulator restarted. On a phone, check `EXPO_PUBLIC_API_URL` above.
 
 **Start over with an empty database:** `npx prisma migrate reset`. This deletes all your local data.
