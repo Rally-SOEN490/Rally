@@ -26,7 +26,6 @@ model User {
   firebaseUid     String   @unique @map("firebase_uid")
   displayName     String   @map("display_name")
   profilePhotoKey String? @map("profile_photo_key")
-  gender         String?
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")
   thoughtText    String?  @map("thought_text")

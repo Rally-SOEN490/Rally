@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PlayerDirectory } from "@/components/playerDirectory";
+import { useSearchFonts } from "@/lib/search-fonts";
+import { searchCopy as copy } from "@/translations/search.en";
+
 import { SearchBanner } from "@/components/searchBanner";
 import { SearchBar } from "@/components/searchBar";
 import { SegmentedToggle } from "@/components/searchToggle";
@@ -13,8 +17,8 @@ import { apiErrorMessage, getPlayers, type RallyPlayer } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 const TABS = [
-  { value: "tournaments", label: "Tournaments" },
-  { value: "players", label: "Players" },
+  { value: "tournaments", label: copy.tabs.tournaments },
+  { value: "players", label: copy.tabs.players },
 ] as const;
 
 const MOCK_TOURNAMENTS = [
@@ -29,6 +33,8 @@ let lastSelectedTab: SearchTab = "tournaments";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const fonts = useSearchFonts();
   const [tab, setTab] = useState<SearchTab>(lastSelectedTab);
   const [players, setPlayers] = useState<RallyPlayer[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
@@ -39,8 +45,7 @@ export default function SearchScreen() {
     if (tab !== "players" || !user) return;
 
     let isCurrent = true;
-    // Reset the prior user's/tab's results as this cancellable request starts.
-    // Keep this existing loading lifecycle here rather than refactor search in a CI change.
+    // Reset stale results when the signed-in user, tab, or retry request changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayers([]);
     setPlayersError(undefined);
@@ -60,14 +65,11 @@ export default function SearchScreen() {
     return () => {
       isCurrent = false;
     };
-  }, [tab, user]);
+  }, [tab, user, retryAttempt]);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleTournaments = MOCK_TOURNAMENTS.filter((tournament) =>
     tournament.name.toLocaleLowerCase().includes(normalizedQuery),
-  );
-  const visiblePlayers = players.filter((player) =>
-    player.displayName.toLocaleLowerCase().includes(normalizedQuery),
   );
   const selectTab = (nextTab: SearchTab) => {
     lastSelectedTab = nextTab;
@@ -77,11 +79,20 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <SearchBanner />
+        <SearchBanner
+          fontFamily={fonts.semibold}
+          regularFontFamily={fonts.regular}
+          mediumFontFamily={fonts.medium}
+        />
 
         <View style={styles.controls}>
-          <SearchBar value={query} onChangeText={setQuery} mode={tab} />
-          <SegmentedToggle options={TABS} selected={tab} onChange={selectTab} />
+          <SearchBar value={query} onChangeText={setQuery} mode={tab} fontFamily={fonts.regular} />
+          <SegmentedToggle
+            options={TABS}
+            selected={tab}
+            onChange={selectTab}
+            fontFamily={fonts.semibold}
+          />
         </View>
 
         {tab === "tournaments" && (
@@ -91,23 +102,21 @@ export default function SearchScreen() {
                 <Text key={tournament.id}>{tournament.name}</Text>
               ))
             ) : (
-              <Text>No matching tournaments.</Text>
+              <Text>{copy.noTournaments}</Text>
             )}
           </View>
         )}
 
         {tab === "players" && (
-          <View>
-            {playersLoading ? (
-              <Text>Loading players...</Text>
-            ) : playersError ? (
-              <Text>{playersError}</Text>
-            ) : visiblePlayers.length > 0 ? (
-              visiblePlayers.map((player) => <Text key={player.id}>{player.displayName}</Text>)
-            ) : (
-              <Text>{players.length === 0 ? "No players found." : "No matching players."}</Text>
-            )}
-          </View>
+          <PlayerDirectory
+            players={players}
+            query={query}
+            loading={playersLoading}
+            error={playersError}
+            retry={() => setRetryAttempt((attempt) => attempt + 1)}
+            clearSearch={() => setQuery("")}
+            fonts={fonts}
+          />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -117,9 +126,12 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   content: {
-    padding: 16,
+    padding: 17,
+    width: "100%",
+    maxWidth: 442,
+    alignSelf: "center",
     paddingBottom: 120, // room for the floating nav bar
     gap: 16,
   },
-  controls: { gap: 16 },
+  controls: { gap: 4 },
 });

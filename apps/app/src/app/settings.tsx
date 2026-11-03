@@ -13,7 +13,7 @@ import {
   verifyBeforeUpdateEmail,
   type User,
 } from "firebase/auth";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import {
   Alert,
   Modal,
@@ -30,12 +30,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   apiErrorMessage,
   deleteMyAccount,
-  getMyGender,
   NAME_MAX_LENGTH,
-  saveMyGender,
   updateMyAccount,
   type ColorTheme,
-  type Gender,
   type Language,
   type ProfileChanges,
 } from "@/lib/api";
@@ -92,9 +89,6 @@ export default function Settings() {
     darkMode: account?.darkMode ?? false,
   });
 
-  const [gender, setGender] = useState<Gender | null>(null);
-  const [genderLoading, setGenderLoading] = useState(true);
-  const [genderSaving, setGenderSaving] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState(account?.instagramUrl ?? "");
   const [instagramSaving, setInstagramSaving] = useState(false);
   const [facebookUrl, setFacebookUrl] = useState(account?.facebookUrl ?? "");
@@ -108,14 +102,6 @@ export default function Settings() {
   const [deleteEmail, setDeleteEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState("");
-
-  useEffect(() => {
-    if (!user) return;
-    getMyGender(user)
-      .then(({ gender: savedGender }) => setGender(savedGender))
-      .catch((error) => notify("Unable to load gender", apiErrorMessage(error)))
-      .finally(() => setGenderLoading(false));
-  }, [user]);
 
   // ---------- Preferences ----------
 
@@ -132,21 +118,6 @@ export default function Settings() {
     } catch (error) {
       setPrefs((current) => ({ ...current, [key]: previous }));
       notify("Unable to save setting", apiErrorMessage(error));
-    }
-  };
-
-  const updateGender = async (value: Gender | null) => {
-    if (!user || genderSaving) return;
-    const previous = gender;
-    setGender(value);
-    setGenderSaving(true);
-    try {
-      await saveMyGender(user, value);
-    } catch (error) {
-      setGender(previous);
-      notify("Unable to save gender", apiErrorMessage(error));
-    } finally {
-      setGenderSaving(false);
     }
   };
 
@@ -572,46 +543,6 @@ export default function Settings() {
           />
         </Section>
 
-        <Section title="Co-ed roster information">
-          <Text style={styles.note}>Optional. This is private and not shown on your profile.</Text>
-          <View style={styles.genderOptions}>
-            {(["male", "female"] as const).map((option) => (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{
-                  checked: gender === option,
-                  disabled: genderLoading || genderSaving,
-                }}
-                accessibilityLabel={option === "male" ? "Male" : "Female"}
-                disabled={genderLoading || genderSaving}
-                onPress={() => updateGender(option)}
-                style={[styles.genderOption, gender === option && styles.genderOptionActive]}
-              >
-                <Text
-                  style={[
-                    styles.genderOptionText,
-                    gender === option && styles.genderOptionTextActive,
-                  ]}
-                >
-                  {option === "male" ? "Male" : "Female"}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {gender !== null && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear gender"
-              disabled={genderSaving}
-              onPress={() => updateGender(null)}
-              style={styles.clearGender}
-            >
-              <Text style={styles.clearGenderText}>Prefer not to say</Text>
-            </Pressable>
-          )}
-        </Section>
-
         <Section title="Social media">
           <Text style={styles.note}>Optional links shown on your public profile.</Text>
           <View style={styles.socialInputRow}>
@@ -1024,40 +955,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     marginTop: 8,
     marginBottom: 10,
-  },
-  genderOptions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  genderOption: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#d9d5d0",
-    borderRadius: 10,
-    paddingVertical: 11,
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  genderOptionActive: {
-    borderColor: GREEN,
-    backgroundColor: "#dfe9e4",
-  },
-  genderOptionText: {
-    color: "#5a675f",
-    fontWeight: "700",
-  },
-  genderOptionTextActive: {
-    color: GREEN,
-  },
-  clearGender: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    marginBottom: 8,
-  },
-  clearGenderText: {
-    color: MUTED,
-    fontSize: 12,
-    textDecorationLine: "underline",
   },
   socialInputRow: {
     flexDirection: "row",
