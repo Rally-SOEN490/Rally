@@ -2,9 +2,10 @@
 // AI contribution: 50% or more AI-generated
 
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { searchCopy as copy } from "@/translations/search.en";
 import { colors, radii } from "@/constants/rallyTheme";
+import { playerFilterCopy } from "@/translations/player-filters.en";
 
 export type SearchMode = "tournaments" | "players";
 
@@ -12,6 +13,7 @@ type Props = {
   value: string;
   onChangeText: (text: string) => void;
   onPressFilter?: () => void;
+  activeFilterCount?: number;
   mode?: SearchMode;
   fontFamily?: string;
 };
@@ -20,6 +22,7 @@ export function SearchBar({
   value,
   onChangeText,
   onPressFilter,
+  activeFilterCount = 0,
   mode = "tournaments",
   fontFamily,
 }: Props) {
@@ -46,6 +49,14 @@ export function SearchBar({
         style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
       >
         <Ionicons name="options-outline" size={22} color={colors.gold} />
+        {activeFilterCount > 0 && (
+          <View
+            style={styles.filterBadge}
+            accessibilityLabel={playerFilterCopy.activeFilters(activeFilterCount)}
+          >
+            <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -71,6 +82,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   filterButton: {
+    position: "relative",
     width: 38,
     height: 32,
     borderRadius: radii.button,
@@ -81,4 +93,17 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+  filterBadge: {
+    position: "absolute",
+    top: -7,
+    right: -7,
+    minWidth: 19,
+    height: 19,
+    paddingHorizontal: 4,
+    borderRadius: 15,
+    backgroundColor: "#d9ec7a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterBadgeText: { color: "#000", fontSize: 10, fontWeight: "600" },
 });

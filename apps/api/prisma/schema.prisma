@@ -25,6 +25,7 @@ model User {
   id              String   @id @default(uuid()) @db.Uuid
   firebaseUid     String   @unique @map("firebase_uid")
   displayName     String   @map("display_name")
+  skillLevel      String?  @map("skill_level")
   profilePhotoKey String? @map("profile_photo_key")
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")
