@@ -1,0 +1,32 @@
+# AI declaration:
+# 50% or more AI-generated
+
+appId: com.rally.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "DEVELOPMENT SERVERS"
+    timeout: 10000
+- tapOn: "http://.*:8081"
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          point: "92%,13%"
+
+- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 15000
+- tapOn: "E-mail address"
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn: "Password"
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 15000
