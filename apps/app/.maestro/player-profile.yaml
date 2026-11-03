@@ -107,16 +107,6 @@ appId: com.rally.app
     visible: "Your thought"
     timeout: 10000
 
-- tapOn:
-    id: "open-profile-settings"
-- extendedWaitUntil:
-    visible: "Settings"
-    timeout: 10000
-- tapOn: "Female"
-- extendedWaitUntil:
-    visible: "Female"
-    timeout: 5000
-
 - tapOn: "Back"
 - assertVisible: "Looking for a team"
 
