@@ -42,6 +42,30 @@ test("reads the email and organizer review settings", () => {
   expect(config.appUrl).toBe("https://rally.example");
 });
 
+// Printed emails contain review links, which are enough to approve someone.
+test("refuses to start in production without a Resend key", () => {
+  expect(() => loadConfig({ ...requiredSettings, NODE_ENV: "production" })).toThrow(
+    /RESEND_API_KEY is missing\. In production it is required/,
+  );
+});
+
+test("starts in production with a Resend key", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    NODE_ENV: "production",
+    RESEND_API_KEY: "re_key",
+  });
+
+  expect(config.email.resendApiKey).toBe("re_key");
+});
+
+test.each([undefined, "development", "test"])(
+  "allows printing emails when NODE_ENV is %s",
+  (NODE_ENV) => {
+    expect(loadConfig({ ...requiredSettings, NODE_ENV }).email.resendApiKey).toBeNull();
+  },
+);
+
 test("names an invalid reviewer email", () => {
   expect(() =>
     loadConfig({ ...requiredSettings, ORGANIZER_REVIEWER_EMAILS: "ok@rally.example,not-an-email" }),

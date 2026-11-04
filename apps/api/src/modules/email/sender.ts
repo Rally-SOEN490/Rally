@@ -30,8 +30,9 @@ export const resendTransport =
     if (!response.ok) throw new Error(`Resend answered ${response.status}`);
   };
 
-// For local development without a Resend key: prints the email instead. Never
-// use it in production, because the email can contain a review link.
+// For local development without a Resend key: prints the email instead. The
+// email can contain a review link, so loadConfig refuses to start a production
+// server (NODE_ENV=production) without a key, and this never runs there.
 export const logTransport =
   (print: (text: string) => void): EmailTransport =>
   async (email) =>

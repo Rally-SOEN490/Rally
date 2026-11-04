@@ -108,7 +108,7 @@ The change applies on the next request; the app shows it after it reloads the ac
 5. Open the link in a browser (the web app on `http://localhost:8081`), then approve or deny.
 6. Back in Settings, open **Become an organizer** again to see the answer. After an approval, close it: the row changes to **Organizer account**.
 
-The printed email contains a working review link. Never leave `RESEND_API_KEY` empty on a shared or production server. How the flow works is in [organizer applications](../../docs/architecture/organizer-applications.md).
+The printed email contains a working review link, so printing is for your own computer only. With `NODE_ENV=production`, the API refuses to start without `RESEND_API_KEY`; set `NODE_ENV=production` on every hosted server. How the flow works is in [organizer applications](../../docs/architecture/organizer-applications.md).
 
 ## Using the API from the app
 

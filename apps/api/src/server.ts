@@ -42,7 +42,9 @@ const app = await buildApp({
 if (config.organizerReviewerEmails.length === 0)
   app.log.warn("ORGANIZER_REVIEWER_EMAILS is empty: nobody is emailed organizer applications.");
 if (!config.email.resendApiKey)
-  app.log.warn("RESEND_API_KEY is not set: emails are printed here instead of sent.");
+  app.log.warn(
+    "RESEND_API_KEY is not set: emails, including review links, are printed here instead of sent. Local development only.",
+  );
 
 // Retries emails that failed and sends any left over from before a restart.
 const emailTimer = setInterval(deliverEmails, 30_000);

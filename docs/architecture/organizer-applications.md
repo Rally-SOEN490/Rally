@@ -38,7 +38,7 @@ Applications expire 14 days after they are sent. An expired application can't be
 5. A failed attempt is retried after 1, 2, 4… minutes, at most an hour apart. After 8 attempts the email is marked failed.
 6. Once an email is sent or given up on, its **body is cleared**, so review links don't stay in the database.
 
-**Resend** is already part of the stack (`AGENTS.md`). It is called with `fetch`, so there's no new dependency. Without `RESEND_API_KEY`, emails are printed in the API log instead. That is for local development only, because the printed email contains a review link. Real sending needs a Resend key and an `EMAIL_FROM` address on a verified domain. Without `EMAIL_FROM`, Resend's test sender only delivers to the Resend account's own address.
+**Resend** is already part of the stack (`AGENTS.md`). It is called with `fetch`, so there's no new dependency. Without `RESEND_API_KEY`, emails are printed in the API log instead. A printed review link is enough to approve someone, so this is for local development only: with `NODE_ENV=production`, the API refuses to start without a key. Hosted servers must set `NODE_ENV=production`. Real sending needs a Resend key and an `EMAIL_FROM` address on a verified domain. Without `EMAIL_FROM`, Resend's test sender only delivers to the Resend account's own address.
 
 ## API
 
