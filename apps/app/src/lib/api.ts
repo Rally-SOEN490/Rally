@@ -88,17 +88,18 @@ export const apiErrorMessage = (error: unknown) =>
   error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
-const request = async (
-  user: User,
+// Pass null only for the few routes that work without logging in.
+export const request = async (
+  user: User | null,
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: object,
 ) => {
-  const token = await user.getIdToken();
+  const token = user && (await user.getIdToken());
   const response = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...(body && { "Content-Type": "application/json" }),
     },
     body: body && JSON.stringify(body),

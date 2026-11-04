@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { expect, test } from "vitest";
 import { loadConfig } from "../src/config.ts";
@@ -21,7 +22,30 @@ test("reads the settings", () => {
     port: 4000,
     corsOrigins: ["http://localhost:8081", "https://rally.example"],
     r2: null,
+    email: { resendApiKey: null, from: "Rally <onboarding@resend.dev>" },
+    organizerReviewerEmails: [],
+    appUrl: "http://localhost:8081",
   });
+});
+
+test("reads the email and organizer review settings", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    RESEND_API_KEY: "re_key",
+    EMAIL_FROM: "Rally <noreply@rally.example>",
+    ORGANIZER_REVIEWER_EMAILS: " first@rally.example, ,second@rally.example ",
+    APP_URL: "https://rally.example/",
+  });
+
+  expect(config.email).toEqual({ resendApiKey: "re_key", from: "Rally <noreply@rally.example>" });
+  expect(config.organizerReviewerEmails).toEqual(["first@rally.example", "second@rally.example"]);
+  expect(config.appUrl).toBe("https://rally.example");
+});
+
+test("names an invalid reviewer email", () => {
+  expect(() =>
+    loadConfig({ ...requiredSettings, ORGANIZER_REVIEWER_EMAILS: "ok@rally.example,not-an-email" }),
+  ).toThrow("ORGANIZER_REVIEWER_EMAILS has an invalid email address: not-an-email");
 });
 
 test("uses port 3000 and the Expo dev server when those aren't set", () => {

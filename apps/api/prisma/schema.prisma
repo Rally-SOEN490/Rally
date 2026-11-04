@@ -56,8 +56,65 @@ model User {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
   interests      UserInterest[]
+  organizerApplications OrganizerApplication[]
 
   @@map("users")
+}
+
+enum OrganizerApplicationStatus {
+  PENDING
+  APPROVED
+  DENIED
+  // The review link ran out before anyone decided. The person may apply again.
+  EXPIRED
+
+  @@map("organizer_application_status")
+}
+
+// A player asking to become an organizer. Reviewers get an email with a
+// single-use link; the first one to approve or deny decides.
+model OrganizerApplication {
+  id              String                     @id @default(uuid()) @db.Uuid
+  userId          String                     @map("user_id") @db.Uuid
+  // The applicant's user ID while the application is pending, null afterwards.
+  // Being unique, it allows one pending application per person, even when two
+  // requests arrive at once.
+  pendingUserId   String?                    @unique @map("pending_user_id") @db.Uuid
+  description     String
+  link            String?
+  status          OrganizerApplicationStatus @default(PENDING)
+  denyReason      String?                    @map("deny_reason")
+  // SHA-256 of the token in the review link. The token itself is never stored here.
+  reviewTokenHash String                     @unique @map("review_token_hash")
+  expiresAt       DateTime                   @map("expires_at") @db.Timestamptz
+  decidedAt       DateTime?                  @map("decided_at") @db.Timestamptz
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("organizer_applications")
+}
+
+// Emails waiting to be sent. They are saved in the same transaction as the
+// change that needs them, then sent afterwards, so a crash or an email outage
+// never loses one. See src/modules/email/.
+model EmailOutbox {
+  id            String    @id @default(uuid()) @db.Uuid
+  recipient     String
+  subject       String
+  // Cleared once the email is sent or given up on, so links in it don't stay here.
+  body          String?
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz
+  // Set while a sender is working on the email, so two senders never send it twice.
+  lockedUntil   DateTime? @map("locked_until") @db.Timestamptz
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz
+  failedAt      DateTime? @map("failed_at") @db.Timestamptz
+  lastError     String?   @map("last_error")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([nextAttemptAt])
+  @@map("email_outbox")
 }
 
 model UserInterest {

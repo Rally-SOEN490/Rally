@@ -45,6 +45,13 @@ jest.mock("firebase/auth", () => ({
 }));
 jest.mock("@/lib/firebase", () => ({ auth: { currentUser: null } }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
+// The sheet has its own tests; here it only needs to show whether it is open.
+jest.mock("@/components/organizer/applicationSheet", () => ({
+  OrganizerApplicationSheet: ({ visible }: { visible: boolean }) => {
+    const { Text } = jest.requireActual("react-native");
+    return visible ? <Text>Organizer request sheet</Text> : null;
+  },
+}));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
   deleteMyAccount: jest.fn(),
@@ -757,3 +764,22 @@ describe("on the web", () => {
     );
   });
 });
+
+it("opens the organizer request from Settings for a player", async () => {
+  await renderSettings({ ...account, role: "PLAYER" });
+  expect(screen.queryByText("Organizer request sheet")).not.toBeOnTheScreen();
+
+  await userEvent.press(screen.getByRole("button", { name: "Become an organizer" }));
+
+  expect(screen.getByText("Organizer request sheet")).toBeOnTheScreen();
+});
+
+it.each(["ORGANIZER", "ADMIN"] as const)(
+  "tells an %s they can create tournaments",
+  async (role) => {
+    await renderSettings({ ...account, role });
+
+    expect(screen.getByText("You can create tournaments")).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: "Become an organizer" })).not.toBeOnTheScreen();
+  },
+);

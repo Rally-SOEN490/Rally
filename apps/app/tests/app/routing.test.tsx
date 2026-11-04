@@ -59,6 +59,7 @@ const renderApp = (initialUrl = "/") =>
       "(tabs)/notifications": () => <Text>Notifications screen</Text>,
       "(tabs)/profile": () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
+      "organizer-review": () => <Text>Organizer review screen</Text>,
     },
     { initialUrl },
   );
@@ -123,6 +124,17 @@ it.each([
   await renderApp(url);
   await act(async () => reportUser(signedOut));
   expect(await screen.findByText(expected)).toBeOnTheScreen();
+});
+
+// Reviewers open it from an email, whether or not they use Rally themselves.
+it.each([
+  ["signed out", signedOut],
+  ["signed in but not verified", unverified],
+  ["signed in and verified", verified],
+])("lets a user who is %s open the organizer review page", async (_, user) => {
+  await renderApp("/organizer-review");
+  await act(async () => reportUser(user));
+  expect(await screen.findByText("Organizer review screen")).toBeOnTheScreen();
 });
 
 it("moves you to Login after logging out", async () => {

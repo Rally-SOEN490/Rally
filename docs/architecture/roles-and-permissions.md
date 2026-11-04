@@ -21,18 +21,10 @@ An organizer only manages the tournaments they created. That check compares the 
 ### How someone gets a role
 
 - **Player:** automatically, at sign-up. Sign-up ignores any role sent with it.
-- **Organizer:** by applying in the app. The application flow is a separate issue; these decisions were made for it:
-  - The application asks for a short description of the events the person runs, plus an optional link to past events or a community page.
-  - Rally emails the application to a list of reviewer addresses, set in the `ORGANIZER_REVIEWER_EMAILS` environment variable.
-  - The email links to a page with Approve and Deny buttons. Anyone holding the link may decide, and the first decision wins. The person who opens it doesn't log in.
-  - Deny takes an optional reason, which the player sees in the app.
-  - Links expire after 14 days. The application is then marked expired.
-  - A denied or expired applicant may apply again. Only one application per person may be pending at a time.
-  - The applicant gets no email about the decision for now; the app shows the result.
-  - This replaces the admin review list described in #157, and the acceptance criteria of #157 and #162 need updating to match.
+- **Organizer:** by applying in the app and being approved by a reviewer. See [Organizer applications](organizer-applications.md).
 - **Admin:** set directly in the database. See "Giving an account a role" in the [API README](../../apps/api/README.md#giving-an-account-a-role).
 
-No API endpoint changes a role. `PATCH /users/me` rejects a request that sends `role`.
+The only API request that changes a role is approving an organizer application, which turns a player into an organizer and never changes an admin. `PATCH /users/me` rejects a request that sends `role`.
 
 ## Roles that belong to a team or tournament
 

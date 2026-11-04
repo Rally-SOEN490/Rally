@@ -72,6 +72,11 @@ src/
     routes.ts          the URLs, and checks the request is valid
     service.ts         the rules: what happens and what gets sent back
     repository.ts      the only place that reads and writes the users table
+  modules/organizer-applications/
+                       applying to become an organizer, and the reviewers' approve/deny link
+  modules/email/
+    outbox.ts          the only place that reads and writes the email_outbox table
+    sender.ts          sends queued emails through Resend (or prints them), with retries
   generated/           created by Prisma, not committed
 test/                  tests, using a fake Firebase so no real accounts are needed
 ```
@@ -93,6 +98,17 @@ Every account starts as a player. To make your own test account an organizer or 
   Find the id with `SELECT id, display_name, role FROM users;`. Use the id, not the display name: names aren't unique.
 
 The change applies on the next request; the app shows it after it reloads the account. The roles are explained in [roles and permissions](../../docs/architecture/roles-and-permissions.md).
+
+## Trying "Become an organizer" locally
+
+1. In `apps/api/.env`, set `ORGANIZER_REVIEWER_EMAILS` to your own email. Leave `RESEND_API_KEY` empty, so the email is printed instead of sent.
+2. Restart the API (`docker compose up --build --watch`, or `npm run dev`).
+3. As a player, open Settings → **Become an organizer**, fill in the form and send it.
+4. Find the email in the API's output: `docker compose logs api` with Docker, or the `npm run dev` terminal. Copy the review link.
+5. Open the link in a browser (the web app on `http://localhost:8081`), then approve or deny.
+6. Back in Settings, open **Become an organizer** again to see the answer. After an approval, close it: the row changes to **Organizer account**.
+
+The printed email contains a working review link. Never leave `RESEND_API_KEY` empty on a shared or production server. How the flow works is in [organizer applications](../../docs/architecture/organizer-applications.md).
 
 ## Using the API from the app
 
