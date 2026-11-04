@@ -207,7 +207,6 @@ it("shows registration unavailability after clicking Register on web", async () 
     expect(Platform.OS).toBe(originalOS);
   }
 });
-
 it("searches tournament names, venues, and organizers without case sensitivity", async () => {
   await render(<SearchScreen />);
   await screen.findByText("Montreal Spring Open");

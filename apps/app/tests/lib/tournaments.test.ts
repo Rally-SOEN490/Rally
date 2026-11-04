@@ -144,7 +144,6 @@ it("matches any of multiple selected options within a filter", () => {
     ).map(({ id }) => id),
   ).toEqual(["one", "two"]);
 });
-
 it("combines all selected criteria with search and excludes missing values where required", () => {
   const filters: TournamentFilters = {
     ...EMPTY_TOURNAMENT_FILTERS,
