@@ -29,10 +29,10 @@ Problems and corrections: the first web export failed without Firebase configura
 
 List every substantive feature, as defined in [rubric §1](docs/course/soen-490/CODE-QUALITY.md#1-feature-implementation-and-volume-of-work), whose implementation had substantial AI assistance.
 
-| Feature                          | Stories and pull requests                                                    | AI-contribution level    |
-| -------------------------------- | ---------------------------------------------------------------------------- | ------------------------ |
-| Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309) | 50% or more AI-generated |
-| Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR pending             | 50% or more AI-generated |
+| Feature                          | Stories and pull requests                                                                                        | AI-contribution level    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                     | 50% or more AI-generated |
+| Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313) | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -62,7 +62,7 @@ Problems and rejected suggestions: the original registration feedback used `Aler
 
 ### RALLY-161, RALLY-140, RALLY-135: Roles and organizer applications
 
-Pull request: pending.
+Pull request: [#313](https://github.com/Rally-SOEN490/Rally/pull/313).
 
 Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the account roles, the permission module and route hook, the organizer application API, the email outbox and Resend sender, the migrations, the Settings request sheet, the reviewer page, the tests and the architecture documents. Hoang made the design decisions: three account roles with captain scoped to one team in one tournament and staff left to #79; review through an emailed link that anyone holding it can use, instead of an admin list in the app; the first decision wins; reviewer emails in an environment variable; 14-day expiry; and applying again at once after a denial. He reviewed the plan against the existing issues and tested the flow manually with a real Resend email.
 
