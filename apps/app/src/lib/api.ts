@@ -10,10 +10,15 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export type Language = "EN" | "FR";
 export type ColorTheme = "green" | "blue" | "pink";
+// Use it to show or hide organizer tools. The API checks the role again on
+// every restricted request, so hiding a button is not the security check.
+export type AccountRole = "PLAYER" | "ORGANIZER" | "ADMIN";
 
 export type RallyUser = {
   id: string;
   displayName: string;
+  // The API always sends it; treat a missing role as "PLAYER", the safe default.
+  role?: AccountRole;
   profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys?: string[];

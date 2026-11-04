@@ -18,6 +18,17 @@ datasource db {
   provider = "postgresql"
 }
 
+// What an account may do across Rally (see docs/architecture/roles-and-permissions.md).
+// Everyone starts as a player. Captain is not stored here: it belongs to one team
+// in one tournament.
+enum UserRole {
+  PLAYER
+  ORGANIZER
+  ADMIN
+
+  @@map("user_role")
+}
+
 // A Rally account. Firebase owns the login (email and password); this row holds
 // what Rally knows about the person. Field names are camelCase in TypeScript and
 // snake_case in the database.
@@ -25,6 +36,9 @@ model User {
   id              String   @id @default(uuid()) @db.Uuid
   firebaseUid     String   @unique @map("firebase_uid")
   displayName     String   @map("display_name")
+  // Only changed by an admin in the database, or by an approved organizer
+  // application. PATCH /users/me can't change it.
+  role            UserRole @default(PLAYER)
   profilePhotoKey String? @map("profile_photo_key")
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")

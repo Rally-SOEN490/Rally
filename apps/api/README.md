@@ -64,6 +64,8 @@ src/
   app.ts               puts the routes together (tests use this without starting a server)
   config.ts            reads the settings from .env
   auth.ts              checks the Firebase login token
+  permissions.ts       which account role may do what (the one place for this)
+  authorization.ts     requirePermission: rejects a request whose role lacks a permission
   db.ts                connects to PostgreSQL
   health.ts            GET /health
   modules/users/
@@ -74,7 +76,23 @@ src/
 test/                  tests, using a fake Firebase so no real accounts are needed
 ```
 
-New features (teams, events…) get their own folder in `src/modules/` with the same three files.
+New features (teams, tournaments…) get their own folder in `src/modules/` with the same three files.
+
+## Giving an account a role
+
+Every account starts as a player. To make your own test account an organizer or admin, find its row and change `role` to `ORGANIZER` or `ADMIN`:
+
+- **In the browser:** run `npm run db:studio`, open the `User` table, and edit `role`.
+- **In SQL:** from the repo root, run
+
+  ```bash
+  docker compose exec postgres psql -U rally -d rally \
+    -c "UPDATE users SET role = 'ORGANIZER' WHERE id = '<the account id>';"
+  ```
+
+  Find the id with `SELECT id, display_name, role FROM users;`. Use the id, not the display name: names aren't unique.
+
+The change applies on the next request; the app shows it after it reloads the account. The roles are explained in [roles and permissions](../../docs/architecture/roles-and-permissions.md).
 
 ## Using the API from the app
 
@@ -90,6 +108,8 @@ The app calls `http://localhost:3000` by default. That works on the web and the 
 **`EADDRINUSE` on port 3000:** the API is already running, probably in Docker. Stop it with `docker compose stop api`, or use the Docker setup instead.
 
 **`port 5432 is already allocated`:** Another PostgreSQL is already running on your computer. If you installed it with Homebrew, stop it with `brew services stop postgresql@17`.
+
+**`P1010: User was denied access` when running the tests or migrations:** another PostgreSQL on your computer is answering on `localhost:5432` instead of Docker's. Docker can start even when that happens. Check with `lsof -nP -iTCP:5432 -sTCP:LISTEN`: a `postgres` process that isn't `com.docker` is the other one. Stop it: in Postgres.app, click **Stop** and turn off starting at login (or move it to port 5433 in its server settings); if you installed it with Homebrew, run `brew services stop postgresql@17` (use your version).
 
 **The app says "Can't reach the Rally server":** Start the API, with `npm run dev` or the Docker setup. On the Android emulator, run `adb reverse tcp:3000 tcp:3000` again if the emulator restarted. On a phone, check `EXPO_PUBLIC_API_URL` above.
 

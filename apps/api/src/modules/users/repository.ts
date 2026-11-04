@@ -2,6 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import type { Database } from "../../db.ts";
+import type { AccountRole } from "../../permissions.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
 
 export type NewUser = {
@@ -95,6 +96,12 @@ export const createUserRepository = (db: Database) => {
         orderBy: [{ displayName: "asc" }, { id: "asc" }],
         include: includeBadges,
       }),
+    // Used by requirePermission. Reads only the role, so permission checks stay cheap.
+    findRoleByFirebaseUid: async (firebaseUid: string): Promise<AccountRole | null> => {
+      const user = await db.user.findUnique({ where: { firebaseUid }, select: { role: true } });
+      return user?.role ?? null;
+    },
+
     findByFirebaseUid: async (firebaseUid: string) => {
       const user = await db.user.findUnique({ where: { firebaseUid } });
       if (!user) return null;
