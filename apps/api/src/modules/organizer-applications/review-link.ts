@@ -10,7 +10,11 @@ export const reviewLinkLifetimeMs = 14 * 24 * 60 * 60 * 1000;
 export const createReviewToken = () => randomBytes(32).toString("base64url");
 export const reviewTokenPattern = "^[A-Za-z0-9_-]{43}$";
 
-// Only this hash is stored, so a copy of the database can't be used to decide.
+// organizer_applications stores only this hash. The full link is also in the
+// queued email (email_outbox.body) until it is sent or given up on: usually
+// seconds, about two hours of retries at most while the API runs, longer if the
+// API is down. The body is cleared then. After that, a copy of the database
+// can't be used to decide.
 export const hashReviewToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 // The token goes after "#": browsers never send that part to a server, so it
