@@ -2,7 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker, {
+import {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { formatDate, formatTime } from "@/lib/organizer-tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
+import { IosPickerSheet } from "./iosPickerSheet";
 import { GREEN, MUTED, styles } from "./styles";
 
 export type DateTimeFieldProps = {
@@ -41,7 +42,7 @@ const fromPickerDate = (mode: "date" | "time", date: Date) =>
     : `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 // A date or time field. Phones use their own picker: a dialog on Android, and
-// on iOS a picker that opens under the field. The web version is dateTimeField.web.tsx.
+// on iOS a sheet from the bottom of the screen. The web version is dateTimeField.web.tsx.
 export function DateTimeField({ mode, value, onChange, accessibilityLabel }: DateTimeFieldProps) {
   const [iosOpen, setIosOpen] = useState(false);
   const pick = (event: DateTimePickerEvent, date?: Date) => {
@@ -50,18 +51,21 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
   const open = () =>
     Platform.OS === "android"
       ? DateTimePickerAndroid.open({ value: toPickerDate(mode, value), mode, onChange: pick })
-      : setIosOpen((isOpen) => !isOpen);
+      : setIosOpen(true);
 
   return (
     <View>
       <FieldButton mode={mode} value={value} label={accessibilityLabel} onPress={open} />
       {iosOpen && (
-        <DateTimePicker
-          testID={`${accessibilityLabel} picker`}
-          value={toPickerDate(mode, value)}
+        <IosPickerSheet
           mode={mode}
-          display={mode === "date" ? "inline" : "spinner"}
-          onChange={(event, date) => date && onChange(fromPickerDate(mode, date))}
+          initial={toPickerDate(mode, value)}
+          label={accessibilityLabel}
+          onDone={(date) => {
+            setIosOpen(false);
+            onChange(fromPickerDate(mode, date));
+          }}
+          onCancel={() => setIosOpen(false)}
         />
       )}
     </View>

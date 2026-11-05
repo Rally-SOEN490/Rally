@@ -181,8 +181,8 @@ it("offers to try again when the request can't be loaded", async () => {
 it("stays open while the player clicks and types inside it", async () => {
   await openSheet();
   await describeEvents("Beach 2s on Sundays");
-  fireEvent.press(screen.getByTestId("organizer-sheet"));
-  fireEvent.press(screen.getByLabelText("What do you organize?"));
+  await fireEvent.press(screen.getByTestId("organizer-sheet"));
+  await fireEvent.press(screen.getByLabelText("What do you organize?"));
 
   expect(onClose).not.toHaveBeenCalled();
   expect(screen.getByLabelText("What do you organize?")).toHaveDisplayValue("Beach 2s on Sundays");
@@ -192,7 +192,7 @@ it("closes when the player taps outside it", async () => {
   await openSheet();
   await screen.findByLabelText("What do you organize?");
 
-  fireEvent.press(screen.getByTestId("organizer-sheet-backdrop"));
+  await fireEvent.press(screen.getByTestId("organizer-sheet-backdrop"));
 
   expect(onClose).toHaveBeenCalled();
 });

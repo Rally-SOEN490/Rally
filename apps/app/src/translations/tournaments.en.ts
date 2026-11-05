@@ -62,6 +62,8 @@ export const tournamentCopy = {
     time: "Time",
     pickDate: "Pick a date",
     pickTime: "Pick a time",
+    cancelPick: "Cancel",
+    donePick: "Done",
     about: "ABOUT",
     description: "Description",
     descriptionPlaceholder:

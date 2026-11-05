@@ -69,9 +69,11 @@ beforeEach(() => {
 const type = (label: string, text: string) => userEvent.type(screen.getByLabelText(label), text);
 const press = (name: string) => userEvent.press(screen.getByRole("button", { name }));
 // Opens a date or time field and picks a value in the phone's picker.
+// On iOS the picker opens in a sheet; the field only changes on "Done".
 const pick = async (label: string, value: Date) => {
   await press(label);
-  fireEvent(screen.getByTestId(`${label} picker`), "onChange", { type: "set" }, value);
+  await fireEvent(screen.getByTestId(`${label} picker`), "onChange", { type: "set" }, value);
+  await press("Done");
 };
 
 it("needs a name before saving a draft", async () => {
@@ -298,5 +300,61 @@ it("lets registration close at the moment the tournament starts", async () => {
       startsAt: "2027-11-15T09:00",
       registrationClosesAt: "2027-11-15T09:00",
     }),
+  );
+});
+
+// ---------- The iPhone picker sheet ----------
+
+it("only changes the field when the organizer taps Done", async () => {
+  await render(<SetupScreen />);
+  await press("Starts time");
+  await fireEvent(
+    screen.getByTestId("Starts time picker"),
+    "onChange",
+    { type: "set" },
+    new Date(2027, 0, 1, 9, 30),
+  );
+
+  expect(screen.getByRole("button", { name: "Starts time" })).toHaveAccessibilityValue({
+    text: "Pick a time",
+  });
+  await press("Done");
+
+  expect(screen.queryByTestId("Starts time picker")).not.toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Starts time" })).toHaveAccessibilityValue({
+    text: "9:30 AM",
+  });
+});
+
+it.each([
+  ["Cancel", () => press("Cancel")],
+  ["a tap outside", () => fireEvent.press(screen.getByTestId("Starts time picker backdrop"))],
+])("keeps the old value after %s", async (_, close) => {
+  await render(<SetupScreen />);
+  await pick("Starts time", new Date(2027, 0, 1, 9, 0));
+  await press("Starts time");
+  await fireEvent(
+    screen.getByTestId("Starts time picker"),
+    "onChange",
+    { type: "set" },
+    new Date(2027, 0, 1, 18, 0),
+  );
+
+  await close();
+
+  expect(screen.queryByTestId("Starts time picker")).not.toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Starts time" })).toHaveAccessibilityValue({
+    text: "9:00 AM",
+  });
+});
+
+it("takes the time the wheel shows when Done is tapped without scrolling", async () => {
+  await render(<SetupScreen />);
+
+  await press("Ends time");
+  await press("Done");
+
+  expect(screen.getByRole("button", { name: "Ends time" }).props.accessibilityValue.text).toMatch(
+    /^\d{1,2}:\d{2} (AM|PM)$/,
   );
 });
