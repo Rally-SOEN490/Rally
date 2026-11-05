@@ -10,10 +10,15 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export type Language = "EN" | "FR";
 export type ColorTheme = "green" | "blue" | "pink";
+// Use it to show or hide organizer tools. The API checks the role again on
+// every restricted request, so hiding a button is not the security check.
+export type AccountRole = "PLAYER" | "ORGANIZER" | "ADMIN";
 
 export type RallyUser = {
   id: string;
   displayName: string;
+  // The API always sends it; treat a missing role as "PLAYER", the safe default.
+  role?: AccountRole;
   profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys?: string[];
@@ -83,17 +88,18 @@ export const apiErrorMessage = (error: unknown) =>
   error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 
 // Calls the API as `user`. Firebase gives us a token that proves who they are.
-const request = async (
-  user: User,
+// Pass null only for the few routes that work without logging in.
+export const request = async (
+  user: User | null,
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: object,
 ) => {
-  const token = await user.getIdToken();
+  const token = user && (await user.getIdToken());
   const response = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...(body && { "Content-Type": "application/json" }),
     },
     body: body && JSON.stringify(body),

@@ -44,6 +44,8 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      {/* Opened from the review email, logged in or not: the link's token is the permission. */}
+      <Stack.Screen name="organizer-review" />
       <Stack.Protected guard={signedOut}>
         <Stack.Screen name="login" />
         <Stack.Screen name="sign-up" />

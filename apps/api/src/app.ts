@@ -8,6 +8,8 @@ import type { VerifyIdToken } from "./auth.ts";
 import type { Database } from "./db.ts";
 import type { ProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 import { healthRoutes } from "./health.ts";
+import { organizerApplicationRoutes } from "./modules/organizer-applications/routes.ts";
+import { createUserRepository } from "./modules/users/repository.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
 export type AppOptions = {
@@ -17,6 +19,14 @@ export type AppOptions = {
   corsOrigins: string[];
   photos?: ProfilePhotoStorage;
   logger?: boolean;
+  organizerApplications?: {
+    // Who is emailed each application.
+    reviewerEmails: string[];
+    // The web app's address, for the review link.
+    appUrl: string;
+    // Sends queued emails now instead of waiting for the next check.
+    onEmailsQueued?: () => void;
+  };
 };
 
 // Builds the API without starting it, so tests can send it requests with app.inject().
@@ -26,6 +36,7 @@ export const buildApp = async ({
   corsOrigins,
   photos,
   logger = false,
+  organizerApplications = { reviewerEmails: [], appUrl: "http://localhost:8081" },
 }: AppOptions) => {
   const app = Fastify({ logger });
   // Browsers only send the request methods listed here.
@@ -46,5 +57,16 @@ export const buildApp = async ({
 
   await app.register(healthRoutes, { db });
   await app.register(userRoutes, { db, verifyIdToken, photos, prefix: "/users" });
+  const users = createUserRepository(db);
+  await app.register(organizerApplicationRoutes, {
+    db,
+    verifyIdToken,
+    applicants: {
+      findApplicant: users.findApplicant,
+      promoteToOrganizer: users.promoteToOrganizer,
+    },
+    ...organizerApplications,
+    prefix: "/organizer-applications",
+  });
   return app;
 };

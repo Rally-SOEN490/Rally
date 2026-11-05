@@ -8,12 +8,12 @@ Each contributor records their own use. Do not guess another contributor's AI us
 
 Tools named in Rally's acknowledgments so far. Add any other tool you used.
 
-| Tool           | Used for                                                                                                                   |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code    | To be completed by the contributors who used it                                                                            |
-| OpenAI Codex   | RALLY-149 (#171): lint/format configuration, PR quality checks, formatting baseline, documentation, and local verification |
-| GitHub Copilot | Automated pull request review comments; RALLY-112 (#134): tournament search, cards, filters, and tests                     |
-| OpenAI         | RALLY-115 player cards, directory states, tests, and visual validation                                                     |
+| Tool           | Used for                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code    | RALLY-161, RALLY-140, RALLY-135: roles, organizer applications, email outbox, tests and docs. Other contributors add their own use |
+| OpenAI Codex   | RALLY-149 (#171): lint/format configuration, PR quality checks, formatting baseline, documentation, and local verification         |
+| GitHub Copilot | Automated pull request review comments; RALLY-112 (#134): tournament search, cards, filters, and tests                             |
+| OpenAI         | RALLY-115 player cards, directory states, tests, and visual validation                                                             |
 
 ## Tooling contributions
 
@@ -29,9 +29,10 @@ Problems and corrections: the first web export failed without Firebase configura
 
 List every substantive feature, as defined in [rubric §1](docs/course/soen-490/CODE-QUALITY.md#1-feature-implementation-and-volume-of-work), whose implementation had substantial AI assistance.
 
-| Feature                       | Stories and pull requests                                                    | AI-contribution level    |
-| ----------------------------- | ---------------------------------------------------------------------------- | ------------------------ |
-| Tournament search and filters | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309) | 50% or more AI-generated |
+| Feature                          | Stories and pull requests                                                                                        | AI-contribution level    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                     | 50% or more AI-generated |
+| Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313) | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -58,6 +59,16 @@ GitHub Copilot contributed the tournament directory, search and filter behavior,
 Verification: the app search tests cover tournament search, the filter UI, registration feedback, loading/error states, and cards; the tournament utility tests cover each filter independently and multiple selections. Native emulator/simulator comparison against Figma remains pending; use `Refs #134` rather than `Closes #134` in the PR description until that criterion is complete.
 
 Problems and rejected suggestions: the original registration feedback used `Alert.alert`, which does not display on web; it is now an accessible inline notice on web while native retains its alert.
+
+### RALLY-161, RALLY-140, RALLY-135: Roles and organizer applications
+
+Pull request: [#313](https://github.com/Rally-SOEN490/Rally/pull/313).
+
+Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the account roles, the permission module and route hook, the organizer application API, the email outbox and Resend sender, the migrations, the Settings request sheet, the reviewer page, the tests and the architecture documents. Hoang made the design decisions: three account roles with captain scoped to one team in one tournament and staff left to #79; review through an emailed link that anyone holding it can use, instead of an admin list in the app; the first decision wins; reviewer emails in an environment variable; 14-day expiry; and applying again at once after a denial. He reviewed the plan against the existing issues and tested the flow manually with a real Resend email.
+
+Verification: [permission tests](apps/api/test/permissions.test.ts), [route hook tests](apps/api/test/authorization.test.ts), [account role tests](apps/api/test/account-role.test.ts), [application tests](apps/api/test/organizer-applications.test.ts), [review tests](apps/api/test/organizer-review.test.ts) and [outbox tests](apps/api/test/email-outbox.test.ts) run against PostgreSQL, including simultaneous requests and decisions. The [request sheet](apps/app/tests/components/organizerApplicationSheet.test.tsx), [review page](apps/app/tests/app/organizer-review.test.tsx) and [client](apps/app/tests/lib/organizer-applications.test.ts) tests cover the app.
+
+Problems and rejected suggestions: Hoang's manual test found that clicks inside the request sheet closed it on the web, because the sheet was nested in the tap-to-close backdrop; the backdrop now sits behind the sheet, with a regression test. A test assumed Fastify rejects unknown request fields, but it removes them; the test now checks that a `status` sent with an application is ignored. Making `role` required on the app's user type broke 51 test fixtures, so it is optional and a missing role is treated as a player. A second PostgreSQL (Postgres.app) on port 5432 blocked `prisma migrate dev`, so the migrations were generated from a schema diff and checked against the test database. Rejected: one pull request per issue (Hoang chose one pull request), requiring an admin login on the review page (#157's wording), and committing the reviewer emails to the public repository.
 
 ## Additional assisted work
 

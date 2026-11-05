@@ -40,20 +40,21 @@ Do not introduce a new framework, database, service, or messaging system without
 
 ## Domain Rules
 
-- An Event contains Tournaments.
-- A Tournament represents a competition/division.
+- A Tournament contains Divisions.
+- A Division represents one competition within a tournament.
+- Account roles are player, organizer and admin. Map roles to permissions only in `apps/api/src/permissions.ts` (see `docs/architecture/roles-and-permissions.md`).
 - Follow the accepted decision for team lifetime and tournament roster versions.
 - Current team membership must not rewrite historical participation.
 - Support name-only participants.
 - Never merge participant identities by matching names.
-- Captain and staff permissions are scoped to their team/event.
+- Captain and staff permissions are scoped to their team/tournament.
 - Scoring and tie-break rules come from stored configuration.
 - The server validates scores and calculates winners.
 - Unconfirmed or disputed scores do not affect official results.
 - Score corrections preserve revisions and account for downstream bracket impact.
 - Persist random draws so unchanged inputs produce stable results.
 - Statistics derive from accepted results and the approved participation policy.
-- Scheduling considers shared courts and referee assignments across the event.
+- Scheduling considers shared courts and referee assignments across the tournament.
 
 ## Reliability and Privacy
 

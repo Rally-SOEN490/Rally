@@ -2,6 +2,8 @@
 // AI contribution: 50% or more AI-generated
 
 import type { Database } from "../../db.ts";
+import type { Prisma } from "../../generated/prisma/client.ts";
+import type { AccountRole } from "../../permissions.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
 
 export type NewUser = {
@@ -95,6 +97,27 @@ export const createUserRepository = (db: Database) => {
         orderBy: [{ displayName: "asc" }, { id: "asc" }],
         include: includeBadges,
       }),
+    // Used by requirePermission. Reads only the role, so permission checks stay cheap.
+    findRoleByFirebaseUid: async (firebaseUid: string): Promise<AccountRole | null> => {
+      const user = await db.user.findUnique({ where: { firebaseUid }, select: { role: true } });
+      return user?.role ?? null;
+    },
+
+    // What the organizer applications module needs to know about an applicant.
+    findApplicant: (firebaseUid: string) =>
+      db.user.findUnique({
+        where: { firebaseUid },
+        select: { id: true, displayName: true, role: true },
+      }),
+
+    // Makes a player an organizer, inside the caller's transaction. Leaves an
+    // admin (or someone already an organizer) as they are.
+    promoteToOrganizer: (userId: string, transaction: Prisma.TransactionClient) =>
+      transaction.user.updateMany({
+        where: { id: userId, role: "PLAYER" },
+        data: { role: "ORGANIZER" },
+      }),
+
     findByFirebaseUid: async (firebaseUid: string) => {
       const user = await db.user.findUnique({ where: { firebaseUid } });
       if (!user) return null;
