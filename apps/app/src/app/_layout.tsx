@@ -62,6 +62,10 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
+        {/* Setting up a tournament. The API only lets organizers and admins in. */}
+        <Stack.Screen name="tournaments/new" />
+        <Stack.Screen name="tournaments/[id]/setup" />
+        <Stack.Screen name="tournaments/[id]/divisions" />
       </Stack.Protected>
     </Stack>
   );
