@@ -103,8 +103,9 @@ export const createUserRepository = (db: Database) => {
       return user?.role ?? null;
     },
 
-    // What the organizer applications module needs to know about an applicant.
-    findApplicant: (firebaseUid: string) =>
+    // Who a logged-in person is, for modules that need their ID and role
+    // (organizer applications, tournaments) without reading the users table.
+    findAccount: (firebaseUid: string) =>
       db.user.findUnique({
         where: { firebaseUid },
         select: { id: true, displayName: true, role: true },
