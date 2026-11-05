@@ -29,11 +29,11 @@ Problems and corrections: the first web export failed without Firebase configura
 
 List every substantive feature, as defined in [rubric §1](docs/course/soen-490/CODE-QUALITY.md#1-feature-implementation-and-volume-of-work), whose implementation had substantial AI assistance.
 
-| Feature                          | Stories and pull requests                                                                                        | AI-contribution level    |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                     | 50% or more AI-generated |
-| Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313) | 50% or more AI-generated |
-| Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR pending                                       | 50% or more AI-generated |
+| Feature                          | Stories and pull requests                                                                                                  | AI-contribution level    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                               | 50% or more AI-generated |
+| Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313)           | 50% or more AI-generated |
+| Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -73,7 +73,7 @@ Problems and rejected suggestions: Hoang's manual test found that clicks inside 
 
 ### RALLY-48, RALLY-49, RALLY-68, RALLY-51: Tournament setup
 
-Pull request: pending.
+Pull request: [#315](https://github.com/Rally-SOEN490/Rally/pull/315).
 
 Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the tournaments API (setup fields, divisions, publishing, deleting drafts, Montreal time conversion), the migration with its check constraints, the Events Organizer section, the two setup steps, the date and time fields, the leave confirmation, the tests and the architecture document. Hoang made the decisions: follow his Figma mock-up, browser and phone date pickers, plain-text descriptions (rich text stays #286), drafts that need only a name, Montreal time for everyone, "Create tournament" publishing, deleting drafts from the Events page, asking before leaving with unsaved changes (including Android's back button and the iOS swipe), and registration opening and closing no later than the start. He tried the screens locally, which is how the back-arrow gap below was found.
 
