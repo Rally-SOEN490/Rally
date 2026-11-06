@@ -9,6 +9,7 @@ import type { Database } from "./db.ts";
 import type { ProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 import { healthRoutes } from "./health.ts";
 import { organizerApplicationRoutes } from "./modules/organizer-applications/routes.ts";
+import { tournamentRoutes } from "./modules/tournaments/routes.ts";
 import { createUserRepository } from "./modules/users/repository.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
@@ -62,11 +63,18 @@ export const buildApp = async ({
     db,
     verifyIdToken,
     applicants: {
-      findApplicant: users.findApplicant,
+      findApplicant: users.findAccount,
       promoteToOrganizer: users.promoteToOrganizer,
     },
     ...organizerApplications,
     prefix: "/organizer-applications",
+  });
+  await app.register(tournamentRoutes, {
+    db,
+    verifyIdToken,
+    accounts: { findAccount: users.findAccount },
+    findRole: users.findRoleByFirebaseUid,
+    prefix: "/tournaments",
   });
   return app;
 };

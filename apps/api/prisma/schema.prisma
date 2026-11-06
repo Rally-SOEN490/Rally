@@ -57,6 +57,7 @@ model User {
   badges         UserBadge[]
   interests      UserInterest[]
   organizerApplications OrganizerApplication[]
+  organizedTournaments  Tournament[]
 
   @@map("users")
 }
@@ -153,4 +154,94 @@ model UserBadge {
   @@id([userId, badgeTypeId])
   @@index([badgeTypeId])
   @@map("user_badges")
+}
+
+enum TournamentStatus {
+  // Only its organizer can see it, and it can still be edited.
+  DRAFT
+  // Players can find it (once search reads real data, #302).
+  PUBLISHED
+
+  @@map("tournament_status")
+}
+
+enum DivisionFormat {
+  TWO_V_TWO     @map("2v2")
+  THREE_V_THREE @map("3v3")
+  FOUR_V_FOUR   @map("4v4")
+  SIX_V_SIX     @map("6v6")
+  NINE_V_NINE   @map("9v9")
+
+  @@map("division_format")
+}
+
+enum DivisionType {
+  COED
+  MEN
+  WOMEN
+
+  @@map("division_type")
+}
+
+enum DivisionLevel {
+  C_MINUS @map("C-")
+  C
+  C_PLUS  @map("C+")
+  B
+  B_PLUS  @map("B+")
+  A
+  OPEN
+  ELITE
+
+  @@map("division_level")
+}
+
+// A tournament an organizer runs. It contains divisions (see
+// docs/architecture/tournaments.md). A draft may be incomplete: only its name is
+// required until it is published.
+model Tournament {
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizerId          String           @map("organizer_id") @db.Uuid
+  status               TournamentStatus @default(DRAFT)
+  name                 String
+  location             String?
+  courts               Int?
+  // Free-form text, kept exactly as typed (line breaks, spaces, emojis).
+  description          String?
+  // Stored in UTC. The API reads and writes them as Montreal times.
+  startsAt             DateTime?        @map("starts_at") @db.Timestamptz
+  endsAt               DateTime?        @map("ends_at") @db.Timestamptz
+  registrationOpensAt  DateTime?        @map("registration_opens_at") @db.Timestamptz
+  registrationClosesAt DateTime?        @map("registration_closes_at") @db.Timestamptz
+  publishedAt          DateTime?        @map("published_at") @db.Timestamptz
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  // Deleting the organizer's account deletes their tournaments for now.
+  // Revisit once teams can register (#58).
+  organizer            User             @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  divisions            Division[]
+
+  @@index([organizerId, createdAt])
+  @@index([status, startsAt])
+  @@map("tournaments")
+}
+
+// One competition inside a tournament, with its own format, level and teams.
+model Division {
+  id           String          @id @default(uuid()) @db.Uuid
+  tournamentId String          @map("tournament_id") @db.Uuid
+  name         String
+  format       DivisionFormat
+  type         DivisionType
+  // One or more levels, e.g. B and B+.
+  levels       DivisionLevel[]
+  maxTeams     Int             @map("max_teams")
+  // For display only: players pay the organizer outside Rally.
+  priceCents   Int             @map("price_cents")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  tournament   Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, name])
+  @@map("divisions")
 }

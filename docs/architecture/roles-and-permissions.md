@@ -16,7 +16,9 @@ Every account has exactly one account role, stored in `users.role`.
 | ------------------- | -------- | ----------- | ------- |
 | `tournament:create` | No       | Yes         | Yes     |
 
-An organizer only manages the tournaments they created. That check compares the tournament's organizer with the caller, so it will live with tournaments, not in this table.
+`tournament:create` guards every tournament route: creating, setting up and publishing (see [tournaments](tournaments.md)).
+
+An organizer only manages the tournaments they created. That check compares the tournament's organizer with the caller, so it lives in the tournaments service, not in this table.
 
 ### How someone gets a role
 

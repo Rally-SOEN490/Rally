@@ -74,6 +74,8 @@ src/
     repository.ts      the only place that reads and writes the users table
   modules/organizer-applications/
                        applying to become an organizer, and the reviewers' approve/deny link
+  modules/tournaments/ creating, setting up and publishing tournaments and their divisions;
+                       montreal-time.ts converts Montreal times, rules.ts holds the date and publish rules
   modules/email/
     outbox.ts          the only place that reads and writes the email_outbox table
     sender.ts          sends queued emails through Resend (or prints them), with retries
