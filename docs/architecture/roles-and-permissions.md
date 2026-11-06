@@ -16,7 +16,7 @@ Every account has exactly one account role, stored in `users.role`.
 | ------------------- | -------- | ----------- | ------- |
 | `tournament:create` | No       | Yes         | Yes     |
 
-`tournament:create` guards every tournament route: creating, setting up and publishing (see [tournaments](tournaments.md)).
+`tournament:create` guards every tournament route for organizers: creating, setting up and publishing (see [tournaments](tournaments.md)). Browsing published tournaments in Search (`GET /tournaments`, #302) only needs a logged-in account, like any other player action.
 
 An organizer only manages the tournaments they created. That check compares the tournament's organizer with the caller, so it lives in the tournaments service, not in this table.
 

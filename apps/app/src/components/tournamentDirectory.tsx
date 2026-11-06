@@ -11,6 +11,7 @@ import {
   type TournamentFilters,
 } from "@/lib/tournaments";
 import { searchCopy as copy } from "@/translations/search.en";
+import { tournamentCopy } from "@/translations/tournaments.en";
 import { TournamentCard } from "@/components/tournamentCard";
 
 type Props = {
@@ -108,26 +109,14 @@ export function TournamentDirectory({
                 }
               />
             ))}
-            {filters.surfaces.map((value) => (
+            {filters.types.map((value) => (
               <FilterChip
-                key={`surface-${value}`}
-                label={value}
+                key={`type-${value}`}
+                label={tournamentCopy.divisions.types[value]}
                 onRemove={() =>
                   removeFilter((current) => ({
                     ...current,
-                    surfaces: current.surfaces.filter((item) => item !== value),
-                  }))
-                }
-              />
-            ))}
-            {filters.teamSizes.map((value) => (
-              <FilterChip
-                key={`team-${value}`}
-                label={copy.teamSize(value)}
-                onRemove={() =>
-                  removeFilter((current) => ({
-                    ...current,
-                    teamSizes: current.teamSizes.filter((item) => item !== value),
+                    types: current.types.filter((item) => item !== value),
                   }))
                 }
               />

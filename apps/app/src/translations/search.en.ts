@@ -24,8 +24,7 @@ export const searchCopy = {
   filterDate: "Date",
   filterFormat: "Format",
   filterLevel: "Level",
-  filterSurface: "Surface",
-  filterTeamSize: "Team size",
+  filterType: "Type",
   filterPrice: "Price per team",
   filterSpots: "Spots available",
   loadingTournaments: "Loading tournaments…",
@@ -36,6 +35,10 @@ export const searchCopy = {
   priceToBeAnnounced: "Price TBA",
   spotsUnavailable: "Spots not available",
   perTeam: "per team",
+  priceFrom: (price: string) => `From ${price}`,
+  free: "Free",
+  timeRange: (start: string, end: string) => `${start} – ${end}`,
+  endsOtherDay: (date: string, time: string) => `${date}, ${time}`,
   register: "Register",
   full: "Full",
   registrationUnavailable: "Registration isn't available yet.",
@@ -43,7 +46,6 @@ export const searchCopy = {
   spotsProgress: (left: number, total: number) => `${left} of ${total} spots left`,
   resultCount: (count: number) => `${count} ${count === 1 ? "result" : "results"}`,
   showResults: (count: number) => `Show ${count} ${count === 1 ? "result" : "results"}`,
-  teamSize: (size: number) => `${size} players`,
   dateRangeLabel: (days: number) => `Next ${days} days`,
   priceRangeLabel: (range: "under-50" | "50-100" | "100-150" | "150-plus") =>
     ({

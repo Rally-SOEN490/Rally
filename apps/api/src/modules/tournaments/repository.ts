@@ -53,6 +53,15 @@ export const createTournamentRepository = (db: Database) => ({
       include: withDivisions,
     }),
 
+  // Published tournaments that haven't ended, for Search: soonest first. Only
+  // the organizer's display name comes with them, nothing else about the account.
+  findPublishedNotEnded: (now: Date) =>
+    db.tournament.findMany({
+      where: { status: "PUBLISHED", endsAt: { gt: now } },
+      orderBy: [{ startsAt: "asc" }, { name: "asc" }],
+      include: { ...withDivisions, organizer: { select: { displayName: true } } },
+    }),
+
   // Locks the tournament until the transaction ends, so a publish and a
   // division change can't run at the same time. Null if it doesn't exist.
   lock: async (id: string, transaction: Transaction) => {

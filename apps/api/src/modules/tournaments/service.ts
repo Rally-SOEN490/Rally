@@ -11,6 +11,7 @@ import {
   notFound,
   toDivisionFields,
   toFields,
+  toPublishedResponse,
   toResponse,
   type Accounts,
   type Deps,
@@ -36,6 +37,10 @@ const listMine = async (deps: Deps, firebaseUid: string) => {
   const organizerId = await findAccountId(deps, firebaseUid);
   return (await deps.tournaments.findByOrganizer(organizerId)).map(toResponse);
 };
+
+// Every signed-in player sees these in Search. A tournament leaves the list once it ends.
+const listPublished = async (deps: Deps) =>
+  (await deps.tournaments.findPublishedNotEnded(deps.now())).map(toPublishedResponse);
 
 // Only the organizer sees their tournament here. The public page is #301.
 const getOwn = async (deps: Deps, firebaseUid: string, tournamentId: string) => {
@@ -142,6 +147,7 @@ export const createTournamentService = (dependencies: {
   return {
     create: (firebaseUid: string, input: TournamentInput & { name: string }) =>
       create(deps, firebaseUid, input),
+    listPublished: () => listPublished(deps),
     listMine: (firebaseUid: string) => listMine(deps, firebaseUid),
     getOwn: (firebaseUid: string, id: string) => getOwn(deps, firebaseUid, id),
     update: (firebaseUid: string, id: string, input: TournamentInput) =>

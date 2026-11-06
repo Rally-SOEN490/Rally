@@ -90,6 +90,26 @@ const toResponse = (tournament: Stored) => ({
 
 export type TournamentResponse = ReturnType<typeof toResponse>;
 
+type Published = Stored & { organizer: { displayName: string } };
+
+// What any signed-in player sees of a published tournament in Search. Leaves out
+// the organizer's account and the draft-only fields (status, courts, description).
+const toPublishedResponse = (tournament: Published) => ({
+  id: tournament.id,
+  name: tournament.name,
+  location: tournament.location,
+  startsAt: montreal(tournament.startsAt),
+  endsAt: montreal(tournament.endsAt),
+  registrationOpensAt: montreal(tournament.registrationOpensAt),
+  registrationClosesAt: montreal(tournament.registrationClosesAt),
+  organizerName: tournament.organizer.displayName,
+  // Teams can't register yet (#58), so every division has all its spots left.
+  divisions: tournament.divisions.map((division) => ({
+    ...toDivisionResponse(division),
+    registeredTeams: 0,
+  })),
+});
+
 const timeFields = ["startsAt", "endsAt", "registrationOpensAt", "registrationClosesAt"] as const;
 
 // Turns API input into stored fields: trims text, converts Montreal times.
@@ -161,5 +181,6 @@ const duplicateDivisionName = () =>
   httpError(409, "This tournament already has a division with that name.");
 
 export { httpError, lockOwnDraft, findAccountId, toFields, checkDates, toResponse };
+export { toPublishedResponse };
 export { toDivisionFields, isUniqueViolation, duplicateDivisionName, notFound };
 export type { Stored };

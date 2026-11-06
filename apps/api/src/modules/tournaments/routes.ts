@@ -52,22 +52,9 @@ const registerDivisionRoutes = (app: FastifyInstance, tournaments: TournamentSer
   );
 };
 
-export const tournamentRoutes: FastifyPluginAsync<{
-  db: Database;
-  verifyIdToken: VerifyIdToken;
-  accounts: Accounts;
-  findRole: FindAccountRole;
-}> = async (app, { db, verifyIdToken, accounts, findRole }) => {
-  const tournaments = createTournamentService({
-    tournaments: createTournamentRepository(db),
-    accounts,
-  });
-
-  // Every route here is for organizers and admins, and the service also checks
-  // the caller organizes the tournament they change.
-  app.addHook("preHandler", requireUser(verifyIdToken));
-  app.addHook("preHandler", requirePermission(findRole, "tournament:create"));
-
+// Creating, setting up, publishing and deleting the caller's own tournaments.
+// The service also checks the caller organizes the tournament they change.
+const registerOrganizerRoutes = (app: FastifyInstance, tournaments: TournamentService) => {
   // Creates a draft. Only the name is required until it is published.
   app.post<{ Body: TournamentInput & { name: string } }>(
     "/",
@@ -97,8 +84,34 @@ export const tournamentRoutes: FastifyPluginAsync<{
     return reply.code(204).send();
   });
 
-  // Publishing makes it visible to players (once search reads real data, #302).
+  // Publishing makes it visible to players in Search.
   app.post<Id>("/:id/publish", { schema: { params: tournamentParams } }, (request) =>
     tournaments.publish(request.firebaseUid, request.params.id),
   );
+};
+
+export const tournamentRoutes: FastifyPluginAsync<{
+  db: Database;
+  verifyIdToken: VerifyIdToken;
+  accounts: Accounts;
+  findRole: FindAccountRole;
+}> = async (app, { db, verifyIdToken, accounts, findRole }) => {
+  const tournaments = createTournamentService({
+    tournaments: createTournamentRepository(db),
+    accounts,
+  });
+
+  // Every route needs a logged-in account.
+  app.addHook("preHandler", requireUser(verifyIdToken));
+
+  // Published tournaments that haven't ended, for Search (#302). Any player may
+  // browse them, so this needs no permission.
+  app.get("/", () => tournaments.listPublished());
+
+  // The rest are for organizers and admins. Hooks added inside this register
+  // only apply to the routes inside it.
+  await app.register(async (organizer) => {
+    organizer.addHook("preHandler", requirePermission(findRole, "tournament:create"));
+    registerOrganizerRoutes(organizer, tournaments);
+  });
 };
