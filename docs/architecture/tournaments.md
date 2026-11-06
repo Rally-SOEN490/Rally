@@ -25,7 +25,7 @@ A **tournament** contains **divisions**. A division is one competition within it
 | Max teams      | 2 to 64.                                                                                                    |
 | Price          | Per team, stored in cents. For display only: players pay the organizer outside Rally.                       |
 
-Formats, types and levels are PostgreSQL enums, so adding one is a migration (#71). Check constraints keep courts, max teams and price in range, require at least one level, and require a published tournament to have every field filled in.
+Formats, types and levels are PostgreSQL enums, so adding one is a migration (#71). Check constraints keep courts, max teams and price in range, require at least one level and no blank ones, and require a published tournament to have every field filled in.
 
 ## Time zone
 

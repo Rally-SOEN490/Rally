@@ -17,13 +17,7 @@ export default function Events() {
   const { account } = useSession();
   const isOrganizer = account?.role === "ORGANIZER" || account?.role === "ADMIN";
   if (!isOrganizer)
-    return (
-      <ComingSoon
-        title="Events"
-        icon="trophy-outline"
-        message="Tournaments and leagues you can join will show up here."
-      />
-    );
+    return <ComingSoon title={copy.title} icon="trophy-outline" message={copy.comingSoon} />;
   return (
     <SafeAreaView style={eventStyles.screen}>
       <ScrollView contentContainerStyle={eventStyles.content}>

@@ -48,7 +48,12 @@ const divisionProperties = {
   priceCents: { type: "integer", minimum: 0, maximum: limits.maxPriceCents },
 } as const;
 
-const uuid = { type: "string", pattern: "^[0-9a-fA-F-]{36}$" } as const;
+// The standard 8-4-4-4-12 form. Anything looser reaches the database, which
+// rejects it as an error (500) instead of the request being invalid (400).
+const uuid = {
+  type: "string",
+  pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+} as const;
 
 export const tournamentParams = {
   type: "object",

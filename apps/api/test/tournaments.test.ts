@@ -176,6 +176,17 @@ test("answers not found for a tournament that doesn't exist", async () => {
   expect(response.json()).toEqual({ message: "Tournament not found." });
 });
 
+// Each is 36 characters of digits and dashes, but not a UUID the database accepts.
+test.each([
+  ["only dashes", "-".repeat(36)],
+  ["no dashes", "0".repeat(36)],
+  ["dashes in the wrong places", "0000-00000000-4000-8000-000000000000"],
+])("rejects a tournament id with %s as invalid", async (_, badId) => {
+  const response = await call.get("organizer", badId);
+
+  expect(response.statusCode).toBe(400);
+});
+
 test("lists only the caller's tournaments, soonest first and undated last", async () => {
   await createAccount("rival");
   await call.create("rival", { name: "Rival Cup" });

@@ -73,6 +73,9 @@ it("shows players a coming-soon page, without the Organizer section", async () =
   await showEventsAs("PLAYER");
 
   expect(screen.getByText("Coming soon")).toBeOnTheScreen();
+  expect(
+    screen.getByText("Tournaments and leagues you can join will show up here."),
+  ).toBeOnTheScreen();
   expect(screen.queryByText("Create tournament")).not.toBeOnTheScreen();
   expect(getMyTournaments).not.toHaveBeenCalled();
 });

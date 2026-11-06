@@ -25,6 +25,8 @@ export const tournamentCopy = {
     deleting: "Deleting…",
     playerTitle: "My tournaments",
     playerSoon: "Tournaments you play in will show up here.",
+    // Players see this until their Events sections exist (#91).
+    comingSoon: "Tournaments and leagues you can join will show up here.",
   },
 
   steps: {

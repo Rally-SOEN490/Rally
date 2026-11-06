@@ -97,6 +97,30 @@ test("won't touch a division through another tournament", async () => {
   expect(await testDb.division.count()).toBe(1);
 });
 
+test("rejects a division id that isn't a UUID as invalid", async () => {
+  const response = await call.updateDivision("organizer", id, "-".repeat(36), { name: "B" });
+
+  expect(response.statusCode).toBe(400);
+});
+
+// The API already rejects these. The database check catches them if a bug or a
+// manual edit gets past the API.
+test.each([
+  ["no levels", "NULL"],
+  ["an empty list", "'{}'"],
+  ["a blank level", "ARRAY['B', NULL]"],
+])("the database refuses a division with %s", async (_, levels) => {
+  const insert = testDb.$executeRawUnsafe(
+    `INSERT INTO "divisions" ("id", "tournament_id", "name", "format", "type", "levels",
+       "max_teams", "price_cents", "updated_at")
+     VALUES (gen_random_uuid(), $1::uuid, 'Raw', '6v6', 'COED', ${levels}::"division_level"[],
+       8, 0, now())`,
+    id,
+  );
+
+  await expect(insert).rejects.toThrow(/divisions_levels_check/);
+});
+
 // ---------- Publishing ----------
 
 test("publishes a complete draft with a division", async () => {
