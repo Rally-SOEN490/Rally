@@ -2,6 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import { buildApp } from "../src/app.ts";
+import type { Prisma } from "../src/generated/prisma/client.ts";
 import { authHeader, testDb } from "./helpers.ts";
 import { fakeVerifyIdToken } from "./organizer-helpers.ts";
 
@@ -59,4 +60,61 @@ export const tournamentCalls = (app: App) => {
     publish: (uid: string, id: string) => send("POST", uid, `/tournaments/${id}/publish`),
     deleteDraft: (uid: string, id: string) => send("DELETE", uid, `/tournaments/${id}`),
   };
+};
+
+// ---------- Tournaments written straight to the database ----------
+
+export const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000);
+
+const days = (count: number) => count * 24 * 60 * 60 * 1000;
+
+// Divisions as the database stores them.
+export const coedB: Prisma.DivisionCreateWithoutTournamentInput = {
+  name: "6v6 Co-ed B / B+",
+  format: "SIX_V_SIX",
+  type: "COED",
+  levels: ["B_PLUS", "B"],
+  maxTeams: 15,
+  priceCents: 24000,
+};
+export const womenA: Prisma.DivisionCreateWithoutTournamentInput = {
+  name: "4v4 Women A",
+  format: "FOUR_V_FOUR",
+  type: "WOMEN",
+  levels: ["A"],
+  maxTeams: 8,
+  priceCents: 12050,
+};
+
+// Writes a tournament straight to the database, so tests can set any status and
+// dates, including ones the API wouldn't let an organizer publish. Registration
+// opens 30 days before the start and closes a day before, unless given.
+export const saveTournament = (
+  organizerId: string,
+  name: string,
+  fields: {
+    startsAt: Date;
+    endsAt: Date;
+    status?: "DRAFT" | "PUBLISHED";
+    registrationOpensAt?: Date;
+    registrationClosesAt?: Date;
+  },
+  divisions: Prisma.DivisionCreateWithoutTournamentInput[] = [coedB],
+) => {
+  const { startsAt, status = "PUBLISHED" } = fields;
+  return testDb.tournament.create({
+    data: {
+      location: "Verdun Auditorium",
+      courts: 3,
+      description: "🏐 The best 6s day of the year!\n\n  • 3 pool games",
+      registrationOpensAt: new Date(startsAt.getTime() - days(30)),
+      registrationClosesAt: new Date(startsAt.getTime() - days(1)),
+      publishedAt: status === "PUBLISHED" ? new Date() : null,
+      ...fields,
+      status,
+      organizerId,
+      name,
+      divisions: { create: divisions },
+    },
+  });
 };
