@@ -2,64 +2,22 @@
 // AI contribution: 50% or more AI-generated
 
 import { afterAll, beforeEach, expect, test } from "vitest";
-import type { Prisma } from "../src/generated/prisma/client.ts";
 import { authHeader, testDb } from "./helpers.ts";
-import { buildTournamentTestApp, createAccount, tournamentCalls } from "./tournament-helpers.ts";
+import {
+  buildTournamentTestApp,
+  coedB,
+  createAccount,
+  hoursFromNow,
+  saveTournament,
+  tournamentCalls,
+  womenA,
+} from "./tournament-helpers.ts";
 
 const app = await buildTournamentTestApp();
 const call = tournamentCalls(app);
 
 const browse = (uid: string) =>
   app.inject({ method: "GET", url: "/tournaments", headers: authHeader(uid) });
-
-const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000);
-
-// Divisions as the database stores them.
-const coedB: Prisma.DivisionCreateWithoutTournamentInput = {
-  name: "6v6 Co-ed B / B+",
-  format: "SIX_V_SIX",
-  type: "COED",
-  levels: ["B_PLUS", "B"],
-  maxTeams: 15,
-  priceCents: 24000,
-};
-const womenA: Prisma.DivisionCreateWithoutTournamentInput = {
-  name: "4v4 Women A",
-  format: "FOUR_V_FOUR",
-  type: "WOMEN",
-  levels: ["A"],
-  maxTeams: 8,
-  priceCents: 12050,
-};
-
-// Writes a tournament straight to the database, so tests can set any status and
-// dates, including ones the API wouldn't let an organizer publish.
-const saveTournament = (
-  organizerId: string,
-  name: string,
-  {
-    startsAt,
-    endsAt,
-    status = "PUBLISHED",
-  }: { startsAt: Date; endsAt: Date; status?: "DRAFT" | "PUBLISHED" },
-  divisions: Prisma.DivisionCreateWithoutTournamentInput[] = [coedB],
-) =>
-  testDb.tournament.create({
-    data: {
-      organizerId,
-      name,
-      status,
-      location: "Verdun Auditorium",
-      courts: 3,
-      description: "Private until the tournament page exists.",
-      startsAt,
-      endsAt,
-      registrationOpensAt: new Date(startsAt.getTime() - 30 * 24 * 60 * 60 * 1000),
-      registrationClosesAt: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000),
-      publishedAt: status === "PUBLISHED" ? new Date() : null,
-      divisions: { create: divisions },
-    },
-  });
 
 let organizerId: string;
 beforeEach(async () => {
@@ -203,12 +161,11 @@ test("still turns a player away from the organizer routes", async () => {
 
   const responses = [
     await call.listMine("player"),
-    await call.get("player", id),
     await call.update("player", id, { name: "Mine now" }),
     await call.addDivision("player", id),
     await call.publish("player", id),
     await call.deleteDraft("player", id),
   ];
 
-  expect(responses.map((response) => response.statusCode)).toEqual([403, 403, 403, 403, 403, 403]);
+  expect(responses.map((response) => response.statusCode)).toEqual([403, 403, 403, 403, 403]);
 });

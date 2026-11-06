@@ -181,6 +181,36 @@ const duplicateDivisionName = () =>
   httpError(409, "This tournament already has a division with that name.");
 
 export { httpError, lockOwnDraft, findAccountId, toFields, checkDates, toResponse };
-export { toPublishedResponse };
+// Whether teams can sign up right now, so the app never has to compare
+// Montreal times with the phone's clock.
+export type SignUps = "NOT_OPEN" | "OPEN" | "CLOSED";
+
+const signUpsAt = (tournament: Stored, now: Date): SignUps => {
+  const { registrationOpensAt: opens, registrationClosesAt: closes } = tournament;
+  if (!opens || !closes || now < opens) return "NOT_OPEN";
+  return now < closes ? "OPEN" : "CLOSED";
+};
+
+// A tournament's page. Its organizer gets everything they set up (status,
+// courts, publishing date), like their other routes; anyone else gets what
+// Search sends, plus the description.
+const toPageResponse = (tournament: Published, isOrganizer: boolean, now: Date) => {
+  const published = toPublishedResponse(tournament);
+  const shared = {
+    isOrganizer,
+    signUps: signUpsAt(tournament, now),
+    description: tournament.description,
+  };
+  return isOrganizer
+    ? {
+        ...toResponse(tournament),
+        organizerName: published.organizerName,
+        divisions: published.divisions,
+        ...shared,
+      }
+    : { ...published, ...shared };
+};
+
+export { toPublishedResponse, toPageResponse };
 export { toDivisionFields, isUniqueViolation, duplicateDivisionName, notFound };
 export type { Stored };

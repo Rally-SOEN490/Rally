@@ -25,8 +25,7 @@ type Props = {
   clearSearch: () => void;
   clearFilters: () => void;
   removeFilter: (update: (filters: TournamentFilters) => TournamentFilters) => void;
-  registrationNotice?: string;
-  onRegister: (tournament: Tournament) => void;
+  onOpen: (tournament: Tournament) => void;
 };
 
 function Message({
@@ -64,8 +63,7 @@ export function TournamentDirectory({
   clearSearch,
   clearFilters,
   removeFilter,
-  registrationNotice,
-  onRegister,
+  onOpen,
 }: Props) {
   const visible = filterTournaments(tournaments, query, filters);
   const hasAppliedFilters = getActiveTournamentFilterCount(filters) > 0;
@@ -139,11 +137,6 @@ export function TournamentDirectory({
           </Pressable>
         </View>
       )}
-      {registrationNotice && (
-        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.notice}>
-          {registrationNotice}
-        </Text>
-      )}
       <Text style={[styles.resultCount, { fontFamily: fonts.regular }]}>
         {copy.resultCount(visible.length)}
       </Text>
@@ -154,7 +147,7 @@ export function TournamentDirectory({
               key={tournament.id}
               tournament={tournament}
               fonts={fonts}
-              onRegister={onRegister}
+              onOpen={onOpen}
             />
           ))}
         </View>
@@ -201,13 +194,6 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.forest, fontSize: 11 },
   clearAll: { color: colors.forest, fontSize: 12, fontWeight: "600", paddingTop: 6 },
-  notice: {
-    color: colors.forest,
-    backgroundColor: "#E8EEDC",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 13,
-  },
   resultCount: { color: colors.textMuted, fontSize: 12 },
   message: {
     alignItems: "center",
