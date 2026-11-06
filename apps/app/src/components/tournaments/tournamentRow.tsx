@@ -24,8 +24,7 @@ const subtitle = (tournament: OrganizerTournament) => {
 };
 
 // One tournament in the Organizer section. A draft opens its setup to keep
-// going, and can be deleted; a published one has nothing to open yet (its
-// overview page is #285).
+// going, and can be deleted; a published one opens its page (#285).
 export function TournamentRow({
   tournament,
   onDelete,
@@ -35,7 +34,19 @@ export function TournamentRow({
 }) {
   const isDraft = tournament.status === "DRAFT";
   const content = <RowContent tournament={tournament} isDraft={isDraft} />;
-  if (!isDraft) return <View style={eventStyles.row}>{content}</View>;
+  if (!isDraft)
+    return (
+      <View style={eventStyles.row}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.openPublished(tournament.name)}
+          onPress={() => router.push(tournamentPaths.page(tournament.id))}
+          style={eventStyles.rowMain}
+        >
+          {content}
+        </Pressable>
+      </View>
+    );
   // The delete button sits next to the row, not inside it, so a click on it
   // never also opens the draft.
   return (

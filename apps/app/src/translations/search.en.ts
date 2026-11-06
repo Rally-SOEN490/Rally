@@ -41,7 +41,7 @@ export const searchCopy = {
   endsOtherDay: (date: string, time: string) => `${date}, ${time}`,
   register: "Register",
   full: "Full",
-  registrationUnavailable: "Registration isn't available yet.",
+  openTournament: (name: string) => `Open ${name}`,
   spotsLeft: (left: number, total: number) => `${left} of ${total} spots left`,
   spotsProgress: (left: number, total: number) => `${left} of ${total} spots left`,
   resultCount: (count: number) => `${count} ${count === 1 ? "result" : "results"}`,

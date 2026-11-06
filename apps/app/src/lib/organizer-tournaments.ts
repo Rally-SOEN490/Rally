@@ -3,7 +3,7 @@
 
 import type { User } from "firebase/auth";
 import type { Href } from "expo-router";
-import { request } from "@/lib/api";
+import { ApiError, request } from "@/lib/api";
 
 // The organizer's side of tournaments: creating, setting up and publishing.
 // (lib/tournaments.ts is the player side: browsing published tournaments in Search.)
@@ -72,8 +72,13 @@ export type DivisionFields = Omit<Division, "id">;
 export const getMyTournaments = (user: User): Promise<OrganizerTournament[]> =>
   request(user, "GET", "/tournaments/mine");
 
-export const getTournament = (user: User, id: string): Promise<OrganizerTournament> =>
-  request(user, "GET", `/tournaments/${id}`);
+// The same route as a tournament's page, which also answers for other
+// organizers' published tournaments. Setup is only for your own.
+export const getTournament = async (user: User, id: string): Promise<OrganizerTournament> => {
+  const tournament = await request(user, "GET", `/tournaments/${id}`);
+  if (!tournament.isOrganizer) throw new ApiError(404, "Tournament not found.");
+  return tournament;
+};
 
 export const createTournament = (user: User, fields: SetupFields): Promise<OrganizerTournament> =>
   request(user, "POST", "/tournaments", fields);
@@ -165,6 +170,7 @@ export const formatTime = (time: string) => {
 // only adds new screens to its generated route types when `expo start` runs.
 export const tournamentPaths = {
   new: "/tournaments/new" as Href,
+  page: (id: string) => `/tournaments/${id}` as Href,
   setup: (id: string) => `/tournaments/${id}/setup` as Href,
   divisions: (id: string) => `/tournaments/${id}/divisions` as Href,
 };

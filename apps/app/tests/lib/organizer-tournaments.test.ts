@@ -6,6 +6,7 @@ import {
   formatDate,
   formatPrice,
   formatTime,
+  getTournament,
   joinDateTime,
   parsePrice,
   publishTournament,
@@ -89,4 +90,28 @@ it("calls the tournament routes with the organizer's login", async () => {
     ["http://localhost:3000/tournaments/t1/divisions/d1", "PATCH"],
     ["http://localhost:3000/tournaments/t1/publish", "POST"],
   ]);
+});
+
+it("loads the organizer's own tournament for its setup", async () => {
+  jest.mocked(globalThis.fetch).mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ id: "t1", isOrganizer: true }),
+  } as Response);
+
+  await expect(getTournament(user, "t1")).resolves.toMatchObject({ id: "t1" });
+});
+
+// The same route also shows other organizers' published tournaments, for their page.
+it("won't open someone else's tournament in its setup", async () => {
+  jest.mocked(globalThis.fetch).mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ id: "t1", isOrganizer: false }),
+  } as Response);
+
+  await expect(getTournament(user, "t1")).rejects.toMatchObject({
+    status: 404,
+    message: "Tournament not found.",
+  });
 });
