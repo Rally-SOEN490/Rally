@@ -35,7 +35,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313)           | 50% or more AI-generated |
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
 | Real tournaments in Search       | RALLY-226 (#302), PR [#320](https://github.com/Rally-SOEN490/Rally/pull/320)                                               | 50% or more AI-generated |
-| Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR pending                                                             | 50% or more AI-generated |
+| Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR [#322](https://github.com/Rally-SOEN490/Rally/pull/322)             | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -95,7 +95,7 @@ Problems and rejected suggestions: filtering each field separately would have sh
 
 ### RALLY-225, RALLY-209, RALLY-68: Tournament page
 
-Pull request: pending.
+Pull request: [#322](https://github.com/Rally-SOEN490/Rally/pull/322).
 
 Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the change to `GET /tournaments/:id` (published tournaments for any logged-in account, drafts only for their organizer, and the sign-ups state worked out on the server), the tournament page with its player and organizer views, the links from Search and the Events page, the tests and the architecture notes. Hoang made the decisions: follow the Nov 2 "Player sign-up" mock-ups, one pull request for the three issues, a Sign up button that says registration isn't available until RALLY-36, team counts shown but not tappable and "Registered teams" greyed out until teams exist, and no Share link, "…" menu or Map button.
 
