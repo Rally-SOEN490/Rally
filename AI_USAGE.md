@@ -34,7 +34,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                               | 50% or more AI-generated |
 | Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313)           | 50% or more AI-generated |
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
-| Real tournaments in Search       | RALLY-226 (#302), PR pending                                                                                               | 50% or more AI-generated |
+| Real tournaments in Search       | RALLY-226 (#302), PR [#320](https://github.com/Rally-SOEN490/Rally/pull/320)                                               | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -84,7 +84,7 @@ Problems and rejected suggestions: installing the date picker with npm 11 rewrot
 
 ### RALLY-226: Real tournaments in Search
 
-Pull request: pending.
+Pull request: [#320](https://github.com/Rally-SOEN490/Rally/pull/320).
 
 Claude Code (Claude Opus 5.5) wrote the `GET /tournaments` route that lists published tournaments that haven't ended for any logged-in account, the app's switch from mock data to that route, the card that combines a tournament's divisions, the filters on real formats, types and levels, the tests and the architecture notes. Hoang Vu made the decisions: replace the mock filters with the real fields (dropping Surface and Team size), one card per tournament that combines its divisions, and leaving the Register button's link to the tournament page for RALLY-225.
 
