@@ -92,4 +92,4 @@ Responses include `registeredTeams`, which is 0 until teams can register (#58).
 
 - Deleting an organizer's account deletes their tournaments. Revisit once teams can register (#58).
 - The overview page (#285) and editing (#80) are separate issues.
-- Search loads every published tournament that hasn't ended and filters them on the phone. That is fine for Release 1's numbers; past a few hundred, filtering and paging should move to the API.
+- Search loads every published tournament that hasn't ended and filters them on the phone. That is fine for Release 1's numbers; past a few hundred, filtering and paging should move to the API (RALLY-232, #319).
