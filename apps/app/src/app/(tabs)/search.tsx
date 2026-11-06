@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -83,13 +84,14 @@ export default function SearchScreen() {
     };
   }, [tab, user, retryAttempt]);
 
-  useEffect(() => {
+  // Loads tournaments each time Search comes back into view, not just once:
+  // the tabs keep this screen loaded, so without this a tournament published
+  // from Events a moment ago wouldn't be listed. Results already on screen stay
+  // while the new ones load.
+  const loadTournaments = useCallback(() => {
     if (tab !== "tournaments" || !user) return;
 
     let isCurrent = true;
-    // Reset stale results when a retry request starts.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTournaments([]);
     setTournamentsError(undefined);
     setTournamentsLoading(true);
 
@@ -104,10 +106,12 @@ export default function SearchScreen() {
         if (isCurrent) setTournamentsLoading(false);
       });
 
+    // Leaving Search ignores an answer that arrives afterwards.
     return () => {
       isCurrent = false;
     };
-  }, [tab, user, retryAttempt]);
+  }, [tab, user]);
+  useFocusEffect(loadTournaments);
 
   const activeFilterCount = getActiveTournamentFilterCount(tournamentFilters);
   const draftResultCount = filterTournaments(tournaments, query, draftTournamentFilters).length;
@@ -162,9 +166,10 @@ export default function SearchScreen() {
             tournaments={tournaments}
             query={query}
             filters={tournamentFilters}
-            loading={tournamentsLoading}
+            // The spinner only replaces an empty list; a refresh keeps the results.
+            loading={tournamentsLoading && tournaments.length === 0}
             error={tournamentsError}
-            retry={() => setRetryAttempt((attempt) => attempt + 1)}
+            retry={loadTournaments}
             fonts={fonts}
             clearSearch={() => setQuery("")}
             clearFilters={clearFilters}

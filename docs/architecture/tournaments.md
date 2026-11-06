@@ -51,6 +51,7 @@ Players find published tournaments in Search (#302).
 - **What is sent:** name, location, the four dates (Montreal time), the organizer's display name, and each division's format, type, levels, max teams, price and registered teams. The organizer's account, the status, courts and description are not sent.
 - **The card** combines the divisions: a tag for each format and type ("6v6 Co-ed"), the levels ("C / B+"), the price ("$240 per team", or "From $40 per team" when divisions differ, or "Free"), and the spots left across all divisions.
 - **Filters:** date, format, type, level, price and spots. Format, type, level, price and spots describe a division, so one division has to match all of them: "6v6" and "Under $50" don't match a tournament whose 6v6 costs $240 and whose $40 division is a 2v2. The date filter compares the Montreal start date as written. Text search matches the name, location and organizer.
+- **Refreshing:** the tabs keep Search loaded, so it reloads tournaments each time it comes back into view (`useFocusEffect`), like the Organizer section. A tournament published from Events then shows when the player returns. The results already on screen stay while the new ones load.
 - **Register** still says registration isn't available; RALLY-225 connects it to the tournament's page.
 
 ## Permissions

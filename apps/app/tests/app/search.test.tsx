@@ -19,6 +19,14 @@ jest.mock("@/lib/search-fonts", () => ({
   }),
 }));
 
+jest.mock("expo-router", () => {
+  const { useEffect } = jest.requireActual("react");
+  return {
+    // Runs the effect once, as when Search first comes into view.
+    // search-navigation.test.tsx checks coming back with the real navigator.
+    useFocusEffect: (effect: () => void) => useEffect(effect, [effect]),
+  };
+});
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),

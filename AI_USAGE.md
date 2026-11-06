@@ -90,7 +90,7 @@ Claude Code (Claude Opus 5.5) wrote the `GET /tournaments` route that lists publ
 
 Verification: [Search route tests](apps/api/test/tournament-browse.test.ts) run against PostgreSQL and cover drafts, ended and in-progress tournaments, the order, the exact fields sent, logging in, and that the organizer routes still turn players away. The [filter tests](apps/app/tests/lib/tournaments.test.ts) and [Search screen tests](apps/app/tests/app/search.test.tsx) cover the card and filters on real data.
 
-Problems and rejected suggestions: filtering each field separately would have shown a tournament for "6v6" and "Under $50" when only its 2v2 was under $50, so one division now has to match every division filter. The date filter compares the Montreal start date as written instead of converting it. Rejected: keeping a Surface filter, which no tournament stores, and adding a tournament page in this PR.
+Problems and rejected suggestions: filtering each field separately would have shown a tournament for "6v6" and "Under $50" when only its 2v2 was under $50, so one division now has to match every division filter. The date filter compares the Montreal start date as written instead of converting it. Rejected: keeping a Surface filter, which no tournament stores, and adding a tournament page in this PR. vtaing10's review on #320 found that Search didn't reload when the player came back to the tab, so a tournament published from Events stayed hidden; it now reloads on focus, with a test using the real tab navigator.
 
 ## Additional assisted work
 
