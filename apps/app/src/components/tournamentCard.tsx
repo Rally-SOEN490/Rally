@@ -3,9 +3,11 @@
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radii } from "@/constants/rallyTheme";
+import { dateParts, formatPrice, formatTime } from "@/lib/organizer-tournaments";
 import type { SearchFonts } from "@/lib/search-fonts";
-import type { Tournament } from "@/lib/tournaments";
+import { summarizeDivisions, type Tournament } from "@/lib/tournaments";
 import { searchCopy as copy } from "@/translations/search.en";
+import { tournamentCopy } from "@/translations/tournaments.en";
 
 type Props = {
   tournament: Tournament;
@@ -13,15 +15,34 @@ type Props = {
   onRegister: (tournament: Tournament) => void;
 };
 
-function getDateParts(value?: string | null) {
+// The day, month and date of a Montreal time, without converting it to the
+// phone's time zone: the date is read as written, then named in the phone's language.
+function getDateParts(value: string | null) {
   if (!value) return undefined;
-  const date = new Date(`${value}T12:00:00`);
+  const { year, day } = dateParts(value);
+  const date = new Date(Date.UTC(year, Number(value.slice(5, 7)) - 1, day, 12));
   if (Number.isNaN(date.getTime())) return undefined;
-  return {
-    day: date.toLocaleDateString(undefined, { weekday: "short" }),
-    month: date.toLocaleDateString(undefined, { month: "short" }),
-    date: date.getDate(),
-  };
+  const name = (options: Intl.DateTimeFormatOptions) =>
+    date.toLocaleDateString(undefined, { ...options, timeZone: "UTC" });
+  return { day: name({ weekday: "short" }), month: name({ month: "short" }), date: day };
+}
+
+// "9:00 AM – 7:00 PM", or "9:00 AM – Nov 16, 7:00 PM" when it ends another day.
+function timeRange(startsAt: string | null, endsAt: string | null) {
+  if (!startsAt || !endsAt) return undefined;
+  const start = formatTime(startsAt.slice(11, 16));
+  const end = formatTime(endsAt.slice(11, 16));
+  if (startsAt.slice(0, 10) === endsAt.slice(0, 10)) return copy.timeRange(start, end);
+  const { month, day } = dateParts(endsAt);
+  return copy.timeRange(start, copy.endsOtherDay(`${month} ${day}`, end));
+}
+
+// "$240 per team", "From $120.50 per team" when divisions cost different amounts, or "Free".
+function priceLabel(lowest: number | undefined, highest: number | undefined) {
+  if (lowest === undefined || highest === undefined) return copy.priceToBeAnnounced;
+  if (highest === 0) return copy.free;
+  const price = `${formatPrice(lowest)} ${copy.perTeam}`;
+  return lowest === highest ? price : copy.priceFrom(price);
 }
 
 function display(value?: string | number | null) {
@@ -29,22 +50,19 @@ function display(value?: string | number | null) {
 }
 
 export function TournamentCard({ tournament, fonts, onRegister }: Props) {
-  const dateParts = getDateParts(tournament.date);
-  const full = typeof tournament.spotsLeft === "number" && tournament.spotsLeft <= 0;
+  const startDate = getDateParts(tournament.startsAt);
+  const summary = summarizeDivisions(tournament.divisions);
   const availableSpots =
-    typeof tournament.spotsLeft === "number" &&
-    typeof tournament.spotsTotal === "number" &&
-    tournament.spotsTotal > 0
-      ? {
-          left: Math.max(0, Math.min(tournament.spotsLeft, tournament.spotsTotal)),
-          total: tournament.spotsTotal,
-        }
-      : undefined;
+    summary.spotsTotal > 0 ? { left: summary.spotsLeft, total: summary.spotsTotal } : undefined;
+  const full = availableSpots !== undefined && availableSpots.left === 0;
   const progress = availableSpots ? availableSpots.left / availableSpots.total : 0;
-  const price =
-    typeof tournament.pricePerTeam === "number"
-      ? `$${tournament.pricePerTeam} ${copy.perTeam}`
-      : copy.priceToBeAnnounced;
+  const price = priceLabel(summary.lowestPriceCents, summary.highestPriceCents);
+  const tags = [
+    ...summary.formatsAndTypes.map(
+      ({ format, type }) => `${format} ${tournamentCopy.divisions.types[type]}`,
+    ),
+    ...(summary.levels.length > 0 ? [summary.levels.join(" / ")] : []),
+  ];
 
   return (
     <View style={styles.card}>
@@ -52,21 +70,21 @@ export function TournamentCard({ tournament, fonts, onRegister }: Props) {
         <View
           style={styles.dateBlock}
           accessibilityLabel={
-            dateParts
-              ? `${dateParts.day}, ${dateParts.month} ${dateParts.date}`
+            startDate
+              ? `${startDate.day}, ${startDate.month} ${startDate.date}`
               : copy.dateToBeAnnounced
           }
         >
           <Text style={[styles.dateDay, { fontFamily: fonts.medium }]}>
-            {dateParts?.day ?? copy.dateToBeAnnounced}
+            {startDate?.day ?? copy.dateToBeAnnounced}
           </Text>
-          {dateParts && (
+          {startDate && (
             <>
               <Text style={[styles.dateMonth, { fontFamily: fonts.semibold }]}>
-                {dateParts.month}
+                {startDate.month}
               </Text>
               <Text style={[styles.dateNumber, { fontFamily: fonts.semibold }]}>
-                {dateParts.date}
+                {startDate.date}
               </Text>
             </>
           )}
@@ -76,18 +94,23 @@ export function TournamentCard({ tournament, fonts, onRegister }: Props) {
             {display(tournament.name)}
           </Text>
           <Text style={[styles.meta, { fontFamily: fonts.regular }]}>
-            {display(tournament.startTime)} – {display(tournament.endTime)}
+            {display(timeRange(tournament.startsAt, tournament.endsAt))}
           </Text>
           <Text style={[styles.meta, { fontFamily: fonts.regular }]}>
-            {display(tournament.venue)}
+            {display(tournament.location)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.tags}>
-        <Text style={[styles.tag, { fontFamily: fonts.medium }]}>{display(tournament.format)}</Text>
-        <Text style={[styles.tag, { fontFamily: fonts.medium }]}>{display(tournament.level)}</Text>
-      </View>
+      {tags.length > 0 && (
+        <View style={styles.tags}>
+          {tags.map((tag) => (
+            <Text key={tag} style={[styles.tag, { fontFamily: fonts.medium }]}>
+              {tag}
+            </Text>
+          ))}
+        </View>
+      )}
 
       <View style={styles.bottom}>
         <View style={styles.availability}>

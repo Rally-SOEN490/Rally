@@ -1,54 +1,68 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-export type TournamentFormat = "Beach 4s" | "Grass 4s" | "Indoor 6s";
-export type TournamentLevel = "Recreational" | "Intermediate" | "Competitive";
-export type TournamentSurface = "Beach" | "Grass" | "Indoor";
-export type TournamentTeamSize = 2 | 4 | 6;
+import type { User } from "firebase/auth";
+import { request } from "@/lib/api";
+import {
+  DIVISION_TYPES,
+  FORMATS,
+  LEVELS,
+  type Division,
+  type DivisionType,
+  type Format,
+  type Level,
+} from "@/lib/organizer-tournaments";
+
+// The player's side of tournaments: browsing published ones in Search (#302).
+// (lib/organizer-tournaments.ts is the organizer's side.)
+
 export type TournamentPriceRange = "under-50" | "50-100" | "100-150" | "150-plus";
 export type TournamentDateRange = 7 | 30 | 90;
 
+export type BrowseDivision = Division & { registeredTeams: number };
+
+// A published tournament that hasn't ended. Times are Montreal times,
+// "YYYY-MM-DDTHH:mm", whatever the phone's time zone.
 export type Tournament = {
   id: string;
-  name?: string | null;
-  date?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  organizer?: string | null;
-  format?: TournamentFormat | null;
-  level?: TournamentLevel | null;
-  surface?: TournamentSurface | null;
-  teamSize?: TournamentTeamSize | null;
-  pricePerTeam?: number | null;
-  spotsLeft?: number | null;
-  spotsTotal?: number | null;
+  name: string;
+  location: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  registrationOpensAt: string | null;
+  registrationClosesAt: string | null;
+  organizerName: string;
+  divisions: BrowseDivision[];
 };
 
 export type TournamentFilters = {
   dateRange?: TournamentDateRange;
-  formats: TournamentFormat[];
-  levels: TournamentLevel[];
-  surfaces: TournamentSurface[];
-  teamSizes: TournamentTeamSize[];
+  formats: Format[];
+  types: DivisionType[];
+  levels: Level[];
   priceRange?: TournamentPriceRange;
   spotsAvailable: boolean;
 };
 
 export const EMPTY_TOURNAMENT_FILTERS: TournamentFilters = {
   formats: [],
+  types: [],
   levels: [],
-  surfaces: [],
-  teamSizes: [],
   spotsAvailable: false,
 };
 
-export const DATE_RANGE_OPTIONS: TournamentDateRange[] = [7, 30, 90];
+// A copy with its own lists, so changing one filter set never changes another.
+export const copyTournamentFilters = (filters: TournamentFilters): TournamentFilters => ({
+  ...filters,
+  formats: [...filters.formats],
+  types: [...filters.types],
+  levels: [...filters.levels],
+});
 
-export const FORMAT_OPTIONS: TournamentFormat[] = ["Beach 4s", "Grass 4s", "Indoor 6s"];
-export const LEVEL_OPTIONS: TournamentLevel[] = ["Recreational", "Intermediate", "Competitive"];
-export const SURFACE_OPTIONS: TournamentSurface[] = ["Beach", "Grass", "Indoor"];
-export const TEAM_SIZE_OPTIONS: TournamentTeamSize[] = [2, 4, 6];
+export const DATE_RANGE_OPTIONS: TournamentDateRange[] = [7, 30, 90];
+export const FORMAT_OPTIONS = FORMATS;
+export const TYPE_OPTIONS = DIVISION_TYPES;
+export const LEVEL_OPTIONS = LEVELS;
 export const PRICE_RANGE_OPTIONS: TournamentPriceRange[] = [
   "under-50",
   "50-100",
@@ -56,159 +70,120 @@ export const PRICE_RANGE_OPTIONS: TournamentPriceRange[] = [
   "150-plus",
 ];
 
-function daysFromToday(days: number) {
-  const date = new Date();
-  date.setHours(12, 0, 0, 0);
-  date.setDate(date.getDate() + days);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+export const getTournaments = (user: User): Promise<Tournament[]> =>
+  request(user, "GET", "/tournaments");
 
-const mockTournaments: Tournament[] = [
-  {
-    id: "montreal-spring-open",
-    name: "Montreal Spring Open",
-    date: daysFromToday(5),
-    startTime: "9:00 AM",
-    endTime: "5:00 PM",
-    venue: "Parc Jean-Drapeau",
-    organizer: "Montreal Volleyball Club",
-    format: "Beach 4s",
-    level: "Intermediate",
-    surface: "Beach",
-    teamSize: 4,
-    pricePerTeam: 80,
-    spotsLeft: 8,
-    spotsTotal: 16,
-  },
-  {
-    id: "concordia-fall-classic",
-    name: "Concordia Fall Classic",
-    date: daysFromToday(18),
-    startTime: "8:30 AM",
-    endTime: "6:00 PM",
-    venue: "Concordia University Gym",
-    organizer: "Concordia Recreation",
-    format: "Indoor 6s",
-    level: "Competitive",
-    surface: "Indoor",
-    teamSize: 6,
-    pricePerTeam: 140,
-    spotsLeft: 0,
-    spotsTotal: 12,
-  },
-  {
-    id: "laval-beach-invitational",
-    name: "Laval Beach Invitational",
-    date: daysFromToday(42),
-    startTime: "10:00 AM",
-    endTime: "4:00 PM",
-    venue: "Centre de la Nature",
-    organizer: "Laval Volley",
-    format: "Grass 4s",
-    level: "Recreational",
-    surface: "Grass",
-    teamSize: 4,
-    pricePerTeam: 45,
-    spotsLeft: 3,
-    spotsTotal: 10,
-  },
-  {
-    id: "open-gym-tournament",
-    name: "Open Gym Tournament",
-    date: daysFromToday(75),
-    startTime: null,
-    endTime: null,
-    venue: null,
-    organizer: "Rally Community",
-    format: "Indoor 6s",
-    level: "Recreational",
-    surface: "Indoor",
-    teamSize: 6,
-    pricePerTeam: null,
-    spotsLeft: null,
-    spotsTotal: null,
-  },
-];
+// ---------- What a card shows ----------
 
-export async function getTournaments(): Promise<Tournament[]> {
-  return mockTournaments.map((tournament) => ({ ...tournament }));
-}
+const spotsLeftIn = (division: BrowseDivision) =>
+  Math.max(0, division.maxTeams - division.registeredTeams);
+
+// One tournament's divisions, combined for its card: every format and type
+// ("6v6 Co-ed"), every level, the lowest and highest price, and the spots left
+// across all divisions.
+export const summarizeDivisions = (divisions: BrowseDivision[]) => {
+  const sorted = [...divisions].sort(
+    (a, b) =>
+      FORMATS.indexOf(a.format) - FORMATS.indexOf(b.format) ||
+      DIVISION_TYPES.indexOf(a.type) - DIVISION_TYPES.indexOf(b.type),
+  );
+  const prices = divisions.map((division) => division.priceCents);
+  return {
+    formatsAndTypes: sorted
+      .filter(
+        (division, index) =>
+          sorted.findIndex(
+            (other) => other.format === division.format && other.type === division.type,
+          ) === index,
+      )
+      .map(({ format, type }) => ({ format, type })),
+    levels: LEVELS.filter((level) => divisions.some((division) => division.levels.includes(level))),
+    lowestPriceCents: prices.length > 0 ? Math.min(...prices) : undefined,
+    highestPriceCents: prices.length > 0 ? Math.max(...prices) : undefined,
+    spotsLeft: divisions.reduce((sum, division) => sum + spotsLeftIn(division), 0),
+    spotsTotal: divisions.reduce((sum, division) => sum + division.maxTeams, 0),
+  };
+};
+
+// ---------- Search and filters ----------
 
 export function getActiveTournamentFilterCount(filters: TournamentFilters) {
   return (
     Number(filters.dateRange !== undefined) +
     filters.formats.length +
+    filters.types.length +
     filters.levels.length +
-    filters.surfaces.length +
-    filters.teamSizes.length +
     Number(filters.priceRange !== undefined) +
     Number(filters.spotsAvailable)
   );
 }
 
-function matchesPriceRange(price: number, range: TournamentPriceRange) {
+function matchesPriceRange(dollars: number, range: TournamentPriceRange) {
   switch (range) {
     case "under-50":
-      return price < 50;
+      return dollars < 50;
     case "50-100":
-      return price >= 50 && price < 100;
+      return dollars >= 50 && dollars < 100;
     case "100-150":
-      return price >= 100 && price < 150;
+      return dollars >= 100 && dollars < 150;
     case "150-plus":
-      return price >= 150;
+      return dollars >= 150;
   }
 }
 
 function matchesSearch(tournament: Tournament, normalizedQuery: string) {
   return (
     !normalizedQuery ||
-    [tournament.name, tournament.venue, tournament.organizer].some((value) =>
+    [tournament.name, tournament.location, tournament.organizerName].some((value) =>
       value?.toLocaleLowerCase().includes(normalizedQuery),
     )
   );
 }
 
+// "YYYY-MM-DD" for a day, read in the phone's calendar.
+const dayKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
+// Starts between today and `dateRange` days from now. Compares calendar days,
+// so the Montreal start time is never converted.
 function matchesDateRange(
   tournament: Tournament,
   dateRange: TournamentDateRange | undefined,
-  today: Date,
+  now: Date,
 ) {
   if (!dateRange) return true;
-  if (!tournament.date) return false;
-  const eventDate = new Date(`${tournament.date}T12:00:00`);
-  const lastDay = new Date(today);
+  if (!tournament.startsAt) return false;
+  const lastDay = new Date(now);
   lastDay.setDate(lastDay.getDate() + dateRange);
-  return !Number.isNaN(eventDate.getTime()) && eventDate >= today && eventDate <= lastDay;
+  const startDay = tournament.startsAt.slice(0, 10);
+  return startDay >= dayKey(now) && startDay <= dayKey(lastDay);
 }
 
-function matchesFilters(tournament: Tournament, filters: TournamentFilters, today: Date) {
+const matchesSelection = <T>(selected: T[], value: T) =>
+  selected.length === 0 || selected.includes(value);
+
+// Format, type, level, price and spots describe a division, so one division has
+// to match all of them: "6v6" and "Under $50" don't match a tournament whose
+// 6v6 costs $240 and whose cheap division is 2v2.
+function matchesDivisionFilters(division: BrowseDivision, filters: TournamentFilters) {
   return (
-    matchesDateRange(tournament, filters.dateRange, today) &&
-    matchesSelection(filters.formats, tournament.format) &&
-    matchesSelection(filters.levels, tournament.level) &&
-    matchesSelection(filters.surfaces, tournament.surface) &&
-    matchesSelection(filters.teamSizes, tournament.teamSize) &&
-    matchesPriceSelection(tournament.pricePerTeam, filters.priceRange) &&
-    (!filters.spotsAvailable ||
-      (typeof tournament.spotsLeft === "number" && tournament.spotsLeft > 0))
+    matchesSelection(filters.formats, division.format) &&
+    matchesSelection(filters.types, division.type) &&
+    (filters.levels.length === 0 ||
+      division.levels.some((level) => filters.levels.includes(level))) &&
+    (!filters.priceRange || matchesPriceRange(division.priceCents / 100, filters.priceRange)) &&
+    (!filters.spotsAvailable || spotsLeftIn(division) > 0)
   );
 }
 
-function matchesSelection<T>(selected: T[], value: T | null | undefined) {
-  return (
-    selected.length === 0 || (value !== null && value !== undefined && selected.includes(value))
-  );
-}
-
-function matchesPriceSelection(
-  price: number | null | undefined,
-  range: TournamentPriceRange | undefined,
-) {
-  return !range || (typeof price === "number" && matchesPriceRange(price, range));
-}
+const usesDivisionFilters = (filters: TournamentFilters) =>
+  filters.formats.length > 0 ||
+  filters.types.length > 0 ||
+  filters.levels.length > 0 ||
+  filters.priceRange !== undefined ||
+  filters.spotsAvailable;
 
 export function filterTournaments(
   tournaments: Tournament[],
@@ -217,11 +192,11 @@ export function filterTournaments(
   now = new Date(),
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-
   return tournaments.filter(
     (tournament) =>
-      matchesSearch(tournament, normalizedQuery) && matchesFilters(tournament, filters, today),
+      matchesSearch(tournament, normalizedQuery) &&
+      matchesDateRange(tournament, filters.dateRange, now) &&
+      (!usesDivisionFilters(filters) ||
+        tournament.divisions.some((division) => matchesDivisionFilters(division, filters))),
   );
 }

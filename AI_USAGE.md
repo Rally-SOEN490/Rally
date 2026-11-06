@@ -34,6 +34,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Tournament search and filters    | RALLY-112 (#134), PR [#309](https://github.com/Rally-SOEN490/Rally/pull/309)                                               | 50% or more AI-generated |
 | Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313)           | 50% or more AI-generated |
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
+| Real tournaments in Search       | RALLY-226 (#302), PR pending                                                                                               | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -80,6 +81,16 @@ Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the tou
 Verification: [setup and permission tests](apps/api/test/tournaments.test.ts), [division and publishing tests](apps/api/test/tournament-divisions.test.ts), [rule tests](apps/api/test/tournament-rules.test.ts) and [Montreal time tests](apps/api/test/montreal-time.test.ts) run against PostgreSQL, including a publish racing a division removal. The [Events](apps/app/tests/app/events.test.tsx), [setup](apps/app/tests/components/tournamentSetup.test.tsx), [divisions](apps/app/tests/components/tournamentDivisions.test.tsx), [leave confirmation with the real navigator](apps/app/tests/app/tournament-leave.test.tsx) and [web date field](apps/app/tests/components/dateTimeField.web.test.tsx) tests cover the app.
 
 Problems and rejected suggestions: installing the date picker with npm 11 rewrote the app's lockfile in a way npm 10 (the Docker image) rejects; Claude first called the change harmless, and Hoang's Docker build failed, so the lockfile was regenerated with npm 10 and checked with both. Fastify's validator turned `courts: 0` into `null` instead of rejecting it; nullable fields now list their types, with tests. `prisma format` removed the schema's AI declaration and realigned every model, so its output was discarded. Expo Router's generated route types don't include new screens until `expo start` runs, so screen links go through one typed helper. Hoang found that the back arrow left without saving or asking, then asked to cover Android's back button and the iOS swipe; a test then found that a "leaving on purpose" flag could outlive the save it was set for, which was fixed. Rejected: the "Ours (latest)" mock-up (it lacked courts and the registration-open date), a rich-text editor in this PR, and adding Search (#302) and registration (#58, #301) to it. HaichuanLi's review on #315 found three gaps, each now covered by a test: tournament and division ids that weren't real UUIDs reached the database and returned 500 instead of 400; the database check on division levels let a missing list or a blank level through, so a new migration tightens it; and the players' Events placeholder text wasn't in the translation file.
+
+### RALLY-226: Real tournaments in Search
+
+Pull request: pending.
+
+Claude Code (Claude Opus 5.5) wrote the `GET /tournaments` route that lists published tournaments that haven't ended for any logged-in account, the app's switch from mock data to that route, the card that combines a tournament's divisions, the filters on real formats, types and levels, the tests and the architecture notes. Hoang Vu made the decisions: replace the mock filters with the real fields (dropping Surface and Team size), one card per tournament that combines its divisions, and leaving the Register button's link to the tournament page for RALLY-225.
+
+Verification: [Search route tests](apps/api/test/tournament-browse.test.ts) run against PostgreSQL and cover drafts, ended and in-progress tournaments, the order, the exact fields sent, logging in, and that the organizer routes still turn players away. The [filter tests](apps/app/tests/lib/tournaments.test.ts) and [Search screen tests](apps/app/tests/app/search.test.tsx) cover the card and filters on real data.
+
+Problems and rejected suggestions: filtering each field separately would have shown a tournament for "6v6" and "Under $50" when only its 2v2 was under $50, so one division now has to match every division filter. The date filter compares the Montreal start date as written instead of converting it. Rejected: keeping a Surface filter, which no tournament stores, and adding a tournament page in this PR.
 
 ## Additional assisted work
 

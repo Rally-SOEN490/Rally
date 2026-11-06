@@ -1,6 +1,6 @@
 # Tournaments
 
-How organizers create, set up and publish a tournament (RALLY-48 #70, RALLY-49 #71, RALLY-68 #90, RALLY-51 #73). Status: proposed, for team review.
+How organizers create, set up and publish a tournament (RALLY-48 #70, RALLY-49 #71, RALLY-68 #90, RALLY-51 #73), and how players find it in Search (RALLY-226 #302). Status: proposed, for team review.
 
 ## Model
 
@@ -41,11 +41,22 @@ Rally is for Montreal, so all tournament times are Montreal times: 9:00 means 9:
 2. **Divisions** (step 2 of 2): add, edit and remove divisions. Each is saved on its own.
 3. **Create tournament** publishes. It needs every setup field, valid dates, a start in the future, and at least one division. Only drafts can be changed for now; editing a published tournament is #80.
 
-A published tournament is not shown in Search yet: search still uses mock data until #302. Its formats and levels ("Beach 4s", "Intermediate") also differ from the real ones, and #302 must reconcile them. Registration (#58) will use the registration dates.
+Once published, a tournament shows in Search until it ends (see [Search](#search)). Registration (#58) will use the registration dates.
+
+## Search
+
+Players find published tournaments in Search (#302).
+
+- **Which:** published tournaments that haven't ended yet, including ones in progress. Drafts and ended tournaments are left out. Cancelling is #81; a cancelled tournament will need leaving out too.
+- **What is sent:** name, location, the four dates (Montreal time), the organizer's display name, and each division's format, type, levels, max teams, price and registered teams. The organizer's account, the status, courts and description are not sent.
+- **The card** combines the divisions: a tag for each format and type ("6v6 Co-ed"), the levels ("C / B+"), the price ("$240 per team", or "From $40 per team" when divisions differ, or "Free"), and the spots left across all divisions.
+- **Filters:** date, format, type, level, price and spots. Format, type, level, price and spots describe a division, so one division has to match all of them: "6v6" and "Under $50" don't match a tournament whose 6v6 costs $240 and whose $40 division is a 2v2. The date filter compares the Montreal start date as written. Text search matches the name, location and organizer.
+- **Register** still says registration isn't available; RALLY-225 connects it to the tournament's page.
 
 ## Permissions
 
-- Every tournament route needs the `tournament:create` permission (organizer or admin). See [roles and permissions](roles-and-permissions.md).
+- `GET /tournaments` (Search) only needs a logged-in account: any player may browse published tournaments.
+- Every other tournament route needs the `tournament:create` permission (organizer or admin). See [roles and permissions](roles-and-permissions.md). In `routes.ts` these routes sit in their own Fastify scope, so the permission hook only applies to them.
 - Only the organizer who created a tournament can see or change it through these routes. Another organizer gets "not found", so nobody learns that a draft exists.
 - A demoted organizer loses access to their drafts, because the permission is checked on every request.
 
@@ -57,6 +68,7 @@ Every change to a draft runs in a transaction that first locks the tournament ro
 
 | Request                                         | What it does                                                                                      |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `GET /tournaments`                              | Published tournaments that haven't ended, soonest first, for Search. Any logged-in account.       |
 | `POST /tournaments`                             | Creates a draft. Only `name` is required.                                                         |
 | `GET /tournaments/mine`                         | The caller's tournaments, soonest first, undated last.                                            |
 | `GET /tournaments/:id`                          | One of the caller's tournaments, with its divisions.                                              |
@@ -79,4 +91,5 @@ Responses include `registeredTeams`, which is 0 until teams can register (#58).
 ## Open points
 
 - Deleting an organizer's account deletes their tournaments. Revisit once teams can register (#58).
-- The overview page (#285), editing (#80) and Search (#302) are separate issues.
+- The overview page (#285) and editing (#80) are separate issues.
+- Search loads every published tournament that hasn't ended and filters them on the phone. That is fine for Release 1's numbers; past a few hundred, filtering and paging should move to the API.

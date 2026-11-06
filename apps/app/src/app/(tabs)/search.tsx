@@ -18,6 +18,7 @@ import { colors } from "@/constants/rallyTheme";
 import { apiErrorMessage, getPlayers, type RallyPlayer } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import {
+  copyTournamentFilters,
   EMPTY_TOURNAMENT_FILTERS,
   filterTournaments,
   getActiveTournamentFilterCount,
@@ -46,12 +47,12 @@ export default function SearchScreen() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
   const [tournamentsError, setTournamentsError] = useState<string>();
-  const [tournamentFilters, setTournamentFilters] = useState<TournamentFilters>({
-    ...EMPTY_TOURNAMENT_FILTERS,
-  });
-  const [draftTournamentFilters, setDraftTournamentFilters] = useState<TournamentFilters>({
-    ...EMPTY_TOURNAMENT_FILTERS,
-  });
+  const [tournamentFilters, setTournamentFilters] = useState<TournamentFilters>(() =>
+    copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS),
+  );
+  const [draftTournamentFilters, setDraftTournamentFilters] = useState<TournamentFilters>(() =>
+    copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS),
+  );
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [registrationNotice, setRegistrationNotice] = useState<string>();
   const { user } = useSession();
@@ -83,7 +84,7 @@ export default function SearchScreen() {
   }, [tab, user, retryAttempt]);
 
   useEffect(() => {
-    if (tab !== "tournaments") return;
+    if (tab !== "tournaments" || !user) return;
 
     let isCurrent = true;
     // Reset stale results when a retry request starts.
@@ -92,7 +93,7 @@ export default function SearchScreen() {
     setTournamentsError(undefined);
     setTournamentsLoading(true);
 
-    getTournaments()
+    getTournaments(user)
       .then((result) => {
         if (isCurrent) setTournaments(result);
       })
@@ -106,7 +107,7 @@ export default function SearchScreen() {
     return () => {
       isCurrent = false;
     };
-  }, [tab, retryAttempt]);
+  }, [tab, user, retryAttempt]);
 
   const activeFilterCount = getActiveTournamentFilterCount(tournamentFilters);
   const draftResultCount = filterTournaments(tournaments, query, draftTournamentFilters).length;
@@ -115,31 +116,12 @@ export default function SearchScreen() {
     setTab(nextTab);
   };
   const openFilters = () => {
-    setDraftTournamentFilters({
-      ...tournamentFilters,
-      formats: [...tournamentFilters.formats],
-      levels: [...tournamentFilters.levels],
-      surfaces: [...tournamentFilters.surfaces],
-      teamSizes: [...tournamentFilters.teamSizes],
-    });
+    setDraftTournamentFilters(copyTournamentFilters(tournamentFilters));
     setFilterSheetVisible(true);
   };
-  const clearFilters = () =>
-    setTournamentFilters({
-      ...EMPTY_TOURNAMENT_FILTERS,
-      formats: [],
-      levels: [],
-      surfaces: [],
-      teamSizes: [],
-    });
+  const clearFilters = () => setTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
   const clearDraftFilters = () =>
-    setDraftTournamentFilters({
-      ...EMPTY_TOURNAMENT_FILTERS,
-      formats: [],
-      levels: [],
-      surfaces: [],
-      teamSizes: [],
-    });
+    setDraftTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
   const handleRegister = () => {
     if (Platform.OS === "web") {
       setRegistrationNotice(copy.registrationUnavailable);

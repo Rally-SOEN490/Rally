@@ -8,11 +8,11 @@ import {
   FORMAT_OPTIONS,
   LEVEL_OPTIONS,
   PRICE_RANGE_OPTIONS,
-  SURFACE_OPTIONS,
-  TEAM_SIZE_OPTIONS,
+  TYPE_OPTIONS,
   type TournamentFilters,
 } from "@/lib/tournaments";
 import { searchCopy as copy } from "@/translations/search.en";
+import { tournamentCopy } from "@/translations/tournaments.en";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -113,6 +113,16 @@ export function TournamentFiltersSheet({
                 />
               ))}
             </FilterGroup>
+            <FilterGroup title={copy.filterType}>
+              {TYPE_OPTIONS.map((value) => (
+                <Option
+                  key={value}
+                  label={tournamentCopy.divisions.types[value]}
+                  selected={filters.types.includes(value)}
+                  onPress={() => onChange({ ...filters, types: toggleValue(filters.types, value) })}
+                />
+              ))}
+            </FilterGroup>
             <FilterGroup title={copy.filterLevel}>
               {LEVEL_OPTIONS.map((value) => (
                 <Option
@@ -121,30 +131,6 @@ export function TournamentFiltersSheet({
                   selected={filters.levels.includes(value)}
                   onPress={() =>
                     onChange({ ...filters, levels: toggleValue(filters.levels, value) })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterSurface}>
-              {SURFACE_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={value}
-                  selected={filters.surfaces.includes(value)}
-                  onPress={() =>
-                    onChange({ ...filters, surfaces: toggleValue(filters.surfaces, value) })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterTeamSize}>
-              {TEAM_SIZE_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={copy.teamSize(value)}
-                  selected={filters.teamSizes.includes(value)}
-                  onPress={() =>
-                    onChange({ ...filters, teamSizes: toggleValue(filters.teamSizes, value) })
                   }
                 />
               ))}

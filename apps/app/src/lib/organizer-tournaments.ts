@@ -6,7 +6,7 @@ import type { Href } from "expo-router";
 import { request } from "@/lib/api";
 
 // The organizer's side of tournaments: creating, setting up and publishing.
-// (lib/tournaments.ts is the search side, still on mock data until #302.)
+// (lib/tournaments.ts is the player side: browsing published tournaments in Search.)
 
 export const FORMATS = ["2v2", "3v3", "4v4", "6v6", "9v9"] as const;
 export const DIVISION_TYPES = ["coed", "men", "women"] as const;
