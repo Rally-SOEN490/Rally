@@ -1,0 +1,11 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+# Kept out of the API's Docker image. The container installs its own packages
+# and generates its own Prisma client; settings come from .env at runtime.
+node_modules/
+src/generated/
+coverage/
+dist/
+.env
+.env.*

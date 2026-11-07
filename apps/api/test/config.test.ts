@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { expect, test } from "vitest";
 import { loadConfig } from "../src/config.ts";
@@ -21,7 +22,54 @@ test("reads the settings", () => {
     port: 4000,
     corsOrigins: ["http://localhost:8081", "https://rally.example"],
     r2: null,
+    email: { resendApiKey: null, from: "Rally <onboarding@resend.dev>" },
+    organizerReviewerEmails: [],
+    appUrl: "http://localhost:8081",
   });
+});
+
+test("reads the email and organizer review settings", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    RESEND_API_KEY: "re_key",
+    EMAIL_FROM: "Rally <noreply@rally.example>",
+    ORGANIZER_REVIEWER_EMAILS: " first@rally.example, ,second@rally.example ",
+    APP_URL: "https://rally.example/",
+  });
+
+  expect(config.email).toEqual({ resendApiKey: "re_key", from: "Rally <noreply@rally.example>" });
+  expect(config.organizerReviewerEmails).toEqual(["first@rally.example", "second@rally.example"]);
+  expect(config.appUrl).toBe("https://rally.example");
+});
+
+// Printed emails contain review links, which are enough to approve someone.
+test("refuses to start in production without a Resend key", () => {
+  expect(() => loadConfig({ ...requiredSettings, NODE_ENV: "production" })).toThrow(
+    /RESEND_API_KEY is missing\. In production it is required/,
+  );
+});
+
+test("starts in production with a Resend key", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    NODE_ENV: "production",
+    RESEND_API_KEY: "re_key",
+  });
+
+  expect(config.email.resendApiKey).toBe("re_key");
+});
+
+test.each([undefined, "development", "test"])(
+  "allows printing emails when NODE_ENV is %s",
+  (NODE_ENV) => {
+    expect(loadConfig({ ...requiredSettings, NODE_ENV }).email.resendApiKey).toBeNull();
+  },
+);
+
+test("names an invalid reviewer email", () => {
+  expect(() =>
+    loadConfig({ ...requiredSettings, ORGANIZER_REVIEWER_EMAILS: "ok@rally.example,not-an-email" }),
+  ).toThrow("ORGANIZER_REVIEWER_EMAILS has an invalid email address: not-an-email");
 });
 
 test("uses port 3000 and the Expo dev server when those aren't set", () => {

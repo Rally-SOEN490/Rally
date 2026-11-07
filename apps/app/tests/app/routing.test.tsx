@@ -59,6 +59,8 @@ const renderApp = (initialUrl = "/") =>
       "(tabs)/notifications": () => <Text>Notifications screen</Text>,
       "(tabs)/profile": () => <Text>Profile screen</Text>,
       settings: () => <Text>Settings screen</Text>,
+      "organizer-review": () => <Text>Organizer review screen</Text>,
+      "tournaments/new": () => <Text>New tournament screen</Text>,
     },
     { initialUrl },
   );
@@ -110,6 +112,12 @@ it.each([
     "Verify email screen",
   ],
   ["an unverified user away from Profile", "/profile", unverified, "Verify email screen"],
+  [
+    "a signed-out user away from creating a tournament",
+    "/tournaments/new",
+    signedOut,
+    "Login screen",
+  ],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -123,6 +131,23 @@ it.each([
   await renderApp(url);
   await act(async () => reportUser(signedOut));
   expect(await screen.findByText(expected)).toBeOnTheScreen();
+});
+
+it("lets a verified user open the tournament setup (the API decides who may create)", async () => {
+  await renderApp("/tournaments/new");
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText("New tournament screen")).toBeOnTheScreen();
+});
+
+// Reviewers open it from an email, whether or not they use Rally themselves.
+it.each([
+  ["signed out", signedOut],
+  ["signed in but not verified", unverified],
+  ["signed in and verified", verified],
+])("lets a user who is %s open the organizer review page", async (_, user) => {
+  await renderApp("/organizer-review");
+  await act(async () => reportUser(user));
+  expect(await screen.findByText("Organizer review screen")).toBeOnTheScreen();
 });
 
 it("moves you to Login after logging out", async () => {

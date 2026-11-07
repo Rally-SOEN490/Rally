@@ -1,0 +1,14 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+# Kept out of the app's Docker image. The container installs its own packages;
+# the Firebase keys come from .env.local at runtime.
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+android/
+ios/
+.env
+.env.*

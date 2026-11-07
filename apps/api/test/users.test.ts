@@ -148,6 +148,7 @@ describe("POST /users/me", () => {
       "lookingForTeam",
       "notificationsEnabled",
       "profilePhotoUrl",
+      "role",
       "shownBadgeKeys",
       "thoughtText",
     ]);

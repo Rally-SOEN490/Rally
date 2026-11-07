@@ -4,11 +4,15 @@
 import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
+import type { AccountRole } from "../../permissions.ts";
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
   id: string;
   displayName: string;
+  // Only sent to the person themselves, so the app can show organizer tools.
+  // The server still checks the role on every restricted request.
+  role: AccountRole;
   profilePhotoUrl: string | null;
   lookingForTeam: boolean;
   shownBadgeKeys: string[];
@@ -86,6 +90,7 @@ const toResponse = async (
 ): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
+  role: user.role,
   profilePhotoUrl:
     user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
   lookingForTeam: user.lookingForTeam,

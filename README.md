@@ -42,17 +42,74 @@ Rally has two parts:
 
 ### What you need
 
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/). Open it before running the commands below.
 - [Node.js](https://nodejs.org/) 22.18 or newer (the LTS is fine).
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/), to run PostgreSQL. Open it before running the commands below.
 - The Firebase keys file `apps/app/.env.local`. Ask a teammate for it. It is never committed.
 
 ### First-time setup
 
 ```bash
-docker compose up -d                 # start PostgreSQL
-
 cd apps/api
 cp .env.example .env                 # then set FIREBASE_PROJECT_ID (same value as in apps/app/.env.local)
+```
+
+The app needs a development build installed once on each simulator or phone. See [Setup step 1 in the app README](apps/app/README.md#setup).
+
+### Run the project with Docker
+
+This is the simplest way to run Rally: one command starts PostgreSQL, the API and the app. To run the API and the app directly on your computer instead, see [Run the frontend and backend in separate terminals](#run-the-frontend-and-backend-in-separate-terminals).
+
+#### iOS Simulator (Mac)
+
+1. From the repo root, run:
+
+   ```bash
+   docker compose up --build --watch
+   ```
+
+2. Open the Rally development build on the simulator. If the server isn't listed, choose to enter a URL and type `http://localhost:8081`.
+
+#### Android emulator (Windows)
+
+1. Start the emulator, then run these two commands so it can reach your computer. Run them again each time the emulator restarts.
+
+   ```bash
+   adb reverse tcp:8081 tcp:8081
+   adb reverse tcp:3000 tcp:3000
+   ```
+
+   If Windows says `'adb' is not recognized`, add the folder that contains `adb` to your Path, then open a new terminal. It's the `platform-tools` folder of your Android SDK: by default `%LOCALAPPDATA%\Android\Sdk\platform-tools`. Android Studio shows the SDK location under **Settings → Languages & Frameworks → Android SDK**.
+
+2. From the repo root, run:
+
+   ```bash
+   docker compose up --build --watch
+   ```
+
+3. Open the Rally development build on the emulator. If the server isn't listed, choose to enter a URL and type `http://localhost:8081`.
+
+#### While it runs
+
+- The first run builds the containers and takes a few minutes. Later runs take seconds.
+- The API applies new database migrations when it starts.
+- Saving a file in `apps/api/src` or `apps/app/src` reloads it. Changing a `package.json`, the Prisma schema or `app.json` rebuilds that container on its own.
+- Keep `--build` in the command so the containers pick up new packages after you pull.
+- Expo's keyboard shortcuts don't work in that terminal. To use them, run `docker compose attach app` in another terminal. Leave with `Ctrl+P` then `Ctrl+Q`, because `Ctrl+C` there stops the app container.
+
+To stop:
+
+- `Ctrl+C` stops everything. Your data stays.
+- `docker compose down` also removes the containers.
+- `docker compose down -v` also deletes the database.
+
+### Run the frontend and backend in separate terminals
+
+Use this instead of the Docker setup if you prefer to run the API and the app directly on your computer. PostgreSQL still runs in Docker. The first time, install the packages and create the tables:
+
+```bash
+docker compose up -d postgres        # only the database, from the repo root
+
+cd apps/api
 npm install
 npm run db:deploy                    # create the tables
 
@@ -60,23 +117,19 @@ cd ../app
 npm install
 ```
 
-The app needs a development build installed once on each simulator or phone. See [Setup step 1 in the app README](apps/app/README.md#setup).
-
-### Run the project
-
-Use two terminal windows:
+Then use two terminal windows:
 
 ```bash
 # Terminal 1: the API, on http://localhost:3000
 cd apps/api
 npm run dev
 
-# Terminal 2: the app. Press w for the web version.
+# Terminal 2: the app
 cd apps/app
 npx expo start --dev-client
 ```
 
-If PostgreSQL isn't running (for example after a restart), open Docker Desktop and run `docker compose up -d` from the repo root.
+If PostgreSQL isn't running (for example after a restart), open Docker Desktop and run `docker compose up -d postgres` from the repo root. Both setups use ports 3000 and 8081, so if the Docker setup is still running, stop it first with `docker compose stop api app`.
 
 After pulling new code, run `npm install` in both folders, then `npm run db:deploy` in `apps/api`.
 
@@ -84,7 +137,7 @@ After pulling new code, run `npm install` in both folders, then `npm run db:depl
 
 ```bash
 cd apps/app && npm test              # app tests
-cd apps/api && npm test              # API tests (PostgreSQL must be running)
+cd apps/api && npm test              # API tests (PostgreSQL must be running: docker compose up -d postgres)
 ```
 
 Run `npm run test:coverage` in either folder to see which lines the tests cover. SonarQube expects new code to be covered.
