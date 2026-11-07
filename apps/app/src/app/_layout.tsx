@@ -44,6 +44,8 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      {/* Opened from the review email, logged in or not: the link's token is the permission. */}
+      <Stack.Screen name="organizer-review" />
       <Stack.Protected guard={signedOut}>
         <Stack.Screen name="login" />
         <Stack.Screen name="sign-up" />
@@ -60,6 +62,10 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="awards" />
         <Stack.Screen name="settings" />
+        {/* Setting up a tournament. The API only lets organizers and admins in. */}
+        <Stack.Screen name="tournaments/new" />
+        <Stack.Screen name="tournaments/[id]/setup" />
+        <Stack.Screen name="tournaments/[id]/divisions" />
       </Stack.Protected>
     </Stack>
   );

@@ -158,7 +158,7 @@ async function preflight(job) {
   const url = databaseUrl();
   if (!url) return "TEST_DATABASE_URL is missing: copy apps/api/.env.example to apps/api/.env";
   const reachable = await canConnect(url.hostname, Number(url.port || 5432));
-  return reachable ? null : `PostgreSQL is not reachable at ${url.host}: start it with docker compose up -d`;
+  return reachable ? null : `PostgreSQL is not reachable at ${url.host}: start it with docker compose up -d postgres`;
 }
 
 function processAlive(pid) {

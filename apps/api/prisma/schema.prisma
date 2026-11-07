@@ -18,6 +18,17 @@ datasource db {
   provider = "postgresql"
 }
 
+// What an account may do across Rally (see docs/architecture/roles-and-permissions.md).
+// Everyone starts as a player. Captain is not stored here: it belongs to one team
+// in one tournament.
+enum UserRole {
+  PLAYER
+  ORGANIZER
+  ADMIN
+
+  @@map("user_role")
+}
+
 // A Rally account. Firebase owns the login (email and password); this row holds
 // what Rally knows about the person. Field names are camelCase in TypeScript and
 // snake_case in the database.
@@ -25,6 +36,9 @@ model User {
   id              String   @id @default(uuid()) @db.Uuid
   firebaseUid     String   @unique @map("firebase_uid")
   displayName     String   @map("display_name")
+  // Only changed by an admin in the database, or by an approved organizer
+  // application. PATCH /users/me can't change it.
+  role            UserRole @default(PLAYER)
   profilePhotoKey String? @map("profile_photo_key")
   instagramUrl   String?  @map("instagram_url")
   facebookUrl    String?  @map("facebook_url")
@@ -42,8 +56,66 @@ model User {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
   badges         UserBadge[]
   interests      UserInterest[]
+  organizerApplications OrganizerApplication[]
+  organizedTournaments  Tournament[]
 
   @@map("users")
+}
+
+enum OrganizerApplicationStatus {
+  PENDING
+  APPROVED
+  DENIED
+  // The review link ran out before anyone decided. The person may apply again.
+  EXPIRED
+
+  @@map("organizer_application_status")
+}
+
+// A player asking to become an organizer. Reviewers get an email with a
+// single-use link; the first one to approve or deny decides.
+model OrganizerApplication {
+  id              String                     @id @default(uuid()) @db.Uuid
+  userId          String                     @map("user_id") @db.Uuid
+  // The applicant's user ID while the application is pending, null afterwards.
+  // Being unique, it allows one pending application per person, even when two
+  // requests arrive at once.
+  pendingUserId   String?                    @unique @map("pending_user_id") @db.Uuid
+  description     String
+  link            String?
+  status          OrganizerApplicationStatus @default(PENDING)
+  denyReason      String?                    @map("deny_reason")
+  // SHA-256 of the token in the review link. The token itself is never stored here.
+  reviewTokenHash String                     @unique @map("review_token_hash")
+  expiresAt       DateTime                   @map("expires_at") @db.Timestamptz
+  decidedAt       DateTime?                  @map("decided_at") @db.Timestamptz
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("organizer_applications")
+}
+
+// Emails waiting to be sent. They are saved in the same transaction as the
+// change that needs them, then sent afterwards, so a crash or an email outage
+// never loses one. See src/modules/email/.
+model EmailOutbox {
+  id            String    @id @default(uuid()) @db.Uuid
+  recipient     String
+  subject       String
+  // Cleared once the email is sent or given up on, so links in it don't stay here.
+  body          String?
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz
+  // Set while a sender is working on the email, so two senders never send it twice.
+  lockedUntil   DateTime? @map("locked_until") @db.Timestamptz
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz
+  failedAt      DateTime? @map("failed_at") @db.Timestamptz
+  lastError     String?   @map("last_error")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([nextAttemptAt])
+  @@map("email_outbox")
 }
 
 model UserInterest {
@@ -82,4 +154,94 @@ model UserBadge {
   @@id([userId, badgeTypeId])
   @@index([badgeTypeId])
   @@map("user_badges")
+}
+
+enum TournamentStatus {
+  // Only its organizer can see it, and it can still be edited.
+  DRAFT
+  // Players can find it (once search reads real data, #302).
+  PUBLISHED
+
+  @@map("tournament_status")
+}
+
+enum DivisionFormat {
+  TWO_V_TWO     @map("2v2")
+  THREE_V_THREE @map("3v3")
+  FOUR_V_FOUR   @map("4v4")
+  SIX_V_SIX     @map("6v6")
+  NINE_V_NINE   @map("9v9")
+
+  @@map("division_format")
+}
+
+enum DivisionType {
+  COED
+  MEN
+  WOMEN
+
+  @@map("division_type")
+}
+
+enum DivisionLevel {
+  C_MINUS @map("C-")
+  C
+  C_PLUS  @map("C+")
+  B
+  B_PLUS  @map("B+")
+  A
+  OPEN
+  ELITE
+
+  @@map("division_level")
+}
+
+// A tournament an organizer runs. It contains divisions (see
+// docs/architecture/tournaments.md). A draft may be incomplete: only its name is
+// required until it is published.
+model Tournament {
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizerId          String           @map("organizer_id") @db.Uuid
+  status               TournamentStatus @default(DRAFT)
+  name                 String
+  location             String?
+  courts               Int?
+  // Free-form text, kept exactly as typed (line breaks, spaces, emojis).
+  description          String?
+  // Stored in UTC. The API reads and writes them as Montreal times.
+  startsAt             DateTime?        @map("starts_at") @db.Timestamptz
+  endsAt               DateTime?        @map("ends_at") @db.Timestamptz
+  registrationOpensAt  DateTime?        @map("registration_opens_at") @db.Timestamptz
+  registrationClosesAt DateTime?        @map("registration_closes_at") @db.Timestamptz
+  publishedAt          DateTime?        @map("published_at") @db.Timestamptz
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  // Deleting the organizer's account deletes their tournaments for now.
+  // Revisit once teams can register (#58).
+  organizer            User             @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  divisions            Division[]
+
+  @@index([organizerId, createdAt])
+  @@index([status, startsAt])
+  @@map("tournaments")
+}
+
+// One competition inside a tournament, with its own format, level and teams.
+model Division {
+  id           String          @id @default(uuid()) @db.Uuid
+  tournamentId String          @map("tournament_id") @db.Uuid
+  name         String
+  format       DivisionFormat
+  type         DivisionType
+  // One or more levels, e.g. B and B+.
+  levels       DivisionLevel[]
+  maxTeams     Int             @map("max_teams")
+  // For display only: players pay the organizer outside Rally.
+  priceCents   Int             @map("price_cents")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  tournament   Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, name])
+  @@map("divisions")
 }

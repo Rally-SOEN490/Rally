@@ -1,7 +1,10 @@
-# Copyright (c) 2026 Rally contributors
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
 # SPDX-License-Identifier: MIT
 
-# Local PostgreSQL for development and tests. Start it with `docker compose up -d`.
+# Local development: PostgreSQL, the API and the app.
+#   docker compose up --build --watch   start everything; saving a file reloads it
+#   docker compose up -d postgres        only the database
 # These credentials are for your own computer only. Never reuse them on a server.
 services:
   postgres:
@@ -21,6 +24,64 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+
+  # Applies new migrations, then starts the API on http://localhost:3000.
+  api:
+    build: ./apps/api
+    env_file:
+      - path: apps/api/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://rally:rally@postgres:5432/rally
+      TEST_DATABASE_URL: postgresql://rally:rally@postgres:5432/rally_test
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/api/src
+          target: /app/src
+          ignore:
+            - generated/
+        - action: rebuild
+          path: ./apps/api/package.json
+        - action: rebuild
+          path: ./apps/api/package-lock.json
+        - action: rebuild
+          path: ./apps/api/prisma
+
+  # The Expo dev server on port 8081. The development build on simulators and emulators loads the app from it.
+  app:
+    build: ./apps/app
+    env_file:
+      - path: apps/app/.env.local
+        required: false
+    environment:
+      REACT_NATIVE_PACKAGER_HOSTNAME: localhost
+    ports:
+      - "8081:8081"
+    depends_on:
+      - api
+    stdin_open: true
+    tty: true
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/app/src
+          target: /app/src
+        - action: sync
+          path: ./apps/app/assets
+          target: /app/assets
+        - action: rebuild
+          path: ./apps/app/package.json
+        - action: rebuild
+          path: ./apps/app/package-lock.json
+        - action: rebuild
+          path: ./apps/app/app.json
 
 volumes:
   postgres-data:

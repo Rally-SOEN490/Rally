@@ -25,7 +25,7 @@ Use the issue whose title starts with `RALLY-<n>:`. Note its acceptance criteria
 
 ## 2. Set up and start local CI
 
-A fresh worktree has no `node_modules` and no `apps/api/.env`. If they are missing, offer to run `npm ci` in `apps/app` and `apps/api`, and to copy `apps/api/.env` from the main checkout (the first path in `git worktree list`). The API tests need PostgreSQL (`docker compose up -d`).
+A fresh worktree has no `node_modules` and no `apps/api/.env`. If they are missing, offer to run `npm ci` in `apps/app` and `apps/api`, and to copy `apps/api/.env` from the main checkout (the first path in `git worktree list`). The API tests need PostgreSQL (`docker compose up -d postgres`).
 
 Then start local CI in the background and keep working while it runs:
 
