@@ -1,3 +1,9 @@
+## AI-use acknowledgment
+
+Copilot assisted with implementing the Maestro flow and runner, organizing the
+test cases, and identifying feasible in-app coverage. The flow and API suite
+should be run against the configured local services before merging.
+
 # Player profile feature test plan
 
 The player profile currently has API coverage for the implemented profile fields.
@@ -44,6 +50,17 @@ another external service.
   Open Awards from Profile, verify the player and locked award collections are
   visible, select up to four player awards, return to Profile, and verify the
   selected awards are shown.
+
+## Manual test
+- **Link Facebook and Instagram**
+  Linking those two accouts require some more steps that could be easier to test
+  by hand rather than automated it. For instance, we would need to create and
+  verify a new Rally acocunt for both platforms and link it to the app. Since we
+  don't know if Facebook or Instagram plans on changing their UI, manually
+  testing this feature will prevent the smallest changes from Meta to break our
+  test.
+
+  File: `apps\api\test\manual_tests\link-facebook-instagram-manual-test.md`
 
 ## API integration
 
@@ -98,8 +115,4 @@ another external service.
   tournament results are not included until those user-facing flows and
   testable backing data are available.
 
-## AI-use acknowledgment
 
-Copilot assisted with implementing the Maestro flow and runner, organizing the
-test cases, and identifying feasible in-app coverage. The flow and API suite
-should be run against the configured local services before merging.
