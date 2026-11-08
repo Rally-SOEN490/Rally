@@ -28,20 +28,17 @@ gh api repos/Rally-SOEN490/Rally/rulesets --jq '.[].id' \
 gh repo view Rally-SOEN490/Rally --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed
 ```
 
-Use the method both allow. If more than one is allowed, follow `CONTRIBUTING.md`, or ask.
+Rally merges with a merge commit (`CONTRIBUTING.md`: do not squash). If the repository does not allow it, stop and tell the user.
 
 ## 3. Confirm the commit message
 
-- **Squash:** the whole pull request becomes one commit on `main`. Use the PR title followed by ` (#<number>)` as the subject. Use the PR description as the body, and make sure it keeps the `Closes #<issue>` reference and the AI-use acknowledgment, because this commit is what the course sees in the history.
-- **Merge commit:** the branch's commits stay as they are; keep GitHub's default subject.
+The branch's commits stay as they are on `main`; keep GitHub's default merge commit subject.
 
-Show the method, the subject, and the body, and ask the user to confirm.
+Show the method and the subject, and ask the user to confirm.
 
 ## 4. Merge
 
 ```bash
-gh pr merge <number> --squash --subject "<subject>" --body-file <file> --match-head-commit <headRefOid>
-# or
 gh pr merge <number> --merge --match-head-commit <headRefOid>
 ```
 
