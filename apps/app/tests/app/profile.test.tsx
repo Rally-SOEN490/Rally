@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import { useState } from "react";
 import Profile from "@/app/(tabs)/profile";
+import { InterestSection } from "@/components/profile/interestSection";
 import { ApiError, updateMyAccount, type RallyUser } from "@/lib/api";
 import { removeMyProfilePhoto, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -567,6 +568,33 @@ describe("Profile interests", () => {
       expect.objectContaining({ selected: true }),
     );
     expect(screen.getByRole("button", { name: "Add interest" })).toBeOnTheScreen();
+  });
+
+  it("collapses and expands selections beyond the first three", async () => {
+    await render(
+      <InterestSection
+        selection={{
+          formats: ["indoor-6s", "beach-2s"],
+          positions: ["setter", "libero"],
+          clubs: [],
+          other: [],
+        }}
+        saving={false}
+        onToggle={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Show 1 more interests" })).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: "Libero" })).not.toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Show 1 more interests" }));
+
+    expect(screen.getByRole("button", { name: "Libero" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Show fewer interests" })).toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Show fewer interests" }));
+
+    expect(screen.queryByRole("button", { name: "Libero" })).not.toBeOnTheScreen();
   });
 
   it("saves selected and deselected interests", async () => {
