@@ -9,10 +9,9 @@ import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
+import { interestCategories, interestKeys } from "../../../../shared/interests.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
-const interestFormats = ["indoor-6s", "beach-2s", "9-man"] as const;
-const interestPositions = ["libero", "outside", "setter", "middle", "opposite"] as const;
 const languages = ["EN", "FR"] as const;
 const colorThemes = ["green", "blue", "pink"] as const;
 
@@ -143,18 +142,12 @@ export const userRoutes: FastifyPluginAsync<{
               type: "object",
               additionalProperties: false,
               required: ["formats", "positions"],
-              properties: {
-                formats: {
-                  type: "array",
-                  uniqueItems: true,
-                  items: { enum: interestFormats },
-                },
-                positions: {
-                  type: "array",
-                  uniqueItems: true,
-                  items: { enum: interestPositions },
-                },
-              },
+              properties: Object.fromEntries(
+                interestCategories.map((category) => [
+                  category,
+                  { type: "array", uniqueItems: true, items: { enum: interestKeys(category) } },
+                ]),
+              ),
             },
             notificationsEnabled: { enum: [true, false] },
             language: { enum: languages },

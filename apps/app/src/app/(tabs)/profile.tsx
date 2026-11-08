@@ -27,6 +27,8 @@ import {
 } from "@/lib/api";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { InterestSection } from "@/components/profile/interestSection";
+import { type InterestCategory } from "@/lib/interests";
 
 const stats = [
   { label: "Matches", value: "132" },
@@ -35,20 +37,6 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const interestFormats = [
-  { key: "indoor-6s", label: "Indoor 6s" },
-  { key: "beach-2s", label: "Beach 2s" },
-  { key: "9-man", label: "9-man" },
-] as const;
-const interestPositions = [
-  { key: "libero", label: "Libero" },
-  { key: "outside", label: "Outside" },
-  { key: "setter", label: "Setter" },
-  { key: "middle", label: "Middle" },
-  { key: "opposite", label: "Opposite" },
-] as const;
-type InterestCategory = "formats" | "positions";
-type InterestOption = (typeof interestFormats)[number] | (typeof interestPositions)[number];
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -89,39 +77,6 @@ const FacebookLogo = () => (
   </View>
 );
 
-const InterestPills = ({
-  category,
-  options,
-  selectedKeys,
-  saving,
-  onToggle,
-}: {
-  category: InterestCategory;
-  options: readonly InterestOption[];
-  selectedKeys: string[];
-  saving: boolean;
-  onToggle: (category: InterestCategory, key: string) => void;
-}) => (
-  <View style={styles.tagRow}>
-    {options.map(({ key, label }) => {
-      const selected = selectedKeys.includes(key);
-      return (
-        <Pressable
-          key={key}
-          accessibilityRole="button"
-          accessibilityLabel={`${label}${selected ? " selected" : ""}`}
-          accessibilityState={{ selected, disabled: saving }}
-          disabled={saving}
-          onPress={() => onToggle(category, key)}
-          style={[styles.tagPill, selected && styles.tagPillSelected]}
-        >
-          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>{label}</Text>
-        </Pressable>
-      );
-    })}
-  </View>
-);
-
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
@@ -142,6 +97,8 @@ export default function Profile() {
   const [interestSelection, setInterestSelection] = useState(() => ({
     formats: account?.interests?.formats ?? [],
     positions: account?.interests?.positions ?? [],
+    clubs: account?.interests?.clubs ?? [],
+    other: account?.interests?.other ?? [],
   }));
   const [interestSaving, setInterestSaving] = useState(false);
   const [interestError, setInterestError] = useState("");
@@ -516,24 +473,12 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={styles.tagSection}>
-          <Text style={styles.sectionTitle}>Interested in</Text>
-          <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
-          <InterestPills
-            category="formats"
-            options={interestFormats}
-            selectedKeys={interestSelection.formats}
-            saving={interestSaving}
-            onToggle={toggleInterest}
-          />
-          <Text style={styles.tagGroupLabel}>POSITIONS</Text>
-          <InterestPills
-            category="positions"
-            options={interestPositions}
-            selectedKeys={interestSelection.positions}
-            saving={interestSaving}
-            onToggle={toggleInterest}
-          />
+        <InterestSection
+          selection={interestSelection}
+          saving={interestSaving}
+          onToggle={toggleInterest}
+        />
+        <View>
           {!!interestError && (
             <Text accessibilityRole="alert" style={styles.saveError}>
               {interestError}

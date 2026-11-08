@@ -22,6 +22,8 @@ export type UserResponse = {
   interests: {
     formats: string[];
     positions: string[];
+    clubs: string[];
+    other: string[];
   };
   // App settings. Only sent to the person themselves (the directory leaves them out).
   notificationsEnabled: boolean;
@@ -103,6 +105,8 @@ const toResponse = async (
     positions: user.interests
       .filter(({ category }) => category === "position")
       .map(({ key }) => key),
+    clubs: user.interests.filter(({ category }) => category === "club").map(({ key }) => key),
+    other: user.interests.filter(({ category }) => category === "other").map(({ key }) => key),
   },
   notificationsEnabled: user.notificationsEnabled,
   // The route only stores the allowed values, so these casts are safe.

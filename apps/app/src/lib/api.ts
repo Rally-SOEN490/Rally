@@ -28,6 +28,8 @@ export type RallyUser = {
   interests?: {
     formats: string[];
     positions: string[];
+    clubs?: string[];
+    other?: string[];
   };
   // App settings from the Settings screen.
   notificationsEnabled?: boolean;
@@ -63,7 +65,9 @@ export type ProfileChanges =
   | { instagramUrl: string | null }
   | { facebookUrl: string | null }
   | { thoughtText: string | null }
-  | { interests: { formats: string[]; positions: string[] } }
+  | {
+      interests: { formats: string[]; positions: string[]; clubs: string[]; other: string[] };
+    }
   | { notificationsEnabled: boolean }
   | { language: Language }
   | { colorTheme: ColorTheme }
