@@ -18,27 +18,19 @@ export const pricePerTeam = (cents: number) =>
 export const spotsLeftIn = (division: BrowseDivision) =>
   Math.max(0, division.maxTeams - division.registeredTeams);
 
+// Both registration dates, shortened, or undefined while a draft is missing one.
+// A published tournament always has both.
+const signUpDates = (page: TournamentPage) => {
+  const { registrationOpensAt: opens, registrationClosesAt: closes } = page;
+  return opens && closes ? { opens: shortDate(opens), closes: shortDate(closes) } : undefined;
+};
+
 // The sign-ups row of the info card: when they open or close, and the other date.
 export function signUpsRow(page: TournamentPage) {
-  const { registrationOpensAt: opens, registrationClosesAt: closes } = page;
-  if (!opens || !closes) return { title: copy.signUpsNotSet };
-  switch (page.signUps) {
-    case "NOT_OPEN":
-      return {
-        title: copy.signUpsOpen(shortDate(opens)),
-        detail: copy.signUpsCloseLater(shortDate(closes)),
-      };
-    case "OPEN":
-      return {
-        title: copy.signUpsClose(shortDate(closes)),
-        detail: copy.signUpsOpened(shortDate(opens)),
-      };
-    case "CLOSED":
-      return {
-        title: copy.signUpsClosed(shortDate(closes)),
-        detail: copy.signUpsOpened(shortDate(opens)),
-      };
-  }
+  const dates = signUpDates(page);
+  if (!dates) return { title: copy.signUps.notSet };
+  const text = copy.signUps[page.signUps];
+  return { title: text.title(dates), detail: text.detail(dates) };
 }
 
 export type BottomBar =
@@ -49,19 +41,12 @@ export type BottomBar =
 // sees where sign-ups stand, or that it is still a draft.
 export function bottomBar(page: TournamentPage): BottomBar {
   if (page.isOrganizer && page.status === "DRAFT") return { kind: "draft" };
-  const closes = page.registrationClosesAt;
-  const opens = page.registrationOpensAt;
-  if (page.signUps === "NOT_OPEN")
-    return {
-      kind: "message",
-      text: opens ? copy.signUpsOpen(shortDate(opens)) : copy.signUpsNotSet,
-    };
-  if (page.signUps === "CLOSED")
-    return {
-      kind: "message",
-      text: closes ? copy.signUpsClosed(shortDate(closes)) : copy.signUpsNotSet,
-    };
-  if (page.isOrganizer) return { kind: "message", text: copy.signUpsOpenNow };
+  if (page.signUps !== "OPEN") {
+    const dates = signUpDates(page);
+    const text = dates ? copy.signUps[page.signUps].title(dates) : copy.signUps.notSet;
+    return { kind: "message", text };
+  }
+  if (page.isOrganizer) return { kind: "message", text: copy.signUps.OPEN.organizerBar };
   const { spotsLeft } = summarizeDivisions(page.divisions);
   return spotsLeft > 0 ? { kind: "signUp", spotsLeft } : { kind: "message", text: copy.full };
 }

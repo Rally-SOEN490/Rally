@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+// When registration opens and closes, already shortened: "Oct 20".
+type SignUpDates = { opens: string; closes: string };
+
 export const tournamentCopy = {
   events: {
     city: "MONTRÉAL",
@@ -127,12 +130,26 @@ export const tournamentCopy = {
     by: (name: string) => `by ${name}`,
     datesToBeAnnounced: "Dates to be announced",
     locationToBeAnnounced: "Location to be announced",
-    signUpsOpen: (date: string) => `Sign-ups open ${date}`,
-    signUpsClose: (date: string) => `Sign-ups close ${date}`,
-    signUpsClosed: (date: string) => `Sign-ups closed ${date}`,
-    signUpsOpened: (date: string) => `Opened ${date}`,
-    signUpsCloseLater: (date: string) => `Close ${date}`,
-    signUpsNotSet: "Sign-up dates to be announced",
+    // Where sign-ups stand, by the `signUps` value the API sends. `title` and
+    // `detail` are the info card's sign-ups row (the detail is the other date).
+    // The bottom bar repeats the title, except while sign-ups are open: then a
+    // player gets Sign up and the organizer gets `organizerBar`.
+    signUps: {
+      notSet: "Sign-up dates to be announced",
+      NOT_OPEN: {
+        title: ({ opens }: SignUpDates) => `Sign-ups open ${opens}`,
+        detail: ({ closes }: SignUpDates) => `Close ${closes}`,
+      },
+      OPEN: {
+        title: ({ closes }: SignUpDates) => `Sign-ups close ${closes}`,
+        detail: ({ opens }: SignUpDates) => `Opened ${opens}`,
+        organizerBar: "Sign-ups open",
+      },
+      CLOSED: {
+        title: ({ closes }: SignUpDates) => `Sign-ups closed ${closes}`,
+        detail: ({ opens }: SignUpDates) => `Opened ${opens}`,
+      },
+    },
     about: "About",
     divisions: "Divisions",
     // "6v6 Co-ed B / B+ · $240 / team"
@@ -152,6 +169,5 @@ export const tournamentCopy = {
     registeredTeamsSoon: "Available once teams can register",
     draft: "Draft · only you can see it",
     continueSetup: "Continue setup",
-    signUpsOpenNow: "Sign-ups open",
   },
 };
