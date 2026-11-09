@@ -5,16 +5,20 @@ appId: com.rally.app
 ---
 - launchApp:
     clearState: true
-- extendedWaitUntil:
-    visible: "DEVELOPMENT SERVERS"
-    timeout: 10000
-- tapOn: "http://.*:8081"
 - runFlow:
     when:
-      visible: "Continue"
+      visible: "DEVELOPMENT SERVERS"
     commands:
-      - tapOn:
-          point: "92%,13%"
+      - tapOn: "http://"
+      - eraseText: 100
+      - inputText: "http://10.0.2.2:8081"
+      - tapOn: "Connect"
+      - runFlow:
+          when:
+            visible: "Continue"
+          commands:
+            - tapOn:
+                point: "92%,13%"
 
 - extendedWaitUntil:
     visible: "Log in"
