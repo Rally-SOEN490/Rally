@@ -35,11 +35,14 @@ import {
   type ColorTheme,
   type Language,
   type ProfileChanges,
+  type RallyUser,
 } from "@/lib/api";
 import { clearAccountDeleted, markAccountDeleted } from "@/lib/account-deleted";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { auth } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
+import { OrganizerApplicationSheet } from "@/components/organizer/applicationSheet";
+import { organizerCopy } from "@/translations/organizer.en";
 
 const GREEN = "#12382d";
 const MUTED = "#687872";
@@ -102,6 +105,7 @@ export default function Settings() {
   const [deleteEmail, setDeleteEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState("");
+  const [organizerSheetOpen, setOrganizerSheetOpen] = useState(false);
 
   // ---------- Preferences ----------
 
@@ -337,6 +341,7 @@ export default function Settings() {
               onChangeText={setNewValue}
               maxLength={NAME_MAX_LENGTH}
               placeholder="Full name"
+              selectTextOnFocus
               style={styles.modalInput}
             />
             {errorText}
@@ -559,7 +564,7 @@ export default function Settings() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Save Instagram link"
+              accessibilityLabel={instagramSaving ? "Saving Instagram link" : "Save Instagram link"}
               disabled={instagramSaving}
               onPress={saveInstagram}
               style={[styles.socialSaveButton, instagramSaving && styles.disabled]}
@@ -582,7 +587,7 @@ export default function Settings() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Save Facebook link"
+              accessibilityLabel={facebookSaving ? "Saving Facebook link" : "Save Facebook link"}
               disabled={facebookSaving}
               onPress={saveFacebook}
               style={[styles.socialSaveButton, facebookSaving && styles.disabled]}
@@ -707,13 +712,7 @@ export default function Settings() {
         </Section>
 
         <View style={[styles.card, styles.standaloneCard]}>
-          <Row
-            icon={<MaterialCommunityIcons name="volleyball" size={22} color={GREEN} />}
-            label="Request Organiser account"
-            value="Request account to Host and Manage tournaments"
-            onPress={() => {}}
-            last
-          />
+          <OrganizerRow account={account} onPress={() => setOrganizerSheetOpen(true)} />
         </View>
 
         <Pressable
@@ -754,11 +753,37 @@ export default function Settings() {
           </View>
         </Pressable>
       </Modal>
+
+      <OrganizerApplicationSheet
+        visible={organizerSheetOpen}
+        onClose={() => setOrganizerSheetOpen(false)}
+      />
     </SafeAreaView>
   );
 }
 
 // ---------- Building blocks ----------
+
+// Players can ask to become organizers; organizers and admins already are.
+function OrganizerRow({
+  account,
+  onPress,
+}: {
+  account: Pick<RallyUser, "role"> | null | undefined;
+  onPress: () => void;
+}) {
+  const isOrganizer = account?.role === "ORGANIZER" || account?.role === "ADMIN";
+  const text = isOrganizer ? organizerCopy.settingsRow.organizer : organizerCopy.settingsRow.player;
+  return (
+    <Row
+      icon={<MaterialCommunityIcons name="volleyball" size={22} color={GREEN} />}
+      label={text.label}
+      value={text.value}
+      onPress={isOrganizer ? undefined : onPress}
+      last
+    />
+  );
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (

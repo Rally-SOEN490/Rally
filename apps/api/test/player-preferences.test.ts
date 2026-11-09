@@ -23,11 +23,11 @@ afterAll(async () => {
 });
 
 describe("Saved player preferences", () => {
-  test("defaults to no declared level and empty competition preferences", async () => {
+  test("defaults to no declared level and empty interests", async () => {
     const response = await register("alice");
     expect(response.json()).toMatchObject({
       skillLevel: null,
-      interests: { formats: [], positions: [], competitionTypes: [] },
+      interests: { formats: [], positions: [], clubs: [], other: [] },
     });
   });
 
@@ -78,49 +78,33 @@ describe("Saved player preferences", () => {
     expect(response.statusCode).toBe(401);
   });
 
-  test("saves all added formats and competition interests, preserving existing IDs", async () => {
+  test("saves added formats alongside the existing managed interests", async () => {
     await register("alice");
     const interests = {
-      formats: ["indoor-6s", "beach-2s", "9-man", "indoor-4s", "beach-4s", "grass-4s"],
-      positions: ["outside", "opposite"],
-      competitionTypes: ["mixed", "men", "women"],
+      formats: ["indoor-4s", "beach-4s", "grass-4s"],
+      positions: ["power", "opposite"],
+      clubs: ["ckvc"],
+      other: ["co-ed"],
     };
     expect((await patch("alice", { interests })).statusCode).toBe(200);
     const saved = (await getMe("alice")).json().interests;
-    expect(saved.formats.sort()).toEqual([...interests.formats].sort());
-    expect(saved.positions.sort()).toEqual(["opposite", "outside"]);
-    expect(saved.competitionTypes.sort()).toEqual(["men", "mixed", "women"]);
-    expect(await testDb.userInterest.count()).toBe(11);
+    expect(saved).toEqual({
+      ...interests,
+      formats: [...interests.formats].sort(),
+      positions: [...interests.positions].sort(),
+    });
+    expect(await testDb.userInterest.count()).toBe(7);
   });
 
-  test("older clients can update formats and positions without erasing new interests", async () => {
+  test("does not reintroduce competition preferences", async () => {
     await register("alice");
-    await patch("alice", {
-      interests: { formats: ["grass-4s"], positions: ["outside"], competitionTypes: ["mixed"] },
+    const response = await patch("alice", {
+      interests: { formats: [], positions: [], competitionTypes: ["men"] },
     });
-    const updated = await patch("alice", {
-      interests: { formats: ["beach-2s"], positions: ["opposite"] },
-    });
-    expect(updated.statusCode).toBe(200);
-    expect((await getMe("alice")).json().interests).toEqual({
-      formats: ["beach-2s"],
-      positions: ["opposite"],
-      competitionTypes: ["mixed"],
-    });
-    await patch("alice", {
-      interests: { formats: ["beach-2s"], positions: ["opposite"], competitionTypes: [] },
-    });
-    expect((await getMe("alice")).json().interests.competitionTypes).toEqual([]);
-  });
-
-  test.each([
-    { formats: [], positions: [], competitionTypes: ["unknown"] },
-    { formats: [], positions: [], competitionTypes: ["mixed", "mixed"] },
-    { formats: [], positions: [], competitionTypes: "mixed" },
-  ])("rejects invalid competition interests %j", async (interests) => {
-    await register("alice");
-    expect((await patch("alice", { interests })).statusCode).toBe(400);
-    expect((await getMe("alice")).json().interests.competitionTypes).toEqual([]);
+    // Match main's additional-property handling: no unsupported category is persisted or exposed.
+    expect([200, 400]).toContain(response.statusCode);
+    expect((await getMe("alice")).json().interests).not.toHaveProperty("competitionTypes");
+    expect(await testDb.userInterest.count()).toBe(0);
   });
 
   test("returns real public preferences, excludes self, and keeps private fields out", async () => {
@@ -128,7 +112,7 @@ describe("Saved player preferences", () => {
     await register("viewer", "Viewer");
     await patch("alice", {
       skillLevel: "C+",
-      interests: { formats: ["beach-4s"], positions: ["libero"], competitionTypes: ["women"] },
+      interests: { formats: ["beach-4s"], positions: ["libero"], other: ["co-ed"] },
     });
     const response = await app.inject({
       method: "GET",
@@ -141,7 +125,7 @@ describe("Saved player preferences", () => {
     expect(player).toMatchObject({
       displayName: "Alice",
       skillLevel: "C+",
-      interests: { formats: ["beach-4s"], positions: ["libero"], competitionTypes: ["women"] },
+      interests: { formats: ["beach-4s"], positions: ["libero"], other: ["co-ed"] },
     });
     expect(Object.keys(player).sort()).toEqual([
       "badges",

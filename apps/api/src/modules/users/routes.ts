@@ -9,12 +9,8 @@ import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { createUserService } from "./service.ts";
-import {
-  competitionTypes,
-  interestFormats,
-  interestPositions,
-  skillLevels,
-} from "./preferences.ts";
+import { skillLevels } from "./preferences.ts";
+import { interestCategories, interestKeys } from "../../../../shared/interests.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 const languages = ["EN", "FR"] as const;
@@ -98,13 +94,6 @@ export const userRoutes: FastifyPluginAsync<{
   app.patch<{ Body: ProfileChanges }>(
     "/me",
     {
-      // Check the new array before AJV can coerce a single string into an array.
-      preValidation: async (request, reply) => {
-        const values = request.body?.interests?.competitionTypes;
-        if (values !== undefined && !Array.isArray(values)) {
-          return reply.code(400).send({ message: "Competition preferences must be an array." });
-        }
-      },
       schema: {
         body: {
           type: "object",
@@ -156,23 +145,12 @@ export const userRoutes: FastifyPluginAsync<{
               type: "object",
               additionalProperties: false,
               required: ["formats", "positions"],
-              properties: {
-                formats: {
-                  type: "array",
-                  uniqueItems: true,
-                  items: { enum: interestFormats },
-                },
-                positions: {
-                  type: "array",
-                  uniqueItems: true,
-                  items: { enum: interestPositions },
-                },
-                competitionTypes: {
-                  type: "array",
-                  uniqueItems: true,
-                  items: { enum: competitionTypes },
-                },
-              },
+              properties: Object.fromEntries(
+                interestCategories.map((category) => [
+                  category,
+                  { type: "array", uniqueItems: true, items: { enum: interestKeys(category) } },
+                ]),
+              ),
             },
             notificationsEnabled: { enum: [true, false] },
             language: { enum: languages },

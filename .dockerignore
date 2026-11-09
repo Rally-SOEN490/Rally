@@ -1,0 +1,17 @@
+# Dependencies and generated files
+**/node_modules
+**/.expo
+**/dist
+**/web-build
+**/coverage
+**/android
+**/ios
+
+# Local configuration and secrets
+**/.env
+**/.env.*
+
+# Source control and editor files
+.git
+.github
+.vscode

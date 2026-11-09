@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { searchCopy as copy } from "@/translations/search.en";
 import { colors, radii } from "@/constants/rallyTheme";
-import { playerFilterCopy } from "@/translations/player-filters.en";
 
 export type SearchMode = "tournaments" | "players";
 
@@ -52,7 +51,7 @@ export function SearchBar({
         {activeFilterCount > 0 && (
           <View
             style={styles.filterBadge}
-            accessibilityLabel={playerFilterCopy.activeFilters(activeFilterCount)}
+            accessibilityLabel={copy.activeFilters(activeFilterCount)}
           >
             <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
           </View>
@@ -90,20 +89,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pressed: {
-    opacity: 0.8,
-  },
   filterBadge: {
     position: "absolute",
     top: -7,
     right: -7,
-    minWidth: 19,
-    height: 19,
+    minWidth: 18,
+    height: 18,
     paddingHorizontal: 4,
-    borderRadius: 15,
-    backgroundColor: "#d9ec7a",
+    borderRadius: 9,
+    backgroundColor: colors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
-  filterBadgeText: { color: "#000", fontSize: 10, fontWeight: "600" },
+  filterBadgeText: { color: colors.forest, fontSize: 10, fontWeight: "700" },
+  pressed: {
+    opacity: 0.8,
+  },
 });

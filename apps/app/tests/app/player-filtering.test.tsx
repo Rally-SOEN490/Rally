@@ -9,6 +9,14 @@ import type { RallyPlayer, RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
+jest.mock("expo-router", () => {
+  const { useEffect } = jest.requireActual("react");
+  return { useFocusEffect: (effect: () => void) => useEffect(effect, [effect]) };
+});
+jest.mock("@/lib/tournaments", () => ({
+  ...jest.requireActual("@/lib/tournaments"),
+  getTournaments: jest.fn().mockResolvedValue([]),
+}));
 jest.mock("@/lib/search-fonts", () => ({ useSearchFonts: () => ({}) }));
 jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getPlayers: jest.fn() }));
@@ -26,7 +34,7 @@ const players: RallyPlayer[] = [
     lookingForTeam: false,
     createdAt: "2026-11-02",
     badges: [],
-    interests: { formats: ["indoor-6s"], positions: ["outside"], competitionTypes: ["mixed"] },
+    interests: { formats: ["indoor-6s"], positions: ["outside"], other: ["co-ed"] },
   },
   {
     id: "z",
@@ -35,7 +43,7 @@ const players: RallyPlayer[] = [
     lookingForTeam: true,
     createdAt: "2026-11-02",
     badges: [],
-    interests: { formats: ["beach-2s"], positions: ["setter"], competitionTypes: ["women"] },
+    interests: { formats: ["beach-2s"], positions: ["setter"], other: ["co-ed"] },
   },
   {
     id: "s",
@@ -44,7 +52,7 @@ const players: RallyPlayer[] = [
     lookingForTeam: false,
     createdAt: "2026-11-02",
     badges: [],
-    interests: { formats: ["grass-4s"], positions: ["opposite"], competitionTypes: ["men"] },
+    interests: { formats: ["grass-4s"], positions: ["opposite"], other: ["co-ed"] },
   },
 ];
 beforeEach(() => {
@@ -65,7 +73,7 @@ const apply = () => userEvent.press(screen.getByRole("button", { name: "Apply" }
 
 it("applies multiple filters with text search and removes individual chips", async () => {
   await showPlayers();
-  await userEvent.type(screen.getByPlaceholderText("Search name, level"), "ZOE");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "ZOE");
   await open();
   await userEvent.press(screen.getByRole("checkbox", { name: "B" }));
   await userEvent.press(screen.getByRole("checkbox", { name: "Setter" }));
@@ -124,7 +132,7 @@ it("retains filters through tab changes and retries without applying them to tou
   await open();
   await userEvent.press(screen.getByRole("checkbox", { name: "Opposite" }));
   await apply();
-  await userEvent.type(screen.getByPlaceholderText("Search name, level"), "Sam");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Sam");
   await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
   expect(screen.queryByRole("button", { name: "Remove Opposite filter" })).not.toBeOnTheScreen();
   jest.mocked(getPlayers).mockRejectedValueOnce(new ApiError(503, "Directory unavailable"));
@@ -146,7 +154,7 @@ it("uses shared interests for Recommended and lets the user choose Name A–Z", 
   expect(names()).toEqual(["Alex Kim", "Sam Lee", "Zoe Tran"]);
 });
 
-it("searches a saved level and keeps missing preferences honest", async () => {
+it("searches names and keeps missing preferences honest", async () => {
   jest.mocked(getPlayers).mockResolvedValue([
     ...players,
     {
@@ -159,7 +167,42 @@ it("searches a saved level and keeps missing preferences honest", async () => {
   ]);
   await showPlayers();
   expect(screen.getByText("Preferences not available yet")).toBeOnTheScreen();
-  await userEvent.type(screen.getByPlaceholderText("Search name, level"), "c+");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Sam");
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
   expect(screen.queryByText("Unknown Player")).not.toBeOnTheScreen();
+});
+
+it("clears active player filters from no matches while keeping the query and sort", async () => {
+  await showPlayers();
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Alex");
+  await open();
+  await userEvent.press(screen.getByRole("checkbox", { name: "Libero" }));
+  await apply();
+  await userEvent.press(screen.getByRole("button", { name: "Clear filters" }));
+  expect(screen.getByText("Alex Kim")).toBeOnTheScreen();
+  expect(screen.getByDisplayValue("Alex")).toBeOnTheScreen();
+  expect(screen.queryByRole("button", { name: "Remove Libero filter" })).not.toBeOnTheScreen();
+  await userEvent.clear(screen.getByPlaceholderText("Search players by name"));
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Nobody");
+  expect(screen.getByRole("button", { name: "Clear search" })).toBeOnTheScreen();
+});
+
+it("keeps each mode's applied filters through repeated mode switches", async () => {
+  await showPlayers();
+  await open();
+  await userEvent.press(screen.getByRole("checkbox", { name: "Setter" }));
+  await apply();
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
+  await open();
+  await userEvent.press(screen.getByRole("checkbox", { name: "B+" }));
+  await userEvent.press(screen.getByRole("button", { name: "Show 0 results" }));
+  expect(screen.getByLabelText("1 active filter")).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("tab", { name: "Players" }));
+  expect(await screen.findByText("Zoe Tran")).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Remove Setter filter" })).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("tab", { name: "Tournaments" }));
+  expect(screen.getByLabelText("1 active filter")).toBeOnTheScreen();
+  expect(screen.queryByRole("button", { name: "Remove Setter filter" })).not.toBeOnTheScreen();
+  await open();
+  expect(screen.getByRole("checkbox", { name: "B+" })).toBeChecked();
 });

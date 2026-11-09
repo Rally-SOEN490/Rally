@@ -120,7 +120,8 @@ function AwardTile({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${badge.name} award`}
+      accessibilityLabel={`${badge.name} award${selected ? " selected" : ""}`}
+      testID={`${badge.key}-award`}
       onPress={onPress}
       style={styles.awardTile}
     >

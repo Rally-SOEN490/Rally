@@ -1,10 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
@@ -59,10 +54,10 @@ it("shows selected badges with checkmarks and locked awards", async () => {
 it("toggles badges and leaves the four-selection limit to the selection state", async () => {
   await render(<Awards />);
 
-  await userEvent.press(screen.getByRole("button", { name: "Badge 0 award" }));
+  await userEvent.press(screen.getByTestId("badge-0-award"));
   expect(toggleBadgeSelection).toHaveBeenCalledWith("badge-0");
 
-  await userEvent.press(screen.getByRole("button", { name: "Badge 4 award" }));
+  await userEvent.press(screen.getByTestId("badge-4-award"));
   expect(toggleBadgeSelection).toHaveBeenCalledWith("badge-4");
 });
 

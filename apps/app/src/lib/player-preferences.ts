@@ -8,7 +8,8 @@ export type SkillLevel = (typeof PLAYER_LEVELS)[number];
 export type SavedInterests = {
   formats: string[];
   positions: string[];
-  competitionTypes?: string[];
+  clubs?: string[];
+  other?: string[];
 };
 
 export const PROFILE_FORMATS = [
@@ -26,11 +27,6 @@ export const PLAYER_POSITIONS = [
   { key: "middle", label: copy.positions.middle },
   { key: "opposite", label: copy.positions.opposite },
 ] as const;
-export const COMPETITION_TYPES = [
-  { key: "mixed", label: copy.interests.mixed },
-  { key: "men", label: copy.interests.men },
-  { key: "women", label: copy.interests.women },
-] as const;
 export const PLAYER_INTEREST_OPTIONS = [
   { key: "beach", label: copy.interests.beach },
   { key: "indoors", label: copy.interests.indoors },
@@ -38,13 +34,14 @@ export const PLAYER_INTEREST_OPTIONS = [
   { key: "6s", label: copy.interests.sixes },
   { key: "4s", label: copy.interests.fours },
   { key: "2s", label: copy.interests.twos },
-  ...COMPETITION_TYPES,
+  { key: "mixed", label: copy.interests.mixed },
 ] as const;
 export type PositionKey = (typeof PLAYER_POSITIONS)[number]["key"];
 export type InterestKey = (typeof PLAYER_INTEREST_OPTIONS)[number]["key"];
 
 export function getInterestTags(interests?: SavedInterests): Set<string> {
-  const tags = new Set<string>(interests?.competitionTypes ?? []);
+  const tags = new Set<string>();
+  if (interests?.other?.includes("co-ed")) tags.add("mixed");
   for (const key of interests?.formats ?? []) {
     const format = PROFILE_FORMATS.find((option) => option.key === key);
     for (const tag of format?.filters ?? []) tags.add(tag);
@@ -56,6 +53,7 @@ export function getSharedInterestKeys(interests?: SavedInterests): Set<string> {
   return new Set([
     ...(interests?.formats ?? []).map((key) => `format:${key}`),
     ...(interests?.positions ?? []).map((key) => `position:${key}`),
-    ...(interests?.competitionTypes ?? []).map((key) => `competition:${key}`),
+    ...(interests?.clubs ?? []).map((key) => `club:${key}`),
+    ...(interests?.other ?? []).map((key) => `other:${key}`),
   ]);
 }

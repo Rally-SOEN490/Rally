@@ -2,8 +2,10 @@
 // AI contribution: 50% or more AI-generated
 
 import type { Database } from "../../db.ts";
-import { badgeCatalog } from "../badges/catalog.ts";
+import type { Prisma } from "../../generated/prisma/client.ts";
 import type { SkillLevel } from "./preferences.ts";
+import type { AccountRole } from "../../permissions.ts";
+import { badgeCatalog } from "../badges/catalog.ts";
 
 export type NewUser = {
   firebaseUid: string;
@@ -26,7 +28,8 @@ export type ProfileChanges = {
   interests?: {
     formats: string[];
     positions: string[];
-    competitionTypes?: string[];
+    clubs?: string[];
+    other?: string[];
   };
   notificationsEnabled?: boolean;
   language?: Language;
@@ -48,7 +51,7 @@ const autoAwardedBadgeKeys = badgeCatalog
 // All database reads and writes for users go through here.
 export const createUserRepository = (db: Database) => {
   const includeBadges = {
-    interests: true,
+    interests: { orderBy: [{ category: "asc" as const }, { key: "asc" as const }] },
     badges: {
       orderBy: [{ receivedCount: "desc" as const }, { badgeType: { key: "asc" as const } }],
       include: { badgeType: true },
@@ -98,6 +101,28 @@ export const createUserRepository = (db: Database) => {
         orderBy: [{ displayName: "asc" }, { id: "asc" }],
         include: includeBadges,
       }),
+    // Used by requirePermission. Reads only the role, so permission checks stay cheap.
+    findRoleByFirebaseUid: async (firebaseUid: string): Promise<AccountRole | null> => {
+      const user = await db.user.findUnique({ where: { firebaseUid }, select: { role: true } });
+      return user?.role ?? null;
+    },
+
+    // Who a logged-in person is, for modules that need their ID and role
+    // (organizer applications, tournaments) without reading the users table.
+    findAccount: (firebaseUid: string) =>
+      db.user.findUnique({
+        where: { firebaseUid },
+        select: { id: true, displayName: true, role: true },
+      }),
+
+    // Makes a player an organizer, inside the caller's transaction. Leaves an
+    // admin (or someone already an organizer) as they are.
+    promoteToOrganizer: (userId: string, transaction: Prisma.TransactionClient) =>
+      transaction.user.updateMany({
+        where: { id: userId, role: "PLAYER" },
+        data: { role: "ORGANIZER" },
+      }),
+
     findByFirebaseUid: async (firebaseUid: string) => {
       const user = await db.user.findUnique({ where: { firebaseUid } });
       if (!user) return null;
@@ -134,25 +159,23 @@ export const createUserRepository = (db: Database) => {
       };
 
       const { interests, ...userChanges } = normalizedChanges;
-      const user = await db.user.findUnique({ where: { firebaseUid }, select: { id: true } });
-      if (!user) return null;
       const updatedUser = await db.$transaction(async (transaction) => {
+        const user = await transaction.user.findUnique({
+          where: { firebaseUid },
+          select: { id: true },
+        });
+        if (!user) return null;
         await transaction.user.update({ where: { id: user.id }, data: userChanges });
         if (interests) {
-          // Older clients send only formats/positions. Keep the new category unless
-          // it was explicitly supplied, including an empty array to clear it.
-          const categories = ["format", "position"];
-          if (interests.competitionTypes !== undefined) categories.push("competitionType");
-          await transaction.userInterest.deleteMany({
-            where: { userId: user.id, category: { in: categories } },
-          });
+          await transaction.userInterest.deleteMany({ where: { userId: user.id } });
           await transaction.userInterest.createMany({
             data: [
               ...interests.formats.map((key) => ({ userId: user.id, category: "format", key })),
               ...interests.positions.map((key) => ({ userId: user.id, category: "position", key })),
-              ...(interests.competitionTypes ?? []).map((key) => ({
+              ...(interests.clubs ?? []).map((key) => ({ userId: user.id, category: "club", key })),
+              ...(interests.other ?? []).map((key) => ({
                 userId: user.id,
-                category: "competitionType",
+                category: "other",
                 key,
               })),
             ],

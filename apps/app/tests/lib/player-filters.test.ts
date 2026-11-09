@@ -9,7 +9,7 @@ const makePlayer = (changes: Partial<SearchablePlayer> = {}): SearchablePlayer =
   id: "1",
   displayName: "Alex Kim",
   skillLevel: "C",
-  interests: { formats: ["indoor-6s"], positions: ["outside"], competitionTypes: ["mixed"] },
+  interests: { formats: ["indoor-6s"], positions: ["outside"], other: ["co-ed"] },
   ...changes,
 });
 
@@ -46,14 +46,12 @@ it.each([
   ["4s", "grass-4s", undefined],
   ["2s", "beach-2s", undefined],
   ["mixed", undefined, "mixed"],
-  ["men", undefined, "men"],
-  ["women", undefined, "women"],
 ] as const)("filters interest %s independently", (interest, format, competitionType) => {
   const matching = makePlayer({
     interests: {
       formats: format ? [format] : [],
       positions: [],
-      competitionTypes: competitionType ? [competitionType] : [],
+      other: competitionType ? ["co-ed"] : [],
     },
   });
   const missing = makePlayer({ id: "unknown", interests: undefined });
@@ -82,7 +80,7 @@ it("combines OR within each group, AND across groups, and case-insensitive text"
   };
   expect(filterPlayers([alex, sam], "", selected)).toEqual([alex, sam]);
   expect(filterPlayers([alex, sam], "  ALEX ", selected)).toEqual([alex]);
-  expect(filterPlayers([alex, sam], "b", selected)).toEqual([sam]);
+  expect(filterPlayers([alex, sam], "b", selected)).toEqual([]);
   expect(filterPlayers([alex, sam], "", { ...selected, positions: ["libero"] })).toEqual([]);
 });
 
@@ -136,4 +134,30 @@ it("counts selected values, rather than groups or results", () => {
   expect(
     playerFilterCount({ levels: ["C", "B"], positions: ["setter"], interests: ["beach", "2s"] }),
   ).toBe(5);
+});
+
+it("does not match a player's skill level as their name", () => {
+  expect(
+    filterPlayers(
+      [makePlayer({ displayName: "Zoe Tran", skillLevel: "C" })],
+      "c",
+      emptyPlayerFilters(),
+    ),
+  ).toEqual([]);
+});
+
+it("ranks shared managed club and other interests without confusing categories", () => {
+  const alex = makePlayer({
+    id: "a",
+    displayName: "Alex",
+    interests: { formats: [], positions: [] },
+  });
+  const zoe = makePlayer({
+    id: "z",
+    displayName: "Zoe",
+    interests: { formats: [], positions: [], clubs: ["ckvc"], other: ["co-ed"] },
+  });
+  expect(
+    filterPlayers([alex, zoe], "", emptyPlayerFilters(), "recommended", zoe.interests),
+  ).toEqual([zoe, alex]);
 });

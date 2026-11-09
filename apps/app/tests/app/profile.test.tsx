@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import { useState } from "react";
 import Profile from "@/app/(tabs)/profile";
+import { InterestSection } from "@/components/profile/interestSection";
 import { ApiError, updateMyAccount, type RallyUser } from "@/lib/api";
 import { removeMyProfilePhoto, uploadMyProfilePhoto } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -554,59 +555,95 @@ describe("Profile interests", () => {
       interests: {
         formats: ["indoor-6s"],
         positions: ["setter"],
+        clubs: [],
+        other: [],
       },
     });
     await render(<Profile />);
 
-    expect(
-      screen.getByRole("button", { name: "Indoor 6s selected" }).props.accessibilityState,
-    ).toEqual(expect.objectContaining({ selected: true }));
-    expect(
-      screen.getByRole("button", { name: "Setter selected" }).props.accessibilityState,
-    ).toEqual(expect.objectContaining({ selected: true }));
-    expect(screen.getByRole("button", { name: "Beach 2s" }).props.accessibilityState).toEqual(
-      expect.objectContaining({ selected: false }),
+    expect(screen.getByRole("button", { name: "Indoor 6s" }).props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: true }),
     );
+    expect(screen.getByRole("button", { name: "Setter" }).props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: true }),
+    );
+    expect(screen.getByRole("button", { name: "Add interest" })).toBeOnTheScreen();
+  });
+
+  it("collapses and expands selections beyond the first three", async () => {
+    await render(
+      <InterestSection
+        selection={{
+          formats: ["indoor-6s", "beach-2s"],
+          positions: ["setter", "libero"],
+          clubs: [],
+          other: [],
+        }}
+        saving={false}
+        onToggle={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Show 1 more interests" })).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: "Libero" })).not.toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Show 1 more interests" }));
+
+    expect(screen.getByRole("button", { name: "Libero" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Show fewer interests" })).toBeOnTheScreen();
+
+    await userEvent.press(screen.getByRole("button", { name: "Show fewer interests" }));
+
+    expect(screen.queryByRole("button", { name: "Libero" })).not.toBeOnTheScreen();
   });
 
   it("saves selected and deselected interests", async () => {
-    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    showAccount({
+      ...account,
+      interests: { formats: [], positions: [], clubs: [], other: [] },
+    });
     jest
       .mocked(updateMyAccount)
       .mockResolvedValueOnce({
         ...account,
-        interests: { formats: ["beach-2s"], positions: [], competitionTypes: [] },
+        interests: { formats: ["beach-2s"], positions: [], clubs: [], other: [] },
       })
       .mockResolvedValueOnce({
         ...account,
-        interests: { formats: [], positions: [], competitionTypes: [] },
+        interests: { formats: [], positions: [], clubs: [], other: [] },
       });
     await render(<Profile />);
 
+    await userEvent.press(screen.getByRole("button", { name: "Add interest" }));
     await userEvent.press(screen.getByRole("button", { name: "Beach 2s" }));
     await waitFor(() =>
       expect(updateMyAccount).toHaveBeenCalledWith(user, {
-        interests: { formats: ["beach-2s"], positions: [], competitionTypes: [] },
+        interests: { formats: ["beach-2s"], positions: [], clubs: [], other: [] },
       }),
     );
-    expect(screen.getByRole("button", { name: "Beach 2s selected" })).toBeOnTheScreen();
 
-    await userEvent.press(screen.getByRole("button", { name: "Beach 2s selected" }));
+    await userEvent.press(screen.getByRole("button", { name: "Close interest picker" }));
+    expect(screen.getByRole("button", { name: "Beach 2s" })).toBeOnTheScreen();
+    await userEvent.press(screen.getByRole("button", { name: "Beach 2s" }));
     await waitFor(() =>
       expect(updateMyAccount).toHaveBeenLastCalledWith(user, {
-        interests: { formats: [], positions: [], competitionTypes: [] },
+        interests: { formats: [], positions: [], clubs: [], other: [] },
       }),
     );
-    expect(screen.getByRole("button", { name: "Beach 2s" })).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: "Beach 2s" })).not.toBeOnTheScreen();
   });
 
   it("restores the previous selection and shows an error when saving fails", async () => {
-    showAccount({ ...account, interests: { formats: [], positions: [] } });
+    showAccount({
+      ...account,
+      interests: { formats: [], positions: [], clubs: [], other: [] },
+    });
     jest
       .mocked(updateMyAccount)
       .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."));
     await render(<Profile />);
 
+    await userEvent.press(screen.getByRole("button", { name: "Add interest" }));
     await userEvent.press(screen.getByRole("button", { name: "Libero" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
@@ -614,6 +651,8 @@ describe("Profile interests", () => {
     expect(screen.getByRole("button", { name: "Libero" }).props.accessibilityState).toEqual(
       expect.objectContaining({ selected: false }),
     );
+    await userEvent.press(screen.getByRole("button", { name: "Close interest picker" }));
+    expect(screen.queryByRole("button", { name: "Libero" })).not.toBeOnTheScreen();
   });
 });
 
@@ -652,18 +691,24 @@ it("restores a saved level after a failure and allows another attempt", async ()
   expect(screen.getByRole("radio", { name: "B" })).toBeChecked();
 });
 
-it("saves competition preferences together with existing format and position choices", async () => {
-  const interests = { formats: ["beach-4s"], positions: ["opposite"], competitionTypes: [] };
+it("labels preferences as public and saves grass 4s through the existing interest picker", async () => {
+  const interests = { formats: [], positions: ["opposite"], clubs: ["ckvc"], other: ["co-ed"] };
   jest
     .mocked(useSession)
     .mockReturnValue(fakeSession({ user, account: { ...account, interests } }));
-  jest.mocked(updateMyAccount).mockResolvedValueOnce({
-    ...account,
-    interests: { ...interests, competitionTypes: ["mixed"] },
-  });
+  jest
+    .mocked(updateMyAccount)
+    .mockResolvedValueOnce({ ...account, interests: { ...interests, formats: ["grass-4s"] } });
   await render(<Profile />);
-  await userEvent.press(screen.getByRole("button", { name: "Mixed" }));
+  expect(screen.getByText("Public · Visible to other players")).toBeOnTheScreen();
+  expect(
+    screen.getByText("Public · Your interests are visible to other players."),
+  ).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Add interest" }));
+  expect(screen.queryByRole("button", { name: "Men’s" })).not.toBeOnTheScreen();
+  expect(screen.queryByRole("button", { name: "Women’s" })).not.toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Grass 4s" }));
   expect(updateMyAccount).toHaveBeenCalledWith(user, {
-    interests: { ...interests, competitionTypes: ["mixed"] },
+    interests: { ...interests, formats: ["grass-4s"] },
   });
 });

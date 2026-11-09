@@ -40,11 +40,7 @@ export function togglePlayerFilter<T>(values: T[], value: T): T[] {
 }
 
 function matchesPlayer(player: SearchablePlayer, query: string, filters: PlayerFilters) {
-  const textMatches =
-    !query ||
-    [player.displayName, player.skillLevel].some((value) =>
-      value?.toLocaleLowerCase().includes(query),
-    );
+  const textMatches = !query || player.displayName.toLocaleLowerCase().includes(query);
   return (
     textMatches &&
     (filters.levels.length === 0 ||

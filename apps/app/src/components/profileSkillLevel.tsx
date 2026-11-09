@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { colors } from "@/constants/rallyTheme";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { apiErrorMessage, updateMyAccount } from "@/lib/api";
@@ -30,6 +31,7 @@ export function ProfileSkillLevel() {
   return (
     <View style={styles.section}>
       <Text style={styles.title}>{copy.profileLevel}</Text>
+      <Text style={styles.hint}>{copy.publicLevel}</Text>
       <Text style={styles.hint}>{copy.levelHint}</Text>
       <View style={styles.options}>
         {[...PLAYER_LEVELS, null].map((level) => (
@@ -58,20 +60,20 @@ export function ProfileSkillLevel() {
 }
 const styles = StyleSheet.create({
   section: { gap: 10, paddingBottom: 20 },
-  title: { color: "#1e4a37", fontWeight: "700", fontSize: 18 },
-  hint: { color: "#666", fontSize: 12 },
+  title: { color: colors.forest, fontWeight: "700", fontSize: 18 },
+  hint: { color: colors.textMuted, fontSize: 12 },
   options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   option: {
     minHeight: 40,
     borderWidth: 1,
-    borderColor: "#cacaca",
+    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: 14,
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
   },
-  selected: { backgroundColor: "#1e4a37", borderColor: "#1e4a37" },
-  label: { fontSize: 13, color: "#1e4a37" },
-  selectedLabel: { color: "#fff" },
-  error: { color: "#b42318", fontSize: 12 },
+  selected: { backgroundColor: colors.forest, borderColor: colors.forest },
+  label: { fontSize: 13, color: colors.forest },
+  selectedLabel: { color: colors.surface },
+  error: { color: colors.textPrimary, fontSize: 12 },
 });

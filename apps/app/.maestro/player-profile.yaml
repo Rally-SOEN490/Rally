@@ -1,0 +1,165 @@
+# AI declaration:
+# 50% or more AI-generated
+
+appId: com.rally.app
+---
+- runFlow:
+    file: login-and-home.yaml
+
+- tapOn: "You"
+- swipe:
+    start: 90%, 8%
+    end: 90%, 32%
+    duration: 500
+- assertVisible: "Add a thought"
+- scrollUntilVisible:
+    element:
+      text: "Interested in"
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Interested in"
+    timeout: 15000
+- assertVisible: "Looking for a team"
+- assertVisible: "Awards"
+- scrollUntilVisible:
+    element:
+      text: "Results"
+    direction: DOWN
+    timeout: 10000
+- assertVisible: "Results"
+- scrollUntilVisible:
+    element:
+      id: "open-profile-settings"
+    direction: UP
+    timeout: 10000
+
+- tapOn:
+    id: "open-profile-settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 15000
+
+- tapOn: "Name"
+- extendedWaitUntil:
+    visible: "Change name"
+    timeout: 5000
+- tapOn: "Full name"
+- eraseText: 500
+- inputText: ${MAESTRO_PROFILE_NAME}
+- tapOn: "Save"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Profile Test Player [0-9]{8}-[0-9]{6}"
+    timeout: 10000
+
+- tapOn: "Looking for a team"
+- extendedWaitUntil:
+    visible: "Looking for a team"
+    timeout: 5000
+- assertVisible: "Looking for a team"
+
+- scrollUntilVisible:
+    element:
+      text: "Indoor 6s"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Indoor 6s"
+- extendedWaitUntil:
+    visible: "Indoor 6s"
+    timeout: 5000
+- tapOn: "Outside"
+- extendedWaitUntil:
+    visible: "Outside"
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Add a thought"
+    direction: UP
+    timeout: 10000
+- tapOn: "Add a thought"
+- extendedWaitUntil:
+    visible: "Share a thought"
+    timeout: 5000
+- tapOn: "Thought"
+- inputText: "Ready to play."
+- tapOn: "Share thought"
+- extendedWaitUntil:
+    visible: "Ready to play."
+    timeout: 10000
+
+- tapOn: "Edit thought"
+- tapOn: "Thought"
+- eraseText: 180
+- inputText: "Looking for a great tournament."
+- tapOn: "Share thought"
+- extendedWaitUntil:
+    visible: "Looking for a great tournament."
+    timeout: 10000
+
+- tapOn: "Edit thought"
+- tapOn: "Delete thought"
+- extendedWaitUntil:
+    visible: "Your thought"
+    timeout: 10000
+
+- tapOn: "Back"
+- assertVisible: "Looking for a team"
+
+- tapOn: "View more awards"
+- extendedWaitUntil:
+    visible: "Player Awards.*"
+    timeout: 10000
+- assertVisible: "Locked Awards.*"
+- runFlow:
+    when:
+      visible: "Blocker award selected"
+    commands:
+      - tapOn: "Blocker award selected"
+- runFlow:
+    when:
+      visible: "Clutch award selected"
+    commands:
+      - tapOn: "Clutch award selected"
+- runFlow:
+    when:
+      visible: "Champion award"
+    commands:
+      - tapOn:
+          point: "40%,25%"
+- scrollUntilVisible:
+    element:
+      text: "Champion"
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Champion award selected"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "Streak"
+    direction: DOWN
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Streak award"
+    commands:
+      - tapOn:
+          point: "40%,54%"
+- extendedWaitUntil:
+    visible: "Streak award selected"
+    timeout: 5000
+- tapOn: "Back to profile"
+- extendedWaitUntil:
+    visible: "Awards"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Streak badge"
+    direction: DOWN
+    timeout: 10000
+- assertVisible: "Streak badge"

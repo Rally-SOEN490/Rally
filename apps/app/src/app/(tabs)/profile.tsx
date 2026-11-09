@@ -27,9 +27,9 @@ import {
 } from "@/lib/api";
 import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { COMPETITION_TYPES, PLAYER_POSITIONS, PROFILE_FORMATS } from "@/lib/player-preferences";
 import { ProfileSkillLevel } from "@/components/profileSkillLevel";
-import { playerFilterCopy } from "@/translations/player-filters.en";
+import { InterestSection } from "@/components/profile/interestSection";
+import { type InterestCategory } from "@/lib/interests";
 
 const stats = [
   { label: "Matches", value: "132" },
@@ -38,10 +38,6 @@ const stats = [
   { label: "Events", value: "9" },
 ];
 
-const interestFormats = PROFILE_FORMATS;
-const interestPositions = PLAYER_POSITIONS;
-type InterestCategory = "formats" | "positions" | "competitionTypes";
-type InterestOption = { readonly key: string; readonly label: string };
 const results = [
   { title: "Nationals, 9-man", year: "Jul 2026", accent: "#f3e5c9" },
   { title: "Summer Slam 6s", year: "Jun 2026", accent: "#f7d7b4" },
@@ -82,39 +78,6 @@ const FacebookLogo = () => (
   </View>
 );
 
-const InterestPills = ({
-  category,
-  options,
-  selectedKeys,
-  saving,
-  onToggle,
-}: {
-  category: InterestCategory;
-  options: readonly InterestOption[];
-  selectedKeys: string[];
-  saving: boolean;
-  onToggle: (category: InterestCategory, key: string) => void;
-}) => (
-  <View style={styles.tagRow}>
-    {options.map(({ key, label }) => {
-      const selected = selectedKeys.includes(key);
-      return (
-        <Pressable
-          key={key}
-          accessibilityRole="button"
-          accessibilityLabel={`${label}${selected ? " selected" : ""}`}
-          accessibilityState={{ selected, disabled: saving }}
-          disabled={saving}
-          onPress={() => onToggle(category, key)}
-          style={[styles.tagPill, selected && styles.tagPillSelected]}
-        >
-          <Text style={[styles.tagText, selected && styles.tagTextSelected]}>{label}</Text>
-        </Pressable>
-      );
-    })}
-  </View>
-);
-
 export default function Profile() {
   // The guards in _layout.tsx only show Profile to someone with a Rally account.
   const { user, account, setAccount, selectedBadgeKeys } = useSession();
@@ -135,7 +98,8 @@ export default function Profile() {
   const [interestSelection, setInterestSelection] = useState(() => ({
     formats: account?.interests?.formats ?? [],
     positions: account?.interests?.positions ?? [],
-    competitionTypes: account?.interests?.competitionTypes ?? [],
+    clubs: account?.interests?.clubs ?? [],
+    other: account?.interests?.other ?? [],
   }));
   const [interestSaving, setInterestSaving] = useState(false);
   const [interestError, setInterestError] = useState("");
@@ -272,6 +236,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open settings"
+            testID="open-profile-settings"
             onPress={() => router.push("/settings")}
             style={styles.gearButton}
           >
@@ -509,33 +474,13 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={styles.tagSection}>
-          <ProfileSkillLevel />
-          <Text style={styles.sectionTitle}>Interested in</Text>
-          <Text style={styles.tagGroupLabel}>PLAY FORMATS</Text>
-          <InterestPills
-            category="formats"
-            options={interestFormats}
-            selectedKeys={interestSelection.formats}
-            saving={interestSaving}
-            onToggle={toggleInterest}
-          />
-          <Text style={styles.tagGroupLabel}>POSITIONS</Text>
-          <InterestPills
-            category="positions"
-            options={interestPositions}
-            selectedKeys={interestSelection.positions}
-            saving={interestSaving}
-            onToggle={toggleInterest}
-          />
-          <Text style={styles.tagGroupLabel}>{playerFilterCopy.competitionTypes}</Text>
-          <InterestPills
-            category="competitionTypes"
-            options={COMPETITION_TYPES}
-            selectedKeys={interestSelection.competitionTypes}
-            saving={interestSaving}
-            onToggle={toggleInterest}
-          />
+        <ProfileSkillLevel />
+        <InterestSection
+          selection={interestSelection}
+          saving={interestSaving}
+          onToggle={toggleInterest}
+        />
+        <View>
           {!!interestError && (
             <Text accessibilityRole="alert" style={styles.saveError}>
               {interestError}

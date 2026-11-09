@@ -23,6 +23,7 @@ export function usePlayerFilters() {
       setVisible(true);
     },
     close: () => setVisible(false),
+    clear: () => setFilters(emptyPlayerFilters()),
     apply: () => {
       setFilters(clonePlayerFilters(draft));
       setVisible(false);

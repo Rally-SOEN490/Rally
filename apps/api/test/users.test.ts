@@ -150,6 +150,7 @@ describe("POST /users/me", () => {
       "lookingForTeam",
       "notificationsEnabled",
       "profilePhotoUrl",
+      "role",
       "shownBadgeKeys",
       "skillLevel",
       "thoughtText",
@@ -272,6 +273,37 @@ describe("GET /users/me", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(alice);
+  });
+
+  test("loads saved interests when the profile is opened later", async () => {
+    await register("alice", { displayName: "Alice", ageConfirmed: true });
+    await app.inject({
+      method: "PATCH",
+      url: "/users/me",
+      headers: { ...authHeader("alice"), "content-type": "application/json" },
+      payload: JSON.stringify({
+        interests: {
+          formats: ["indoor-6s"],
+          positions: ["setter", "power"],
+          clubs: ["ckvc"],
+          other: [],
+        },
+      }),
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeader("alice"),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().interests).toEqual({
+      formats: ["indoor-6s"],
+      positions: ["power", "setter"],
+      clubs: ["ckvc"],
+      other: [],
+    });
   });
 
   test("adds default badges when an existing profile has none", async () => {
@@ -484,14 +516,17 @@ describe("PATCH /users/me", () => {
       interests: {
         formats: ["indoor-6s", "beach-2s"],
         positions: ["libero", "setter"],
+        clubs: [],
+        other: [],
       },
     });
 
     expect(updated.statusCode).toBe(200);
     expect(updated.json().interests).toEqual({
-      formats: ["indoor-6s", "beach-2s"],
+      formats: ["beach-2s", "indoor-6s"],
       positions: ["libero", "setter"],
-      competitionTypes: [],
+      clubs: [],
+      other: [],
     });
     const saved = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "alice" } });
     expect(
@@ -507,12 +542,13 @@ describe("PATCH /users/me", () => {
     ]);
 
     const replaced = await update("alice", {
-      interests: { formats: ["9-man"], positions: ["outside"] },
+      interests: { formats: ["9-man"], positions: ["outside"], clubs: [], other: [] },
     });
     expect(replaced.json().interests).toEqual({
       formats: ["9-man"],
       positions: ["outside"],
-      competitionTypes: [],
+      clubs: [],
+      other: [],
     });
     expect(await testDb.userInterest.count({ where: { userId: saved.id } })).toBe(2);
   });

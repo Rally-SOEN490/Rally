@@ -7,9 +7,9 @@ import type { SearchFonts } from "@/lib/search-fonts";
 import { PlayerCard } from "@/components/playerCard";
 import { searchCopy as copy } from "@/translations/search.en";
 import { playerFilterCopy } from "@/translations/player-filters.en";
-import { emptyPlayerFilters, filterPlayers } from "@/lib/player-filters";
+import { emptyPlayerFilters, filterPlayers, playerFilterCount } from "@/lib/player-filters";
 import type { PlayerFilters, PlayerSort } from "@/lib/player-filters";
-import { COMPETITION_TYPES, PLAYER_POSITIONS, PROFILE_FORMATS } from "@/lib/player-preferences";
+import { PLAYER_POSITIONS, PROFILE_FORMATS } from "@/lib/player-preferences";
 import type { SavedInterests } from "@/lib/player-preferences";
 
 type Props = {
@@ -19,6 +19,7 @@ type Props = {
   error?: string;
   retry: () => void;
   clearSearch: () => void;
+  clearFilters?: () => void;
   fonts: SearchFonts;
   filters?: PlayerFilters;
   sort?: PlayerSort;
@@ -59,6 +60,7 @@ export function PlayerDirectory({
   error,
   retry,
   clearSearch,
+  clearFilters,
   fonts,
   filters = emptyPlayerFilters(),
   sort = "recommended",
@@ -73,8 +75,8 @@ export function PlayerDirectory({
       <Message
         title={copy.noMatches}
         detail={playerFilterCopy.noMatchesDetail}
-        action={copy.clearSearch}
-        onAction={clearSearch}
+        action={playerFilterCount(filters) > 0 ? playerFilterCopy.clearFilters : copy.clearSearch}
+        onAction={playerFilterCount(filters) > 0 ? clearFilters : clearSearch}
       />
     );
   return (
@@ -104,16 +106,13 @@ function cardData(player: RallyPlayer) {
   const formats = (player.interests?.formats ?? []).map(
     (key) => PROFILE_FORMATS.find((option) => option.key === key)?.label ?? key,
   );
-  const types = (player.interests?.competitionTypes ?? []).map(
-    (key) => COMPETITION_TYPES.find((option) => option.key === key)?.label ?? key,
-  );
   return {
     ...player,
     level: player.skillLevel,
     positions: (player.interests?.positions ?? []).map(
       (key) => PLAYER_POSITIONS.find((option) => option.key === key)?.label ?? key,
     ),
-    formats: [...formats, ...types],
+    formats,
   };
 }
 
