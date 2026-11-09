@@ -12,7 +12,7 @@ USER node
 COPY --chown=node:node apps/app/package.json apps/app/package-lock.json ./
 RUN npm ci
 
-COPY --chown=node:node apps/app/app.json apps/app/tsconfig.json ./
+COPY --chown=node:node apps/app/app.json apps/app/metro.config.js apps/app/tsconfig.json ./
 COPY --chown=node:node apps/app/assets ./assets
 COPY --chown=node:node apps/app/src ./src
 COPY --chown=node:node apps/shared /shared
