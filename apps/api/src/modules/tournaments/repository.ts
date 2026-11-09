@@ -33,6 +33,11 @@ export type DivisionFields = {
 };
 
 const withDivisions = { divisions: { orderBy: { createdAt: "asc" as const } } };
+// Only the organizer's display name, nothing else about their account.
+const withDivisionsAndOrganizer = {
+  ...withDivisions,
+  organizer: { select: { displayName: true } },
+};
 
 // The only place that reads and writes the tournaments and divisions tables.
 // Functions that take a transaction run inside the caller's.
@@ -46,6 +51,10 @@ export const createTournamentRepository = (db: Database) => ({
   findById: (id: string, transaction: Transaction = db) =>
     transaction.tournament.findUnique({ where: { id }, include: withDivisions }),
 
+  // One tournament with its organizer's display name, for its page.
+  findWithOrganizer: (id: string) =>
+    db.tournament.findUnique({ where: { id }, include: withDivisionsAndOrganizer }),
+
   findByOrganizer: (organizerId: string) =>
     db.tournament.findMany({
       where: { organizerId },
@@ -53,13 +62,12 @@ export const createTournamentRepository = (db: Database) => ({
       include: withDivisions,
     }),
 
-  // Published tournaments that haven't ended, for Search: soonest first. Only
-  // the organizer's display name comes with them, nothing else about the account.
+  // Published tournaments that haven't ended, for Search: soonest first.
   findPublishedNotEnded: (now: Date) =>
     db.tournament.findMany({
       where: { status: "PUBLISHED", endsAt: { gt: now } },
       orderBy: [{ startsAt: "asc" }, { name: "asc" }],
-      include: { ...withDivisions, organizer: { select: { displayName: true } } },
+      include: withDivisionsAndOrganizer,
     }),
 
   // Locks the tournament until the transaction ends, so a publish and a

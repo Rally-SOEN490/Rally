@@ -11,6 +11,7 @@ import {
   type DivisionType,
   type Format,
   type Level,
+  type OrganizerTournament,
 } from "@/lib/organizer-tournaments";
 
 // The player's side of tournaments: browsing published ones in Search (#302).
@@ -72,6 +73,26 @@ export const PRICE_RANGE_OPTIONS: TournamentPriceRange[] = [
 
 export const getTournaments = (user: User): Promise<Tournament[]> =>
   request(user, "GET", "/tournaments");
+
+// ---------- A tournament's page (#301, #285) ----------
+
+// Whether teams can sign up right now. The API works it out, so the app never
+// compares Montreal times with the phone's clock.
+export type SignUps = "NOT_OPEN" | "OPEN" | "CLOSED";
+
+// Anyone sees a published tournament's page. Its organizer also gets what they
+// set up (status, courts, publishing date), and is the only one who sees a draft.
+export type TournamentPage =
+  | (Tournament & { isOrganizer: false; signUps: SignUps; description: string | null })
+  | (Omit<OrganizerTournament, "divisions"> & {
+      isOrganizer: true;
+      signUps: SignUps;
+      organizerName: string;
+      divisions: BrowseDivision[];
+    });
+
+export const getTournamentPage = (user: User, id: string): Promise<TournamentPage> =>
+  request(user, "GET", `/tournaments/${id}`);
 
 // ---------- What a card shows ----------
 

@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PlayerDirectory } from "@/components/playerDirectory";
@@ -17,6 +17,7 @@ import { SearchBar } from "@/components/searchBar";
 import { SegmentedToggle } from "@/components/searchToggle";
 import { colors } from "@/constants/rallyTheme";
 import { apiErrorMessage, getPlayers, type RallyPlayer } from "@/lib/api";
+import { tournamentPaths } from "@/lib/organizer-tournaments";
 import { useSession } from "@/lib/session";
 import {
   copyTournamentFilters,
@@ -55,7 +56,6 @@ export default function SearchScreen() {
     copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS),
   );
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
-  const [registrationNotice, setRegistrationNotice] = useState<string>();
   const { user } = useSession();
 
   useEffect(() => {
@@ -126,14 +126,8 @@ export default function SearchScreen() {
   const clearFilters = () => setTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
   const clearDraftFilters = () =>
     setDraftTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
-  const handleRegister = () => {
-    if (Platform.OS === "web") {
-      setRegistrationNotice(copy.registrationUnavailable);
-      return;
-    }
-
-    Alert.alert(copy.register, copy.registrationUnavailable);
-  };
+  const openTournament = (tournament: Tournament) =>
+    router.push(tournamentPaths.page(tournament.id));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -174,8 +168,7 @@ export default function SearchScreen() {
             clearSearch={() => setQuery("")}
             clearFilters={clearFilters}
             removeFilter={(update) => setTournamentFilters(update)}
-            registrationNotice={registrationNotice}
-            onRegister={handleRegister}
+            onOpen={openTournament}
           />
         )}
 

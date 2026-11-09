@@ -3,8 +3,9 @@
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radii } from "@/constants/rallyTheme";
-import { dateParts, formatPrice, formatTime } from "@/lib/organizer-tournaments";
+import { formatPrice } from "@/lib/organizer-tournaments";
 import type { SearchFonts } from "@/lib/search-fonts";
+import { dateTile, timeRange } from "@/lib/tournament-dates";
 import { summarizeDivisions, type Tournament } from "@/lib/tournaments";
 import { searchCopy as copy } from "@/translations/search.en";
 import { tournamentCopy } from "@/translations/tournaments.en";
@@ -12,30 +13,8 @@ import { tournamentCopy } from "@/translations/tournaments.en";
 type Props = {
   tournament: Tournament;
   fonts: SearchFonts;
-  onRegister: (tournament: Tournament) => void;
+  onOpen: (tournament: Tournament) => void;
 };
-
-// The day, month and date of a Montreal time, without converting it to the
-// phone's time zone: the date is read as written, then named in the phone's language.
-function getDateParts(value: string | null) {
-  if (!value) return undefined;
-  const { year, day } = dateParts(value);
-  const date = new Date(Date.UTC(year, Number(value.slice(5, 7)) - 1, day, 12));
-  if (Number.isNaN(date.getTime())) return undefined;
-  const name = (options: Intl.DateTimeFormatOptions) =>
-    date.toLocaleDateString(undefined, { ...options, timeZone: "UTC" });
-  return { day: name({ weekday: "short" }), month: name({ month: "short" }), date: day };
-}
-
-// "9:00 AM – 7:00 PM", or "9:00 AM – Nov 16, 7:00 PM" when it ends another day.
-function timeRange(startsAt: string | null, endsAt: string | null) {
-  if (!startsAt || !endsAt) return undefined;
-  const start = formatTime(startsAt.slice(11, 16));
-  const end = formatTime(endsAt.slice(11, 16));
-  if (startsAt.slice(0, 10) === endsAt.slice(0, 10)) return copy.timeRange(start, end);
-  const { month, day } = dateParts(endsAt);
-  return copy.timeRange(start, copy.endsOtherDay(`${month} ${day}`, end));
-}
 
 // "$240 per team", "From $120.50 per team" when divisions cost different amounts, or "Free".
 function priceLabel(lowest: number | undefined, highest: number | undefined) {
@@ -49,8 +28,8 @@ function display(value?: string | number | null) {
   return value === undefined || value === null || value === "" ? copy.detailsToBeAnnounced : value;
 }
 
-export function TournamentCard({ tournament, fonts, onRegister }: Props) {
-  const startDate = getDateParts(tournament.startsAt);
+export function TournamentCard({ tournament, fonts, onOpen }: Props) {
+  const startDate = dateTile(tournament.startsAt);
   const summary = summarizeDivisions(tournament.divisions);
   const availableSpots =
     summary.spotsTotal > 0 ? { left: summary.spotsLeft, total: summary.spotsTotal } : undefined;
@@ -64,8 +43,15 @@ export function TournamentCard({ tournament, fonts, onRegister }: Props) {
     ...(summary.levels.length > 0 ? [summary.levels.join(" / ")] : []),
   ];
 
+  // The whole card opens the tournament's page, full or not; "Register" is
+  // only its label, so there is one button, not a button inside a button.
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={copy.openTournament(tournament.name)}
+      onPress={() => onOpen(tournament)}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <View style={styles.top}>
         <View
           style={styles.dateBlock}
@@ -137,17 +123,7 @@ export function TournamentCard({ tournament, fonts, onRegister }: Props) {
             </View>
           )}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: full }}
-          disabled={full}
-          onPress={() => onRegister(tournament)}
-          style={({ pressed }) => [
-            styles.register,
-            full && styles.registerDisabled,
-            pressed && !full && styles.pressed,
-          ]}
-        >
+        <View style={[styles.register, full && styles.registerDisabled]}>
           <Text
             style={[
               styles.registerText,
@@ -157,9 +133,9 @@ export function TournamentCard({ tournament, fonts, onRegister }: Props) {
           >
             {full ? copy.full : copy.register}
           </Text>
-        </Pressable>
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
