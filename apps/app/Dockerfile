@@ -9,12 +9,13 @@ WORKDIR /app
 RUN chown node:node /app
 USER node
 
-COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node apps/app/package.json apps/app/package-lock.json ./
 RUN npm ci
 
-COPY --chown=node:node app.json tsconfig.json ./
-COPY --chown=node:node assets ./assets
-COPY --chown=node:node src ./src
+COPY --chown=node:node apps/app/app.json apps/app/tsconfig.json ./
+COPY --chown=node:node apps/app/assets ./assets
+COPY --chown=node:node apps/app/src ./src
+COPY --chown=node:node apps/shared /shared
 
 EXPOSE 8081
 CMD ["npx", "expo", "start", "--dev-client"]

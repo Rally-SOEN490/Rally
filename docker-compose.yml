@@ -27,7 +27,9 @@ services:
 
   # Applies new migrations, then starts the API on http://localhost:3000.
   api:
-    build: ./apps/api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     env_file:
       - path: apps/api/.env
         required: false
@@ -47,6 +49,9 @@ services:
           target: /app/src
           ignore:
             - generated/
+        - action: sync
+          path: ./apps/shared
+          target: /shared
         - action: rebuild
           path: ./apps/api/package.json
         - action: rebuild
@@ -56,7 +61,9 @@ services:
 
   # The Expo dev server on port 8081. The development build on simulators and emulators loads the app from it.
   app:
-    build: ./apps/app
+    build:
+      context: .
+      dockerfile: apps/app/Dockerfile
     env_file:
       - path: apps/app/.env.local
         required: false
@@ -76,6 +83,9 @@ services:
         - action: sync
           path: ./apps/app/assets
           target: /app/assets
+        - action: sync
+          path: ./apps/shared
+          target: /shared
         - action: rebuild
           path: ./apps/app/package.json
         - action: rebuild

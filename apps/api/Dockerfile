@@ -15,11 +15,12 @@ RUN chown node:node /app
 USER node
 
 # Installing runs `prisma generate`, which needs the schema.
-COPY --chown=node:node package.json package-lock.json prisma.config.ts ./
-COPY --chown=node:node prisma ./prisma
+COPY --chown=node:node apps/api/package.json apps/api/package-lock.json apps/api/prisma.config.ts ./
+COPY --chown=node:node apps/api/prisma ./prisma
 RUN npm ci
 
-COPY --chown=node:node src ./src
+COPY --chown=node:node apps/api/src ./src
+COPY --chown=node:node apps/shared /shared
 
 EXPOSE 3000
 CMD ["sh", "-c", "npm run db:deploy && npm run dev"]
