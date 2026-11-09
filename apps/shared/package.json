@@ -1,0 +1,5 @@
+{
+  "name": "@rally/shared",
+  "private": true,
+  "type": "module"
+}
