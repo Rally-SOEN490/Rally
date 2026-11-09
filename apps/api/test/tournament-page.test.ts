@@ -119,6 +119,16 @@ test.each([
   expect(response.json()).toEqual({ message: "Tournament not found." });
 });
 
+test("treats a demoted organizer as a player", async () => {
+  await testDb.user.update({ where: { id: organizerId }, data: { role: "PLAYER" } });
+
+  expect((await call.get("Verdun Volley", draft)).statusCode).toBe(404);
+  const response = await call.get("Verdun Volley", published);
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toMatchObject({ isOrganizer: false });
+  expect(response.json()).not.toHaveProperty("status");
+});
+
 test("shows an admin or another organizer the player's view", async () => {
   await createAccount("rival");
   await createAccount("admin", "ADMIN");

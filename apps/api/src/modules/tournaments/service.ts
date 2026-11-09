@@ -19,6 +19,7 @@ import {
   type DivisionInput,
   type TournamentInput,
 } from "./mapping.ts";
+import { can } from "../../permissions.ts";
 import type { DivisionFields, TournamentRepository } from "./repository.ts";
 import { publishProblems } from "./rules.ts";
 
@@ -45,11 +46,16 @@ const listPublished = async (deps: Deps) =>
 
 // A tournament's page (#301, #285). Any logged-in account sees a published
 // tournament; a draft only its organizer, and anyone else gets "not found", so
-// nobody learns that a draft exists.
+// nobody learns that a draft exists. An organizer who has been demoted counts as
+// a player, like on the other tournament routes, so they lose their drafts.
 const getPage = async (deps: Deps, firebaseUid: string, tournamentId: string) => {
   const account = await deps.accounts.findAccount(firebaseUid);
   const tournament = await deps.tournaments.findWithOrganizer(tournamentId);
-  const isOrganizer = !!tournament && !!account && tournament.organizerId === account.id;
+  const isOrganizer =
+    !!tournament &&
+    !!account &&
+    tournament.organizerId === account.id &&
+    can(account.role, "tournament:create");
   if (!tournament || (tournament.status !== "PUBLISHED" && !isOrganizer)) throw notFound();
   return toPageResponse(tournament, isOrganizer, deps.now());
 };

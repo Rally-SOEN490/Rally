@@ -72,7 +72,7 @@ One page at `/tournaments/:id` for everyone (#301), with extra parts for the tou
 - `GET /tournaments` (Search) and `GET /tournaments/:id` (a tournament's page) only need a logged-in account: any player may see published tournaments. The service decides who sees a draft.
 - Every other tournament route needs the `tournament:create` permission (organizer or admin). See [roles and permissions](roles-and-permissions.md). In `routes.ts` these routes sit in their own Fastify scope, so the permission hook only applies to them.
 - Only the organizer who created a tournament can change it. Another organizer gets "not found", so nobody learns that a draft exists.
-- A demoted organizer loses access to their drafts, because the permission is checked on every request.
+- A demoted organizer loses access to their drafts, because the permission is checked on every request. On a tournament's page they count as a player: their drafts answer "not found" and their published tournaments show the player's view.
 
 ## Simultaneous changes
 
