@@ -12,6 +12,22 @@ it("names the day of a Montreal date without shifting it", () => {
   expect(dateTile(null)).toBeUndefined();
 });
 
+it("writes day and month names in English on a phone set to French", () => {
+  // A French phone: dates formatted without a language come out in French.
+  const toLocale = Date.prototype.toLocaleDateString;
+  const spy = jest.spyOn(Date.prototype, "toLocaleDateString").mockImplementation(function (
+    this: Date,
+    locales,
+    options,
+  ) {
+    return toLocale.call(this, locales ?? "fr-CA", options);
+  });
+
+  expect(longDate("2027-11-13T09:00")).toBe("Sat, Nov 13, 2027");
+  expect(dateTile("2027-11-13T09:00")).toEqual({ day: "Sat", month: "Nov", date: 13 });
+  spy.mockRestore();
+});
+
 it("shortens a date to its month and day", () => {
   expect(shortDate("2027-11-09T23:59")).toBe("Nov 9");
 });

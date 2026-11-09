@@ -5,8 +5,9 @@ import { dateParts, formatTime } from "@/lib/organizer-tournaments";
 import { searchCopy } from "@/translations/search.en";
 
 // Tournament times are Montreal times, "YYYY-MM-DDTHH:mm". These read them as
-// written and never convert them to the phone's time zone; only the day and
-// month names come from the phone's language.
+// written and never convert them to the phone's time zone. Day and month names
+// are in English, like the rest of the app's text, whatever the phone's
+// language, so a date never mixes two languages.
 
 // The date at noon UTC, so naming its weekday can't shift it by a day.
 const asCalendarDay = (value: string) => {
@@ -16,7 +17,7 @@ const asCalendarDay = (value: string) => {
 };
 
 const named = (date: Date, options: Intl.DateTimeFormatOptions) =>
-  date.toLocaleDateString(undefined, { ...options, timeZone: "UTC" });
+  date.toLocaleDateString("en-CA", { ...options, timeZone: "UTC" });
 
 // The day, month and date, for a date tile: "Sat", "Nov", 15.
 export function dateTile(value: string | null) {
