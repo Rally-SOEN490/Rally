@@ -5,16 +5,20 @@ appId: com.rally.app
 ---
 - launchApp:
     clearState: true
-- extendedWaitUntil:
-    visible: "DEVELOPMENT SERVERS"
-    timeout: 10000
-- tapOn: "http://.*:8081"
 - runFlow:
     when:
-      visible: "Continue"
+      visible: "DEVELOPMENT SERVERS"
     commands:
-      - tapOn:
-          point: "92%,13%"
+      - tapOn: "http://"
+      - eraseText: 100
+      - inputText: "http://10.0.2.2:8081"
+      - tapOn: "Connect"
+      - runFlow:
+          when:
+            visible: "Continue"
+          commands:
+            - tapOn:
+                point: "92%,13%"
 
 - assertVisible: "Sign up"
 - tapOn: "Sign up"
@@ -30,14 +34,7 @@ appId: com.rally.app
 - tapOn:
     id: "sign-up-confirm-password"
 - waitForAnimationToEnd
-- longPressOn:
-    id: "sign-up-confirm-password"
-- runFlow:
-    when:
-      visible: "Select all"
-    commands:
-      - tapOn: "Select all"
-- eraseText: 1
+- eraseText: 100
 - inputText: ${MAESTRO_TEST_PASSWORD}
 - hideKeyboard
 - tapOn:
@@ -87,15 +84,12 @@ appId: com.rally.app
     stopApp: false
 - runFlow:
     when:
-      visible: "Continue"
-    commands:
-      - tapOn:
-          point: "92%,13%"
-- runFlow:
-    when:
       visible: "DEVELOPMENT SERVERS"
     commands:
-      - tapOn: "http://.*:8081"
+      - tapOn: "http://"
+      - eraseText: 100
+      - inputText: "http://10.0.2.2:8081"
+      - tapOn: "Connect"
       - runFlow:
           when:
             visible: "Continue"
@@ -103,9 +97,24 @@ appId: com.rally.app
             - tapOn:
                 point: "92%,13%"
 - extendedWaitUntil:
-    visible: "Verify your email"
+    visible: "Verify your email|Log in"
     timeout: 15000
-- tapOn: "I've verified my email"
+- runFlow:
+    when:
+      visible: "Verify your email"
+    commands:
+      - tapOn: "I've verified my email"
+- runFlow:
+    when:
+      visible: "Log in"
+    commands:
+      - tapOn: "E-mail address"
+      - inputText: ${MAESTRO_TEST_EMAIL}
+      - tapOn: "Password"
+      - inputText: ${MAESTRO_TEST_PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit"
 
 - extendedWaitUntil:
     visible: "Home"
