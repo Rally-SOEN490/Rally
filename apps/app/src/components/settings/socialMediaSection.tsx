@@ -104,7 +104,7 @@ function SocialLinkInput({
         accessibilityRole="button"
         accessibilityLabel={saving ? `Saving ${network.name} link` : `Save ${network.name} link`}
         disabled={saving}
-        onPress={save}
+        onPress={() => void save()}
         style={[styles.socialSaveButton, saving && styles.disabled]}
       >
         <Text style={styles.socialSaveText}>{saving ? "Saving…" : "Save link"}</Text>

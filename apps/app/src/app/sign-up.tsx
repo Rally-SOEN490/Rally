@@ -128,7 +128,7 @@ export default function SignUp() {
   const signUp = () => {
     const problem = signUpProblem({ name, password, confirmPassword, isOldEnough });
     if (problem) return alert(problem);
-    createAccount(name, email, password);
+    void createAccount(name, email, password);
   };
 
   return (

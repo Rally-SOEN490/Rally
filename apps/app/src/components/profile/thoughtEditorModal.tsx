@@ -60,7 +60,7 @@ function ThoughtEditorActions({
           accessibilityRole="button"
           accessibilityLabel="Delete thought"
           disabled={editor.saving}
-          onPress={editor.remove}
+          onPress={() => void editor.remove()}
           style={styles.deleteThoughtButton}
         >
           <Text style={styles.deleteThoughtText}>Delete</Text>
@@ -70,7 +70,7 @@ function ThoughtEditorActions({
         accessibilityRole="button"
         accessibilityLabel="Share thought"
         disabled={editor.saving}
-        onPress={editor.save}
+        onPress={() => void editor.save()}
         style={styles.shareThoughtButton}
       >
         {editor.saving ? (

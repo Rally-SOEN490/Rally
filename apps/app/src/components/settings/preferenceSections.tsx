@@ -59,7 +59,10 @@ function usePreferences({ user, account, setAccount }: Session) {
     }
   };
 
-  return { prefs, save };
+  // The switches and buttons ignore the result; save shows its own errors.
+  const savePreference: SavePreference = (key, value) => void save(key, value);
+
+  return { prefs, save: savePreference };
 }
 
 function PreferenceSwitch({

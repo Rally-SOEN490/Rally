@@ -40,7 +40,7 @@ function SocialLink({
     <Pressable
       accessibilityRole={url ? "link" : "button"}
       accessibilityLabel={`${name}${url ? " profile" : " (not connected)"}`}
-      onPress={() => openSocialLink(name, url)}
+      onPress={() => void openSocialLink(name, url)}
       style={[styles.socialLink, !url && styles.socialLinkPlaceholder]}
     >
       <Logo />
