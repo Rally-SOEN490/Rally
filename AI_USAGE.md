@@ -36,7 +36,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
 | Real tournaments in Search       | RALLY-226 (#302), PR [#320](https://github.com/Rally-SOEN490/Rally/pull/320)                                               | 50% or more AI-generated |
 | Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR [#322](https://github.com/Rally-SOEN490/Rally/pull/322)             | 50% or more AI-generated |
-| Team sign-up                     | RALLY-36 (#58), RALLY-51 (#73), pull request to come                                                                       | 50% or more AI-generated |
+| Team sign-up                     | RALLY-36 (#58), RALLY-51 (#73), PR [#335](https://github.com/Rally-SOEN490/Rally/pull/335)                                 | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -106,7 +106,7 @@ Problems and rejected suggestions: the issue asked for team lists and a "Create 
 
 ### RALLY-36, RALLY-51: Team sign-up
 
-Pull request: to come.
+Pull request: [#335](https://github.com/Rally-SOEN490/Rally/pull/335).
 
 Claude Code (Claude Opus 5.5) wrote the teams module (`teams` and `team_members` tables, migration, `POST /tournaments/:id/teams`), the interfaces between the teams and tournaments modules, the real team counts and `myTeam` on tournament responses, the "Create a team" sheet with its review step, the tests and [the teams architecture notes](docs/architecture/teams.md). Hoang Vu made the decisions: teams have no player limit, any account (the tournament's organizer included) can sign up a team, team names are unique ignoring case and spaces, a review step showing the price before signing up, and staying on the tournament page afterwards with "You're captain of …" in the bottom bar.
 
