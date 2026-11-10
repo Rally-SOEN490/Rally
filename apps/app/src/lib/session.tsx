@@ -4,6 +4,7 @@
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { apiErrorMessage, getMyAccount, updateMyAccount, type RallyUser } from "@/lib/api";
+import { sortBadges } from "@/lib/badges";
 import { auth } from "@/lib/firebase";
 
 export type Session = {
@@ -31,21 +32,55 @@ type LoadedAccount = { key: string; account?: RallyUser | null; error?: string }
 
 const SessionContext = createContext<Session | null>(null);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
+const maxShownBadges = 4;
+
+// Which badges to show after the account loads: the saved choice if there is
+// one, otherwise the current choice, otherwise the top four. Badges the player
+// no longer has are dropped.
+const reconcileShownBadges = (account: RallyUser, keys: string[]) => {
+  const availableKeys = new Set(account.badges.map((badge) => badge.key));
+  if (account.shownBadgeKeys && account.shownBadgeKeys.length > 0) {
+    return account.shownBadgeKeys
+      .filter((badgeKey) => availableKeys.has(badgeKey))
+      .slice(0, maxShownBadges);
+  }
+  const validKeys = keys.filter((badgeKey) => availableKeys.has(badgeKey));
+  if (validKeys.length > 0) return validKeys.slice(0, maxShownBadges);
+  return sortBadges(account.badges)
+    .slice(0, maxShownBadges)
+    .map((badge) => badge.key);
+};
+
+// Removes the badge if it's selected, or adds it when there's room. Returns the
+// same array when nothing changes (four are already selected).
+const toggledBadgeKeys = (selected: string[], badgeKey: string) => {
+  if (selected.includes(badgeKey)) return selected.filter((key) => key !== badgeKey);
+  if (selected.length >= maxShownBadges) return selected;
+  return [...selected, badgeKey];
+};
+
+// Who is signed in to Firebase, kept up to date as they log in and out.
+function useAuthState() {
   const [state, setState] = useState<{ user: User | null; isLoading: boolean }>({
     user: auth.currentUser,
     isLoading: true,
   });
-  const [loaded, setLoaded] = useState<LoadedAccount>();
-  const [attempt, setAttempt] = useState(0);
-  const [selectedBadgeKeys, setSelectedBadgeKeys] = useState<string[]>([]);
 
   useEffect(() => onAuthStateChanged(auth, (user) => setState({ user, isLoading: false })), []);
 
-  const { user } = state;
-  // Only look for the Rally account once the email is verified. Sign-up is still
-  // saving it before that, and asking too early would wrongly find nothing.
-  const key = user?.emailVerified ? `${user.uid}/${attempt}` : undefined;
+  const refresh = async () => {
+    await auth.currentUser?.reload();
+    // reload() updates the same User object, so pass a new state object to re-render.
+    setState({ user: auth.currentUser, isLoading: false });
+  };
+
+  return { state, refresh };
+}
+
+// Loads the Rally account for the given key (user and attempt). `current` is
+// only set when it belongs to that key.
+function useAccountLoader(user: User | null, key: string | undefined) {
+  const [loaded, setLoaded] = useState<LoadedAccount>();
 
   useEffect(() => {
     if (!user || !key) return;
@@ -63,7 +98,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [user, key]);
 
-  const current = loaded?.key === key ? loaded : undefined;
+  return { current: loaded?.key === key ? loaded : undefined, setLoaded };
+}
+
+export function SessionProvider({ children }: { children: ReactNode }) {
+  const { state, refresh } = useAuthState();
+  const [attempt, setAttempt] = useState(0);
+  const [selectedBadgeKeys, setSelectedBadgeKeys] = useState<string[]>([]);
+
+  const { user } = state;
+  // Only look for the Rally account once the email is verified. Sign-up is still
+  // saving it before that, and asking too early would wrongly find nothing.
+  const key = user?.emailVerified ? `${user.uid}/${attempt}` : undefined;
+  const { current, setLoaded } = useAccountLoader(user, key);
 
   useEffect(() => {
     const account = current?.account;
@@ -71,29 +118,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Reconcile editable badge choices after the asynchronous account refresh;
     // deriving them on every render would overwrite the user's optimistic selection.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedBadgeKeys((keys) => {
-      const availableKeys = new Set(account.badges.map((badge) => badge.key));
-      if (account.shownBadgeKeys && account.shownBadgeKeys.length > 0) {
-        return account.shownBadgeKeys.filter((badgeKey) => availableKeys.has(badgeKey)).slice(0, 4);
-      }
-      const validKeys = keys.filter((badgeKey) => availableKeys.has(badgeKey));
-      if (validKeys.length > 0) return validKeys.slice(0, 4);
-      return account.badges
-        .slice()
-        .sort(
-          (left, right) =>
-            right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
-        )
-        .slice(0, 4)
-        .map((badge) => badge.key);
-    });
+    setSelectedBadgeKeys((keys) => reconcileShownBadges(account, keys));
   }, [current?.account]);
-
-  const refresh = async () => {
-    await auth.currentUser?.reload();
-    // reload() updates the same User object, so pass a new state object to re-render.
-    setState({ user: auth.currentUser, isLoading: false });
-  };
 
   const setAccount = (account: RallyUser) => {
     if (key) setLoaded({ key, account });
@@ -101,11 +127,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const toggleBadgeSelection = async (badgeKey: string) => {
     if (!user || !current?.account) return;
-    const nextKeys = selectedBadgeKeys.includes(badgeKey)
-      ? selectedBadgeKeys.filter((key) => key !== badgeKey)
-      : selectedBadgeKeys.length >= 4
-        ? selectedBadgeKeys
-        : [...selectedBadgeKeys, badgeKey];
+    const nextKeys = toggledBadgeKeys(selectedBadgeKeys, badgeKey);
     if (nextKeys === selectedBadgeKeys) return;
 
     setSelectedBadgeKeys(nextKeys);
