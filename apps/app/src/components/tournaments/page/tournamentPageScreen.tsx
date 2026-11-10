@@ -7,14 +7,16 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ApiError, apiErrorMessage } from "@/lib/api";
-import { getTournamentPage, type TournamentPage } from "@/lib/tournaments";
+import { getTournamentPage, type MyTeam, type TournamentPage } from "@/lib/tournaments";
 import { useSession } from "@/lib/session";
 import { tournamentCopy } from "@/translations/tournaments.en";
 import { GREEN } from "../styles";
 import { BottomBar } from "./bottomBar";
 import { DivisionsSection, RegisteredTeams } from "./divisionsSection";
 import { InfoCard } from "./infoCard";
+import { withMyTeam } from "./pageModel";
 import { pageStyles } from "./pageStyles";
+import { SignUpSheet } from "./signUpSheet";
 
 const copy = tournamentCopy.page;
 
@@ -40,7 +42,14 @@ function BackButton() {
   );
 }
 
-function PageContent({ page }: { page: TournamentPage }) {
+function PageContent({
+  page,
+  onSignedUp,
+}: {
+  page: TournamentPage;
+  onSignedUp: (team: MyTeam) => void;
+}) {
+  const [signingUp, setSigningUp] = useState(false);
   return (
     <>
       <ScrollView contentContainerStyle={pageStyles.content}>
@@ -64,7 +73,17 @@ function PageContent({ page }: { page: TournamentPage }) {
         <DivisionsSection page={page} />
         {page.isOrganizer && <RegisteredTeams />}
       </ScrollView>
-      <BottomBar page={page} />
+      <BottomBar page={page} onSignUp={() => setSigningUp(true)} />
+      {signingUp && (
+        <SignUpSheet
+          page={page}
+          onClose={() => setSigningUp(false)}
+          onSignedUp={(team) => {
+            setSigningUp(false);
+            onSignedUp(team);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -97,7 +116,12 @@ function useTournamentPage(id: string) {
     setLoaded({ kind: "loading" });
     setAttempt((count) => count + 1);
   };
-  return { loaded, retry };
+  // Shows the team the server just confirmed, without reloading the page.
+  const signedUp = (team: MyTeam) =>
+    setLoaded((current) =>
+      current.kind === "ready" ? { kind: "ready", page: withMyTeam(current.page, team) } : current,
+    );
+  return { loaded, retry, signedUp };
 }
 
 function PageStatus({
@@ -140,11 +164,11 @@ function PageStatus({
 // A tournament's page (#301): players see the details and can sign up; its
 // organizer also sees the teams (#285).
 export function TournamentPageScreen({ id }: { id: string }) {
-  const { loaded, retry } = useTournamentPage(id);
+  const { loaded, retry, signedUp } = useTournamentPage(id);
   if (loaded.kind !== "ready") return <PageStatus loaded={loaded} retry={retry} />;
   return (
     <SafeAreaView edges={["top"]} style={pageStyles.screen}>
-      <PageContent page={loaded.page} />
+      <PageContent page={loaded.page} onSignedUp={signedUp} />
     </SafeAreaView>
   );
 }

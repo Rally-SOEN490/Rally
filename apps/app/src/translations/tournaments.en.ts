@@ -132,8 +132,8 @@ export const tournamentCopy = {
     locationToBeAnnounced: "Location to be announced",
     // Where sign-ups stand, by the `signUps` value the API sends. `title` and
     // `detail` are the info card's sign-ups row (the detail is the other date).
-    // The bottom bar repeats the title, except while sign-ups are open: then a
-    // player gets Sign up and the organizer gets `organizerBar`.
+    // The bottom bar repeats the title, except while sign-ups are open: then it
+    // has Sign up.
     signUps: {
       notSet: "Sign-up dates to be announced",
       NOT_OPEN: {
@@ -143,7 +143,6 @@ export const tournamentCopy = {
       OPEN: {
         title: ({ closes }: SignUpDates) => `Sign-ups close ${closes}`,
         detail: ({ opens }: SignUpDates) => `Opened ${opens}`,
-        organizerBar: "Sign-ups open",
       },
       CLOSED: {
         title: ({ closes }: SignUpDates) => `Sign-ups closed ${closes}`,
@@ -164,10 +163,33 @@ export const tournamentCopy = {
     full: "Full",
     fullTeams: (max: number) => `Full · ${max} / ${max}`,
     signUp: "Sign up",
-    registrationUnavailable: "Registration isn't available yet.",
+    // The bottom bar of someone on a team, above its division.
+    captainOf: (team: string) => `You're captain of ${team}`,
+    onTeam: (team: string) => `You're on ${team}`,
     registeredTeams: "Registered teams",
-    registeredTeamsSoon: "Available once teams can register",
+    registeredTeamsSoon: "The list of teams is coming soon",
     draft: "Draft · only you can see it",
     continueSetup: "Continue setup",
+  },
+
+  // Signing up a team from a tournament's page (RALLY-36): pick a division and
+  // a name, then check them and the price before the team is created.
+  signUp: {
+    createTeam: "Create a team",
+    checkTeam: "Check your team",
+    close: "Close",
+    back: "Back to the team details",
+    division: "Division",
+    // Next to a division: "5 left", or "Full" when it has no room.
+    spotsLeft: (count: number) => `${count} left`,
+    full: "Full",
+    teamName: "Team name",
+    captainNote: "You'll be the captain. You can be on only one team in this tournament.",
+    next: "Continue",
+    team: "Team",
+    price: "Price",
+    payOutside: (price: string) => `Pay ${price} to the organizer outside Rally.`,
+    submit: "Create team and sign up",
+    submitting: "Signing up…",
   },
 };

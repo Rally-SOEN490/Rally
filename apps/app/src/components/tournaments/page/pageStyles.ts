@@ -71,6 +71,7 @@ export const pageStyles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: OPEN_DOT },
   barStrong: { fontSize: 14, fontWeight: "700", color: INK },
   barMessage: { flex: 1, fontSize: 15, color: MUTED, textAlign: "center" },
+  barTeam: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   primaryButton: {
     minHeight: 48,
     paddingHorizontal: 26,
@@ -81,13 +82,6 @@ export const pageStyles = StyleSheet.create({
   },
   primaryText: { color: "#ffffff", fontSize: 16, fontWeight: "700" },
   pressed: { opacity: 0.8 },
-  notice: {
-    fontSize: 13,
-    color: GREEN,
-    textAlign: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
   // ---------- Loading and errors ----------
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   status: { fontSize: 15, color: MUTED, textAlign: "center" },

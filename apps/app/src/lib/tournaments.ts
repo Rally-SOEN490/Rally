@@ -80,19 +80,50 @@ export const getTournaments = (user: User): Promise<Tournament[]> =>
 // compares Montreal times with the phone's clock.
 export type SignUps = "NOT_OPEN" | "OPEN" | "CLOSED";
 
+// The team the viewer is on in a tournament (RALLY-36).
+export type MyTeam = {
+  id: string;
+  name: string;
+  divisionId: string;
+  divisionName: string;
+  isCaptain: boolean;
+};
+
 // Anyone sees a published tournament's page. Its organizer also gets what they
 // set up (status, courts, publishing date), and is the only one who sees a draft.
+// Everyone gets the team they are on in it, or null.
 export type TournamentPage =
-  | (Tournament & { isOrganizer: false; signUps: SignUps; description: string | null })
+  | (Tournament & {
+      isOrganizer: false;
+      signUps: SignUps;
+      description: string | null;
+      myTeam: MyTeam | null;
+    })
   | (Omit<OrganizerTournament, "divisions"> & {
       isOrganizer: true;
       signUps: SignUps;
       organizerName: string;
       divisions: BrowseDivision[];
+      myTeam: MyTeam | null;
     });
 
 export const getTournamentPage = (user: User, id: string): Promise<TournamentPage> =>
   request(user, "GET", `/tournaments/${id}`);
+
+// ---------- Signing up a team (RALLY-36) ----------
+
+// The longest team name the API accepts.
+export const TEAM_NAME_MAX_LENGTH = 40;
+
+// "  Spike   Lee " becomes "Spike Lee", as the API stores it.
+export const tidyTeamName = (name: string) => name.trim().replaceAll(/\s+/g, " ");
+
+// Creates a team in a division with the caller as captain. Any account may.
+export const signUpTeam = (
+  user: User,
+  tournamentId: string,
+  team: { divisionId: string; name: string },
+): Promise<MyTeam> => request(user, "POST", `/tournaments/${tournamentId}/teams`, team);
 
 // ---------- What a card shows ----------
 

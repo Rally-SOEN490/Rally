@@ -3,7 +3,12 @@
 
 import { formatPrice } from "@/lib/organizer-tournaments";
 import { shortDate } from "@/lib/tournament-dates";
-import { summarizeDivisions, type BrowseDivision, type TournamentPage } from "@/lib/tournaments";
+import {
+  summarizeDivisions,
+  type BrowseDivision,
+  type MyTeam,
+  type TournamentPage,
+} from "@/lib/tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
 
 // What the tournament page shows in each case, kept apart from the layout so
@@ -34,21 +39,45 @@ export function signUpsRow(page: TournamentPage) {
 }
 
 export type BottomBar =
-  { kind: "signUp"; spotsLeft: number } | { kind: "message"; text: string } | { kind: "draft" };
+  | { kind: "signUp"; spotsLeft: number }
+  | { kind: "message"; text: string }
+  | { kind: "myTeam"; title: string; detail: string }
+  | { kind: "draft" };
 
-// The bar docked at the bottom. A player can sign up only while sign-ups are
-// open and a division has room; otherwise the bar only says why. The organizer
-// sees where sign-ups stand, or that it is still a draft.
+// The bar docked at the bottom. Anyone, the organizer included, can sign up a
+// team while sign-ups are open and a division has room; otherwise the bar only
+// says why. Someone on a team sees it instead, and the organizer of a draft
+// sees that it is still a draft.
 export function bottomBar(page: TournamentPage): BottomBar {
   if (page.isOrganizer && page.status === "DRAFT") return { kind: "draft" };
+  if (page.myTeam) {
+    const { name, isCaptain, divisionName } = page.myTeam;
+    return {
+      kind: "myTeam",
+      title: isCaptain ? copy.captainOf(name) : copy.onTeam(name),
+      detail: divisionName,
+    };
+  }
   if (page.signUps !== "OPEN") {
     const dates = signUpDates(page);
     const text = dates ? copy.signUps[page.signUps].title(dates) : copy.signUps.notSet;
     return { kind: "message", text };
   }
-  if (page.isOrganizer) return { kind: "message", text: copy.signUps.OPEN.organizerBar };
   const { spotsLeft } = summarizeDivisions(page.divisions);
   return spotsLeft > 0 ? { kind: "signUp", spotsLeft } : { kind: "message", text: copy.full };
+}
+
+// The page once the server confirms a new team: the viewer is on it, and its
+// division has one more team.
+export function withMyTeam(page: TournamentPage, team: MyTeam): TournamentPage {
+  const divisions = page.divisions.map((division) =>
+    division.id === team.divisionId
+      ? { ...division, registeredTeams: division.registeredTeams + 1 }
+      : division,
+  );
+  return page.isOrganizer
+    ? { ...page, myTeam: team, divisions, registeredTeams: page.registeredTeams + 1 }
+    : { ...page, myTeam: team, divisions };
 }
 
 // A division's second line: "$240 · 5 spots left" or "$240 · Full" for players,
