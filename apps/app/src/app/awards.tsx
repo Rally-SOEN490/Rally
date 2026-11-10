@@ -4,19 +4,18 @@
 import { router } from "expo-router";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { RallyUser } from "@/lib/api";
+import { GoldStars } from "@/components/badges/goldStars";
+import {
+  type Badge,
+  badgeImages,
+  badgeImageSource,
+  badgeProgress,
+  sortBadges,
+  tierColor,
+} from "@/lib/badges";
 import { useSession } from "@/lib/session";
 
-const badgeImages = {
-  "badge-gold-placeholder": require("@/assets/images/badge-gold-placeholder.png"),
-} as const;
 const lockImage = require("@/assets/images/Lock.png");
-
-const tierColors = {
-  Bronze: "#8c5a3c",
-  Silver: "#9aa1a8",
-  Gold: "#d4a72c",
-} as const;
 
 const lockedAwards = [
   ["streak", "10 streak", "Win 10 in a row", "6/10"],
@@ -27,16 +26,6 @@ const lockedAwards = [
   ["team-builder", "Team builder", "Start a team", "0/1"],
 ] as const;
 
-const getBadgeProgress = (receivedCount: number, nextTierThreshold?: number | null) => {
-  const target = nextTierThreshold ?? (Math.floor(Math.max(0, receivedCount) / 10) + 1) * 10;
-  return { target, percentage: Math.min(receivedCount / target, 1) };
-};
-
-const sortBadges = (badges: RallyUser["badges"]) =>
-  [...badges].sort(
-    (left, right) => right.receivedCount - left.receivedCount || left.key.localeCompare(right.key),
-  );
-
 export default function Awards() {
   const { account, selectedBadgeKeys, toggleBadgeSelection } = useSession();
   const badges = sortBadges(account?.badges ?? []);
@@ -44,14 +33,7 @@ export default function Awards() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to profile"
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backIcon}>‹</Text>
-        </Pressable>
+        <BackButton />
 
         <Text style={styles.pageTitle}>Awards</Text>
         <Text style={styles.sectionTitle}>Player Awards ({badges.length})</Text>
@@ -75,27 +57,12 @@ export default function Awards() {
         <View style={styles.awardsCard}>
           <View style={styles.grid}>
             {lockedAwards.map(([key, name, requirement, progress]) => (
-              <View key={key} style={styles.awardTile}>
-                <View style={styles.imageWrapper}>
-                  <Image
-                    accessibilityLabel={`${name} locked award image`}
-                    source={badgeImages["badge-gold-placeholder"]}
-                    style={styles.lockedImage}
-                  />
-                  <View pointerEvents="none" style={styles.lockedOverlay} />
-                  <Image
-                    accessibilityLabel={`${name} locked award lock`}
-                    source={lockImage}
-                    style={styles.lock}
-                  />
-                </View>
-                <Text style={styles.awardName}>{name}</Text>
-                <Text style={styles.tierText}>{requirement}</Text>
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${progressPercent(progress)}%` }]} />
-                </View>
-                <Text style={styles.progressText}>{progress}</Text>
-              </View>
+              <LockedAwardTile
+                key={key}
+                name={name}
+                requirement={requirement}
+                progress={progress}
+              />
             ))}
           </View>
         </View>
@@ -104,18 +71,64 @@ export default function Awards() {
   );
 }
 
+function BackButton() {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back to profile"
+      onPress={() => router.back()}
+      style={styles.backButton}
+    >
+      <Text style={styles.backIcon}>‹</Text>
+    </Pressable>
+  );
+}
+
+// An award the player hasn't earned yet, greyed out with a lock.
+function LockedAwardTile({
+  name,
+  requirement,
+  progress,
+}: {
+  name: string;
+  requirement: string;
+  progress: string;
+}) {
+  return (
+    <View style={styles.awardTile}>
+      <View style={styles.imageWrapper}>
+        <Image
+          accessibilityLabel={`${name} locked award image`}
+          source={badgeImages["badge-gold-placeholder"]}
+          style={styles.lockedImage}
+        />
+        <View pointerEvents="none" style={styles.lockedOverlay} />
+        <Image
+          accessibilityLabel={`${name} locked award lock`}
+          source={lockImage}
+          style={styles.lock}
+        />
+      </View>
+      <Text style={styles.awardName}>{name}</Text>
+      <Text style={styles.tierText}>{requirement}</Text>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progressPercent(progress)}%` }]} />
+      </View>
+      <Text style={styles.progressText}>{progress}</Text>
+    </View>
+  );
+}
+
 function AwardTile({
   badge,
   selected,
   onPress,
 }: {
-  badge: RallyUser["badges"][number];
+  badge: Badge;
   selected: boolean;
   onPress: () => void;
 }) {
-  const progress = badge.isComplete
-    ? null
-    : getBadgeProgress(badge.receivedCount, badge.nextTierThreshold);
+  const progress = badgeProgress(badge);
 
   return (
     <Pressable
@@ -126,21 +139,11 @@ function AwardTile({
       style={styles.awardTile}
     >
       <View style={styles.imageWrapper}>
-        {badge.tier === "Gold" && (
-          <>
-            <Text style={[styles.goldStar, styles.goldStarTop]}>✦</Text>
-            <Text style={[styles.goldStar, styles.goldStarRight]}>✦</Text>
-            <Text style={[styles.goldStar, styles.goldStarBottom]}>✦</Text>
-            <Text style={[styles.goldStar, styles.goldStarLeft]}>✦</Text>
-          </>
-        )}
+        {badge.tier === "Gold" && <GoldStars />}
         <Image
           accessibilityLabel={`${badge.name} award image`}
-          source={badgeImages[badge.image as keyof typeof badgeImages]}
-          style={[
-            styles.awardImage,
-            { borderColor: tierColors[badge.tier as keyof typeof tierColors] },
-          ]}
+          source={badgeImageSource(badge)}
+          style={[styles.awardImage, { borderColor: tierColor(badge) }]}
         />
         {selected && <Text style={styles.checkmark}>✓</Text>}
       </View>
@@ -202,16 +205,6 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: "rgba(109, 123, 117, 0.48)",
   },
-  goldStar: {
-    position: "absolute",
-    color: "#d4a72c",
-    fontSize: 11,
-    lineHeight: 11,
-  },
-  goldStarTop: { top: 0 },
-  goldStarRight: { right: 0 },
-  goldStarBottom: { bottom: 0 },
-  goldStarLeft: { left: 0 },
   checkmark: {
     position: "absolute",
     right: -1,

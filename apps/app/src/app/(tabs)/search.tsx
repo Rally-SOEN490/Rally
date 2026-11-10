@@ -1,33 +1,26 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router } from "expo-router";
+import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PlayerDirectory } from "@/components/playerDirectory";
-import { TournamentDirectory } from "@/components/tournamentDirectory";
-import { TournamentFiltersSheet } from "@/components/tournamentFilters";
-import { useSearchFonts } from "@/lib/search-fonts";
-import { searchCopy as copy } from "@/translations/search.en";
-
 import { SearchBanner } from "@/components/searchBanner";
 import { SearchBar } from "@/components/searchBar";
+import { usePlayerResults } from "@/components/search/usePlayerResults";
+import { useTournamentFilterState } from "@/components/search/useTournamentFilterState";
+import { useTournamentResults } from "@/components/search/useTournamentResults";
 import { SegmentedToggle } from "@/components/searchToggle";
+import { TournamentDirectory } from "@/components/tournamentDirectory";
+import { TournamentFiltersSheet } from "@/components/tournamentFilters";
 import { colors } from "@/constants/rallyTheme";
-import { apiErrorMessage, getPlayers, type RallyPlayer } from "@/lib/api";
 import { tournamentPaths } from "@/lib/organizer-tournaments";
+import { useSearchFonts } from "@/lib/search-fonts";
 import { useSession } from "@/lib/session";
-import {
-  copyTournamentFilters,
-  EMPTY_TOURNAMENT_FILTERS,
-  filterTournaments,
-  getActiveTournamentFilterCount,
-  getTournaments,
-  type Tournament,
-  type TournamentFilters,
-} from "@/lib/tournaments";
+import { filterTournaments, type Tournament } from "@/lib/tournaments";
+import { searchCopy as copy } from "@/translations/search.en";
 
 const TABS = [
   { value: "tournaments", label: copy.tabs.tournaments },
@@ -38,96 +31,109 @@ type SearchTab = (typeof TABS)[number]["value"];
 
 let lastSelectedTab: SearchTab = "tournaments";
 
+const openTournament = (tournament: Tournament) => router.push(tournamentPaths.page(tournament.id));
+
+// The search field (with the filter button on the Tournaments tab) and the tabs.
+function SearchControls({
+  tab,
+  onSelectTab,
+  query,
+  onChangeQuery,
+  fonts,
+  filters,
+}: {
+  tab: SearchTab;
+  onSelectTab: (tab: SearchTab) => void;
+  query: string;
+  onChangeQuery: (query: string) => void;
+  fonts: ReturnType<typeof useSearchFonts>;
+  filters: ReturnType<typeof useTournamentFilterState>;
+}) {
+  return (
+    <View style={styles.controls}>
+      <SearchBar
+        value={query}
+        onChangeText={onChangeQuery}
+        mode={tab}
+        fontFamily={fonts.regular}
+        onPressFilter={tab === "tournaments" ? filters.openSheet : undefined}
+        activeFilterCount={tab === "tournaments" ? filters.activeCount : 0}
+      />
+      <SegmentedToggle
+        options={TABS}
+        selected={tab}
+        onChange={onSelectTab}
+        fontFamily={fonts.semibold}
+      />
+    </View>
+  );
+}
+
+// The tournament or player list, depending on the tab.
+function SearchResults({
+  tab,
+  query,
+  clearSearch,
+  fonts,
+  players,
+  tournaments,
+  filters,
+}: {
+  tab: SearchTab;
+  query: string;
+  clearSearch: () => void;
+  fonts: ReturnType<typeof useSearchFonts>;
+  players: ReturnType<typeof usePlayerResults>;
+  tournaments: ReturnType<typeof useTournamentResults>;
+  filters: ReturnType<typeof useTournamentFilterState>;
+}) {
+  return (
+    <>
+      {tab === "tournaments" && (
+        <TournamentDirectory
+          tournaments={tournaments.tournaments}
+          query={query}
+          filters={filters.applied}
+          // The spinner only replaces an empty list; a refresh keeps the results.
+          loading={tournaments.loading && tournaments.tournaments.length === 0}
+          error={tournaments.error}
+          retry={tournaments.retry}
+          fonts={fonts}
+          clearSearch={clearSearch}
+          clearFilters={filters.clearApplied}
+          removeFilter={(update) => filters.setApplied(update)}
+          onOpen={openTournament}
+        />
+      )}
+
+      {tab === "players" && (
+        <PlayerDirectory
+          players={players.players}
+          query={query}
+          loading={players.loading}
+          error={players.error}
+          retry={players.retry}
+          clearSearch={clearSearch}
+          fonts={fonts}
+        />
+      )}
+    </>
+  );
+}
+
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
-  const [retryAttempt, setRetryAttempt] = useState(0);
   const fonts = useSearchFonts();
   const [tab, setTab] = useState<SearchTab>(lastSelectedTab);
-  const [players, setPlayers] = useState<RallyPlayer[]>([]);
-  const [playersLoading, setPlayersLoading] = useState(false);
-  const [playersError, setPlayersError] = useState<string>();
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [tournamentsLoading, setTournamentsLoading] = useState(false);
-  const [tournamentsError, setTournamentsError] = useState<string>();
-  const [tournamentFilters, setTournamentFilters] = useState<TournamentFilters>(() =>
-    copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS),
-  );
-  const [draftTournamentFilters, setDraftTournamentFilters] = useState<TournamentFilters>(() =>
-    copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS),
-  );
-  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const { user } = useSession();
+  const players = usePlayerResults(tab === "players", user);
+  const tournaments = useTournamentResults(tab === "tournaments", user);
+  const filters = useTournamentFilterState();
 
-  useEffect(() => {
-    if (tab !== "players" || !user) return;
-
-    let isCurrent = true;
-    // Reset stale results when the signed-in user, tab, or retry request changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPlayers([]);
-    setPlayersError(undefined);
-    setPlayersLoading(true);
-
-    getPlayers(user)
-      .then((result) => {
-        if (isCurrent) setPlayers(result);
-      })
-      .catch((error) => {
-        if (isCurrent) setPlayersError(apiErrorMessage(error));
-      })
-      .finally(() => {
-        if (isCurrent) setPlayersLoading(false);
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [tab, user, retryAttempt]);
-
-  // Loads tournaments each time Search comes back into view, not just once:
-  // the tabs keep this screen loaded, so without this a tournament published
-  // from Events a moment ago wouldn't be listed. Results already on screen stay
-  // while the new ones load.
-  const loadTournaments = useCallback(() => {
-    if (tab !== "tournaments" || !user) return;
-
-    let isCurrent = true;
-    setTournamentsError(undefined);
-    setTournamentsLoading(true);
-
-    getTournaments(user)
-      .then((result) => {
-        if (isCurrent) setTournaments(result);
-      })
-      .catch((error) => {
-        if (isCurrent) setTournamentsError(apiErrorMessage(error));
-      })
-      .finally(() => {
-        if (isCurrent) setTournamentsLoading(false);
-      });
-
-    // Leaving Search ignores an answer that arrives afterwards.
-    return () => {
-      isCurrent = false;
-    };
-  }, [tab, user]);
-  useFocusEffect(loadTournaments);
-
-  const activeFilterCount = getActiveTournamentFilterCount(tournamentFilters);
-  const draftResultCount = filterTournaments(tournaments, query, draftTournamentFilters).length;
   const selectTab = (nextTab: SearchTab) => {
     lastSelectedTab = nextTab;
     setTab(nextTab);
   };
-  const openFilters = () => {
-    setDraftTournamentFilters(copyTournamentFilters(tournamentFilters));
-    setFilterSheetVisible(true);
-  };
-  const clearFilters = () => setTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
-  const clearDraftFilters = () =>
-    setDraftTournamentFilters(copyTournamentFilters(EMPTY_TOURNAMENT_FILTERS));
-  const openTournament = (tournament: Tournament) =>
-    router.push(tournamentPaths.page(tournament.id));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -138,63 +144,33 @@ export default function SearchScreen() {
           mediumFontFamily={fonts.medium}
         />
 
-        <View style={styles.controls}>
-          <SearchBar
-            value={query}
-            onChangeText={setQuery}
-            mode={tab}
-            fontFamily={fonts.regular}
-            onPressFilter={tab === "tournaments" ? openFilters : undefined}
-            activeFilterCount={tab === "tournaments" ? activeFilterCount : 0}
-          />
-          <SegmentedToggle
-            options={TABS}
-            selected={tab}
-            onChange={selectTab}
-            fontFamily={fonts.semibold}
-          />
-        </View>
+        <SearchControls
+          tab={tab}
+          onSelectTab={selectTab}
+          query={query}
+          onChangeQuery={setQuery}
+          fonts={fonts}
+          filters={filters}
+        />
 
-        {tab === "tournaments" && (
-          <TournamentDirectory
-            tournaments={tournaments}
-            query={query}
-            filters={tournamentFilters}
-            // The spinner only replaces an empty list; a refresh keeps the results.
-            loading={tournamentsLoading && tournaments.length === 0}
-            error={tournamentsError}
-            retry={loadTournaments}
-            fonts={fonts}
-            clearSearch={() => setQuery("")}
-            clearFilters={clearFilters}
-            removeFilter={(update) => setTournamentFilters(update)}
-            onOpen={openTournament}
-          />
-        )}
-
-        {tab === "players" && (
-          <PlayerDirectory
-            players={players}
-            query={query}
-            loading={playersLoading}
-            error={playersError}
-            retry={() => setRetryAttempt((attempt) => attempt + 1)}
-            clearSearch={() => setQuery("")}
-            fonts={fonts}
-          />
-        )}
+        <SearchResults
+          tab={tab}
+          query={query}
+          clearSearch={() => setQuery("")}
+          fonts={fonts}
+          players={players}
+          tournaments={tournaments}
+          filters={filters}
+        />
       </ScrollView>
       <TournamentFiltersSheet
-        visible={filterSheetVisible}
-        filters={draftTournamentFilters}
-        resultCount={draftResultCount}
-        onClose={() => setFilterSheetVisible(false)}
-        onChange={setDraftTournamentFilters}
-        onApply={() => {
-          setTournamentFilters(draftTournamentFilters);
-          setFilterSheetVisible(false);
-        }}
-        onClear={clearDraftFilters}
+        visible={filters.sheetVisible}
+        filters={filters.draft}
+        resultCount={filterTournaments(tournaments.tournaments, query, filters.draft).length}
+        onClose={filters.closeSheet}
+        onChange={filters.setDraft}
+        onApply={filters.applyDraft}
+        onClear={filters.clearDraft}
       />
     </SafeAreaView>
   );
