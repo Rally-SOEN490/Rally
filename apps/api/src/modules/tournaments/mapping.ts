@@ -20,12 +20,26 @@ import {
 } from "./catalog.ts";
 import { fromMontrealTime, toMontrealTime } from "./montreal-time.ts";
 import type { DivisionFields, TournamentFields, TournamentRepository } from "./repository.ts";
-import { dateProblems } from "./rules.ts";
+import { dateProblems, signUpsAt } from "./rules.ts";
 
 // What this module needs from the users module, passed in by app.ts.
 export type Accounts = {
   findAccount: (firebaseUid: string) => Promise<{ id: string; role: AccountRole } | null>;
 };
+
+// What this module needs from the teams module, passed in by app.ts.
+export type Teams = {
+  // How many teams each division has. Divisions without teams can be left out.
+  countByDivision: (divisionIds: string[]) => Promise<Map<string, number>>;
+  // The team a player is on in a tournament, or null.
+  findTeamOf: (tournamentId: string, userId: string) => Promise<MyTeam | null>;
+};
+
+type MyTeam = { id: string; name: string; divisionId: string; isCaptain: boolean };
+
+// How many teams each division has, by division id.
+export type TeamCounts = Map<string, number>;
+const noTeams: TeamCounts = new Map();
 
 // The fields the API accepts. Times are Montreal times, "YYYY-MM-DDTHH:mm".
 export type TournamentInput = {
@@ -49,7 +63,12 @@ export type DivisionInput = {
 };
 
 type Stored = NonNullable<Awaited<ReturnType<TournamentRepository["findById"]>>>;
-export type Deps = { tournaments: TournamentRepository; accounts: Accounts; now: () => Date };
+export type Deps = {
+  tournaments: TournamentRepository;
+  accounts: Accounts;
+  teams: Teams;
+  now: () => Date;
+};
 
 // Errors whose message the app shows; app.ts sends them with this status code.
 const httpError = (statusCode: number, message: string) =>
@@ -71,7 +90,8 @@ const toDivisionResponse = (division: Stored["divisions"][number]) => ({
   priceCents: division.priceCents,
 });
 
-const toResponse = (tournament: Stored) => ({
+// Drafts have no teams, so the routes that change a draft leave out `counts`.
+const toResponse = (tournament: Stored, counts: TeamCounts = noTeams) => ({
   id: tournament.id,
   status: tournament.status,
   name: tournament.name,
@@ -84,8 +104,10 @@ const toResponse = (tournament: Stored) => ({
   registrationClosesAt: montreal(tournament.registrationClosesAt),
   publishedAt: tournament.publishedAt?.toISOString() ?? null,
   divisions: tournament.divisions.map(toDivisionResponse),
-  // Teams can't register yet (#58), so this is 0 until then.
-  registeredTeams: 0,
+  registeredTeams: tournament.divisions.reduce(
+    (sum, division) => sum + (counts.get(division.id) ?? 0),
+    0,
+  ),
 });
 
 export type TournamentResponse = ReturnType<typeof toResponse>;
@@ -94,7 +116,7 @@ type Published = Stored & { organizer: { displayName: string } };
 
 // What any signed-in player sees of a published tournament in Search. Leaves out
 // the organizer's account and the draft-only fields (status, courts, description).
-const toPublishedResponse = (tournament: Published) => ({
+const toPublishedResponse = (tournament: Published, counts: TeamCounts) => ({
   id: tournament.id,
   name: tournament.name,
   location: tournament.location,
@@ -103,10 +125,9 @@ const toPublishedResponse = (tournament: Published) => ({
   registrationOpensAt: montreal(tournament.registrationOpensAt),
   registrationClosesAt: montreal(tournament.registrationClosesAt),
   organizerName: tournament.organizer.displayName,
-  // Teams can't register yet (#58), so every division has all its spots left.
   divisions: tournament.divisions.map((division) => ({
     ...toDivisionResponse(division),
-    registeredTeams: 0,
+    registeredTeams: counts.get(division.id) ?? 0,
   })),
 });
 
@@ -181,31 +202,28 @@ const duplicateDivisionName = () =>
   httpError(409, "This tournament already has a division with that name.");
 
 export { httpError, lockOwnDraft, findAccountId, toFields, checkDates, toResponse };
-// Whether teams can sign up right now, so the app never has to compare
-// Montreal times with the phone's clock. Publishing needs both registration
-// dates, so only a draft can be missing one; it counts as NOT_OPEN, and the app
-// checks the dates itself to show "Sign-up dates to be announced".
-export type SignUps = "NOT_OPEN" | "OPEN" | "CLOSED";
-
-const signUpsAt = (tournament: Stored, now: Date): SignUps => {
-  const { registrationOpensAt: opens, registrationClosesAt: closes } = tournament;
-  if (!opens || !closes || now < opens) return "NOT_OPEN";
-  return now < closes ? "OPEN" : "CLOSED";
-};
-
 // A tournament's page. Its organizer gets everything they set up (status,
 // courts, publishing date), like their other routes; anyone else gets what
-// Search sends, plus the description.
-const toPageResponse = (tournament: Published, isOrganizer: boolean, now: Date) => {
-  const published = toPublishedResponse(tournament);
+// Search sends, plus the description. Everyone also gets the team they are on
+// in it, or null.
+const toPageResponse = (
+  tournament: Published,
+  viewer: { isOrganizer: boolean; myTeam: MyTeam | null },
+  counts: TeamCounts,
+  now: Date,
+) => {
+  const { isOrganizer, myTeam } = viewer;
+  const published = toPublishedResponse(tournament, counts);
+  const division = tournament.divisions.find(({ id }) => id === myTeam?.divisionId);
   const shared = {
     isOrganizer,
     signUps: signUpsAt(tournament, now),
     description: tournament.description,
+    myTeam: myTeam && division ? { ...myTeam, divisionName: division.name } : null,
   };
   return isOrganizer
     ? {
-        ...toResponse(tournament),
+        ...toResponse(tournament, counts),
         organizerName: published.organizerName,
         divisions: published.divisions,
         ...shared,

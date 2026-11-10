@@ -1,15 +1,12 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { singleLine, uuid } from "../../request-schemas.ts";
 import { formats, levels, limits, types } from "./catalog.ts";
 import { localDateTimePattern } from "./montreal-time.ts";
 
 // Request schemas for the tournament routes. Fastify checks requests against
 // them before the service runs.
-
-// One line with at least one visible character and no invisible control characters.
-const singleLine = (maxLength: number) =>
-  ({ type: "string", maxLength, pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$" }) as const;
 
 // Allows null as well. Written as a list of types, not anyOf, because Fastify's
 // validator would otherwise turn 0, false or "" into null instead of rejecting them.
@@ -46,13 +43,6 @@ const divisionProperties = {
   },
   maxTeams: { type: "integer", minimum: limits.minTeams, maximum: limits.maxTeams },
   priceCents: { type: "integer", minimum: 0, maximum: limits.maxPriceCents },
-} as const;
-
-// The standard 8-4-4-4-12 form. Anything looser reaches the database, which
-// rejects it as an error (500) instead of the request being invalid (400).
-const uuid = {
-  type: "string",
-  pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
 } as const;
 
 export const tournamentParams = {

@@ -17,6 +17,8 @@ import {
   type Accounts,
   type Deps,
   type DivisionInput,
+  type Stored,
+  type Teams,
   type TournamentInput,
 } from "./mapping.ts";
 import { can } from "../../permissions.ts";
@@ -35,14 +37,25 @@ const create = async (
   return toResponse(await deps.tournaments.create(organizerId, { ...fields, name: fields.name! }));
 };
 
+// How many teams each division of these tournaments has, in one query.
+const countTeams = (deps: Deps, tournaments: Pick<Stored, "divisions">[]) =>
+  deps.teams.countByDivision(
+    tournaments.flatMap((tournament) => tournament.divisions.map(({ id }) => id)),
+  );
+
 const listMine = async (deps: Deps, firebaseUid: string) => {
   const organizerId = await findAccountId(deps, firebaseUid);
-  return (await deps.tournaments.findByOrganizer(organizerId)).map(toResponse);
+  const tournaments = await deps.tournaments.findByOrganizer(organizerId);
+  const counts = await countTeams(deps, tournaments);
+  return tournaments.map((tournament) => toResponse(tournament, counts));
 };
 
 // Every signed-in player sees these in Search. A tournament leaves the list once it ends.
-const listPublished = async (deps: Deps) =>
-  (await deps.tournaments.findPublishedNotEnded(deps.now())).map(toPublishedResponse);
+const listPublished = async (deps: Deps) => {
+  const tournaments = await deps.tournaments.findPublishedNotEnded(deps.now());
+  const counts = await countTeams(deps, tournaments);
+  return tournaments.map((tournament) => toPublishedResponse(tournament, counts));
+};
 
 // A tournament's page (#301, #285). Any logged-in account sees a published
 // tournament; a draft only its organizer, and anyone else gets "not found", so
@@ -57,7 +70,9 @@ const getPage = async (deps: Deps, firebaseUid: string, tournamentId: string) =>
     tournament.organizerId === account.id &&
     can(account.role, "tournament:create");
   if (!tournament || (tournament.status !== "PUBLISHED" && !isOrganizer)) throw notFound();
-  return toPageResponse(tournament, isOrganizer, deps.now());
+  const myTeam = account ? await deps.teams.findTeamOf(tournament.id, account.id) : null;
+  const counts = await countTeams(deps, [tournament]);
+  return toPageResponse(tournament, { isOrganizer, myTeam }, counts, deps.now());
 };
 
 // Runs `change` on the caller's own draft inside one transaction, then returns the result.
@@ -151,6 +166,7 @@ const deleteDraft = async (deps: Deps, firebaseUid: string, tournamentId: string
 export const createTournamentService = (dependencies: {
   tournaments: TournamentRepository;
   accounts: Accounts;
+  teams: Teams;
   now?: () => Date;
 }) => {
   const deps: Deps = { ...dependencies, now: dependencies.now ?? (() => new Date()) };

@@ -9,7 +9,10 @@ import type { Database } from "./db.ts";
 import type { ProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 import { healthRoutes } from "./health.ts";
 import { organizerApplicationRoutes } from "./modules/organizer-applications/routes.ts";
+import { createTeamLookup } from "./modules/teams/lookup.ts";
+import { teamRoutes } from "./modules/teams/routes.ts";
 import { tournamentRoutes } from "./modules/tournaments/routes.ts";
+import { createSignUpLookup } from "./modules/tournaments/sign-up-lookup.ts";
 import { createUserRepository } from "./modules/users/repository.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
@@ -73,7 +76,16 @@ export const buildApp = async ({
     db,
     verifyIdToken,
     accounts: { findAccount: users.findAccount },
+    teams: createTeamLookup(db),
     findRole: users.findRoleByFirebaseUid,
+    prefix: "/tournaments",
+  });
+  // Teams live in their own module, under the same /tournaments addresses.
+  await app.register(teamRoutes, {
+    db,
+    verifyIdToken,
+    accounts: { findAccount: users.findAccount },
+    tournaments: createSignUpLookup(db),
     prefix: "/tournaments",
   });
   return app;
