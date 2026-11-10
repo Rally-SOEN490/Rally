@@ -32,7 +32,7 @@ The only API request that changes a role is approving an organizer application, 
 
 These are not account roles. A person can hold them in one place and not in another, so they are never stored on `users`.
 
-- **Captain:** the player who created a team in a tournament. Teams don't last across tournaments (decision for #180), so captaincy belongs to that one team in that one tournament. Captain checks will take the team, and will be added with teams (#58).
+- **Captain:** the player who created a team in a tournament. Teams don't last across tournaments (decision for #180), so captaincy belongs to that one team in that one tournament. The creator of a team is its captain (`team_members.is_captain`, see [teams](teams.md)). Captain checks will take the team; the first ones come with join requests (RALLY-38).
 - **Staff:** not part of this decision. Event staff (#79) is still a planned story and will define its own role when it is built.
 
 ## Where permissions are checked

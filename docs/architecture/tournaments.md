@@ -41,7 +41,7 @@ Rally is for Montreal, so all tournament times are Montreal times: 9:00 means 9:
 2. **Divisions** (step 2 of 2): add, edit and remove divisions. Each is saved on its own.
 3. **Create tournament** publishes. It needs every setup field, valid dates, a start in the future, and at least one division. Only drafts can be changed for now; editing a published tournament is #80.
 
-Once published, a tournament shows in Search until it ends (see [Search](#search)). Registration (#58) will use the registration dates.
+Once published, a tournament shows in Search until it ends (see [Search](#search)). Teams can sign up between the registration dates (see [teams](teams.md)).
 
 ## Search
 
@@ -62,8 +62,8 @@ One page at `/tournaments/:id` for everyone (#301), with extra parts for the tou
 - **What is sent:** the same fields as Search, plus the description. The organizer also gets what they set up (status, courts, publishing date). `isOrganizer` says which view it is.
 - **Sign-ups:** the API sends `signUps`: `NOT_OPEN`, `OPEN` or `CLOSED`, worked out from the registration dates and the server's clock. The app never compares Montreal times with the phone's clock.
 - **Layout:** the name and organizer; an info card with the date and hours, the location, when sign-ups open or close (and the other date), and, for a tournament with one division, that division and its price; the description exactly as typed; then the teams count (one division) or the Divisions list (several), where full divisions are greyed out.
-- **The bar at the bottom:** "N spots left" and **Sign up** while sign-ups are open and a division has room. Otherwise it only says why: "Sign-ups open Oct 20", "Sign-ups closed Nov 12" or "Full". Signing up is RALLY-36 and RALLY-38, so for now Sign up says registration isn't available yet.
-- **The organizer's extras:** each division's "10 / 15 teams" and the total, "Sign-ups open" in the bar instead of Sign up, a greyed-out "Registered teams" button until the list exists (RALLY-53), and "Continue setup" on a draft.
+- **The bar at the bottom:** "N spots left" and **Sign up** while sign-ups are open and a division has room; Sign up creates a team (RALLY-36, see [teams](teams.md)). Someone already on a team sees "You're captain of Spike Lee" and its division instead. Otherwise the bar only says why: "Sign-ups open Oct 20", "Sign-ups closed Nov 12" or "Full".
+- **The organizer's extras:** each division's "10 / 15 teams" and the total, a greyed-out "Registered teams" button until the list exists (RALLY-53), and "Continue setup" on a draft. On a published tournament they get the same Sign up as everyone, since organizers may play in their own tournament.
 - **Not yet:** team lists ("See all", tapping a division), Share link, the "…" menu (editing #80, cancelling #81) and the Map button.
 - **Setup screens** load through the same route, and refuse a tournament whose `isOrganizer` is false.
 
@@ -93,7 +93,7 @@ Every change to a draft runs in a transaction that first locks the tournament ro
 | `DELETE /tournaments/:id`                       | Deletes a draft and its divisions. A published tournament can't be deleted; cancelling it is #81.           |
 | `POST /tournaments/:id/publish`                 | Publishes a complete draft. Returns 400 listing what's missing.                                             |
 
-Responses include `registeredTeams`, which is 0 until teams can register (#58).
+Responses include `registeredTeams`: the teams signed up, counted from the teams module. Signing up a team is `POST /tournaments/:id/teams`, in the [teams](teams.md) module.
 
 ## App
 
@@ -104,6 +104,6 @@ Responses include `registeredTeams`, which is 0 until teams can register (#58).
 
 ## Open points
 
-- Deleting an organizer's account deletes their tournaments. Revisit once teams can register (#58).
+- Deleting an organizer's account deletes their tournaments, and with them every team signed up. Now that teams can sign up (#58), this needs a decision: keep it, refuse to delete an account that organizes a published tournament, or keep the tournament without its organizer.
 - Editing (#80) and cancelling (#81) are separate issues.
 - Search loads every published tournament that hasn't ended and filters them on the phone. That is fine for Release 1's numbers; past a few hundred, filtering and paging should move to the API (RALLY-232, #319).
