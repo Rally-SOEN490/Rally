@@ -24,7 +24,24 @@ export type Config = {
 };
 
 // Loose on purpose: Resend does the real check. This catches typos like a missing "@".
-const looksLikeEmail = (value: string) => /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/.test(value);
+// Equivalent to /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/ but runs in linear time (no backtracking).
+const looksLikeEmail = (value: string) => {
+  if (/[\s,]/.test(value)) return false;
+  const at = value.indexOf("@");
+  // Exactly one "@", with something before it.
+  if (at < 1 || at !== value.lastIndexOf("@")) return false;
+  const domain = value.slice(at + 1);
+  // A "." that has at least one character on each side.
+  const dot = domain.indexOf(".", 1);
+  return dot !== -1 && dot < domain.length - 1;
+};
+
+// Removes any number of trailing "/" characters in a single pass.
+const trimTrailingSlashes = (value: string) => {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end--;
+  return value.slice(0, end);
+};
 
 const readEmailList = (name: string, value: string | undefined) => {
   const emails = (value ?? "")
@@ -85,6 +102,6 @@ export const loadConfig = (env: NodeJS.ProcessEnv): Config => {
       "ORGANIZER_REVIEWER_EMAILS",
       env.ORGANIZER_REVIEWER_EMAILS,
     ),
-    appUrl: (env.APP_URL || "http://localhost:8081").replace(/\/+$/, ""),
+    appUrl: trimTrailingSlashes(env.APP_URL || "http://localhost:8081"),
   };
 };
