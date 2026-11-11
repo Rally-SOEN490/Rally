@@ -9,8 +9,8 @@ import { pageStyles } from "./pageStyles";
 
 const copy = tournamentCopy.page;
 
-// The teams in the tournament. Team lists don't exist yet (RALLY-36, RALLY-53),
-// so nothing here opens anything: no "See all", no arrows.
+// The teams in the tournament. Team lists don't exist yet (RALLY-53), so
+// nothing here opens anything: no "See all", no arrows.
 export function DivisionsSection({ page }: { page: TournamentPage }) {
   const { divisions } = page;
   if (divisions.length === 0) return null;

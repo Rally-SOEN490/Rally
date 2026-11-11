@@ -57,3 +57,18 @@ export const publishProblems = (tournament: PublishCandidate, now: Date) => {
   if (tournament.divisionCount === 0) problems.push("Add at least one division.");
   return problems;
 };
+
+// Whether teams can sign up right now, so the app never has to compare
+// Montreal times with the phone's clock. Publishing needs both registration
+// dates, so only a draft can be missing one; it counts as NOT_OPEN, and the app
+// checks the dates itself to show "Sign-up dates to be announced".
+export type SignUps = "NOT_OPEN" | "OPEN" | "CLOSED";
+
+export const signUpsAt = (
+  dates: Pick<TournamentDates, "registrationOpensAt" | "registrationClosesAt">,
+  now: Date,
+): SignUps => {
+  const { registrationOpensAt: opens, registrationClosesAt: closes } = dates;
+  if (!opens || !closes || now < opens) return "NOT_OPEN";
+  return now < closes ? "OPEN" : "CLOSED";
+};

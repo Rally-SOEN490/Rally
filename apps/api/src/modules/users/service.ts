@@ -5,6 +5,12 @@ import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./rep
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import type { AccountRole } from "../../permissions.ts";
+import type { Prisma } from "../../generated/prisma/client.ts";
+
+// What this module needs from the teams module, passed in by app.ts.
+export type AccountTeams = {
+  leaveAllTeams: (userId: string, transaction: Prisma.TransactionClient) => Promise<void>;
+};
 
 // What the API sends back about a user. Internal fields like firebaseUid stay on the server.
 export type UserResponse = {
@@ -151,7 +157,11 @@ const requirePhotos = (photos?: ProfilePhotoStorage) => {
   return photos;
 };
 
-export const createUserService = (users: UserRepository, photos?: ProfilePhotoStorage) => {
+export const createUserService = (
+  users: UserRepository,
+  teams: AccountTeams,
+  photos?: ProfilePhotoStorage,
+) => {
   const dependencies = { users, photos };
 
   return {
@@ -199,11 +209,10 @@ export const createUserService = (users: UserRepository, photos?: ProfilePhotoSt
       return user ? toResponse(user, photos) : null;
     },
 
-    // Removes everything Rally stores about the person. Once users have teams and
-    // results, this must keep match history but replace their name with "Deleted
-    // player" (see the architecture page on the Wiki).
-    remove: async (firebaseUid: string) => {
-      await users.deleteByFirebaseUid(firebaseUid);
-    },
+    // Removes everything Rally stores about the person, and any team left with no
+    // players, which would otherwise keep its spot and name (docs/architecture/teams.md).
+    // Once teams have results, this must keep match history but replace their
+    // name with "Deleted player" (see the architecture page on the Wiki).
+    remove: (firebaseUid: string) => users.deleteByFirebaseUid(firebaseUid, teams.leaveAllTeams),
   };
 };

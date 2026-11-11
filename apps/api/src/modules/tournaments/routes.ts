@@ -5,7 +5,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import { requirePermission, type FindAccountRole } from "../../authorization.ts";
 import type { Database } from "../../db.ts";
-import type { Accounts, DivisionInput, TournamentInput } from "./mapping.ts";
+import type { Accounts, DivisionInput, Teams, TournamentInput } from "./mapping.ts";
 import { createTournamentRepository } from "./repository.ts";
 import {
   createDivisionBody,
@@ -90,11 +90,13 @@ export const tournamentRoutes: FastifyPluginAsync<{
   db: Database;
   verifyIdToken: VerifyIdToken;
   accounts: Accounts;
+  teams: Teams;
   findRole: FindAccountRole;
-}> = async (app, { db, verifyIdToken, accounts, findRole }) => {
+}> = async (app, { db, verifyIdToken, accounts, teams, findRole }) => {
   const tournaments = createTournamentService({
     tournaments: createTournamentRepository(db),
     accounts,
+    teams,
   });
 
   // Every route needs a logged-in account.

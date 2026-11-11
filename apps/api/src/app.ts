@@ -3,13 +3,16 @@
 
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
-import Fastify, { type FastifyError } from "fastify";
+import Fastify, { type FastifyError, type FastifyReply, type FastifyRequest } from "fastify";
 import type { VerifyIdToken } from "./auth.ts";
 import type { Database } from "./db.ts";
 import type { ProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 import { healthRoutes } from "./health.ts";
 import { organizerApplicationRoutes } from "./modules/organizer-applications/routes.ts";
+import { createTeamLeaver, createTeamLookup } from "./modules/teams/lookup.ts";
+import { teamRoutes } from "./modules/teams/routes.ts";
 import { tournamentRoutes } from "./modules/tournaments/routes.ts";
+import { createSignUpLookup } from "./modules/tournaments/sign-up-lookup.ts";
 import { createUserRepository } from "./modules/users/repository.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 
@@ -30,6 +33,17 @@ export type AppOptions = {
   };
 };
 
+// The app shows `message` to the user, so keep it short and never send
+// internal details (database errors name our tables). The log keeps the details.
+const sendError = (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+  if (error.validation)
+    return reply.code(400).send({ message: "Some of the details you sent aren't valid." });
+  const statusCode = error.statusCode ?? 500;
+  if (statusCode < 500) return reply.code(statusCode).send({ message: error.message });
+  request.log.error(error);
+  return reply.code(500).send({ message: "Something went wrong on our side. Please try again." });
+};
+
 // Builds the API without starting it, so tests can send it requests with app.inject().
 export const buildApp = async ({
   db,
@@ -45,19 +59,16 @@ export const buildApp = async ({
   await app.register(multipart, { limits: { files: 1, fileSize: 5 * 1024 * 1024 } });
   app.decorateRequest("firebaseUid", "");
 
-  // The app shows `message` to the user, so keep it short and never send
-  // internal details (database errors name our tables). The log keeps the details.
-  app.setErrorHandler((error: FastifyError, request, reply) => {
-    if (error.validation)
-      return reply.code(400).send({ message: "Some of the details you sent aren't valid." });
-    const statusCode = error.statusCode ?? 500;
-    if (statusCode < 500) return reply.code(statusCode).send({ message: error.message });
-    request.log.error(error);
-    return reply.code(500).send({ message: "Something went wrong on our side. Please try again." });
-  });
+  app.setErrorHandler(sendError);
 
   await app.register(healthRoutes, { db });
-  await app.register(userRoutes, { db, verifyIdToken, photos, prefix: "/users" });
+  await app.register(userRoutes, {
+    db,
+    verifyIdToken,
+    photos,
+    teams: createTeamLeaver(db),
+    prefix: "/users",
+  });
   const users = createUserRepository(db);
   await app.register(organizerApplicationRoutes, {
     db,
@@ -73,7 +84,16 @@ export const buildApp = async ({
     db,
     verifyIdToken,
     accounts: { findAccount: users.findAccount },
+    teams: createTeamLookup(db),
     findRole: users.findRoleByFirebaseUid,
+    prefix: "/tournaments",
+  });
+  // Teams live in their own module, under the same /tournaments addresses.
+  await app.register(teamRoutes, {
+    db,
+    verifyIdToken,
+    accounts: { findAccount: users.findAccount },
+    tournaments: createSignUpLookup(db),
     prefix: "/tournaments",
   });
   return app;

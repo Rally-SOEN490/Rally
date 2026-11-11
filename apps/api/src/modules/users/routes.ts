@@ -9,7 +9,7 @@ import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
 import { directoryQuerySchema, profileChangesBodySchema, registerBodySchema } from "./schemas.ts";
-import { createUserService } from "./service.ts";
+import { createUserService, type AccountTeams } from "./service.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
 
@@ -38,8 +38,9 @@ export const userRoutes: FastifyPluginAsync<{
   db: Database;
   verifyIdToken: VerifyIdToken;
   photos?: ProfilePhotoStorage;
-}> = async (app, { db, verifyIdToken, photos }) => {
-  const users = createUserService(createUserRepository(db), photos);
+  teams: AccountTeams;
+}> = async (app, { db, verifyIdToken, photos, teams }) => {
+  const users = createUserService(createUserRepository(db), teams, photos);
 
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));

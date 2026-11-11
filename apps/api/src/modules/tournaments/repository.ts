@@ -39,6 +39,31 @@ const withDivisionsAndOrganizer = {
   organizer: { select: { displayName: true } },
 };
 
+// Locks the tournament until the transaction ends, so a publish and a
+// division change can't run at the same time, and sign-ups for it run one at a
+// time. Null if it doesn't exist.
+const lock = async (id: string, transaction: Transaction) => {
+  const rows = await transaction.$queryRaw<
+    { organizerId: string; status: TournamentStatus }[]
+  >`SELECT organizer_id AS "organizerId", status FROM tournaments WHERE id = ${id}::uuid FOR UPDATE`;
+  return rows[0] ?? null;
+};
+
+// Locks a published tournament for a team sign-up and returns what the
+// sign-up checks. Null if it doesn't exist or is a draft.
+const lockForSignUp = async (id: string, transaction: Transaction) => {
+  const locked = await lock(id, transaction);
+  if (locked?.status !== "PUBLISHED") return null;
+  return transaction.tournament.findUnique({
+    where: { id },
+    select: {
+      registrationOpensAt: true,
+      registrationClosesAt: true,
+      divisions: { select: { id: true, name: true, maxTeams: true } },
+    },
+  });
+};
+
 // The only place that reads and writes the tournaments and divisions tables.
 // Functions that take a transaction run inside the caller's.
 export const createTournamentRepository = (db: Database) => ({
@@ -70,14 +95,8 @@ export const createTournamentRepository = (db: Database) => ({
       include: withDivisionsAndOrganizer,
     }),
 
-  // Locks the tournament until the transaction ends, so a publish and a
-  // division change can't run at the same time. Null if it doesn't exist.
-  lock: async (id: string, transaction: Transaction) => {
-    const rows = await transaction.$queryRaw<
-      { organizerId: string; status: TournamentStatus }[]
-    >`SELECT organizer_id AS "organizerId", status FROM tournaments WHERE id = ${id}::uuid FOR UPDATE`;
-    return rows[0] ?? null;
-  },
+  lock,
+  lockForSignUp,
 
   update: (id: string, fields: TournamentFields, transaction: Transaction) =>
     transaction.tournament.update({ where: { id }, data: fields }),
