@@ -1,48 +1,38 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { fileTypeFromBuffer } from "file-type";
 import { requireUser, type VerifyIdToken } from "../../auth.ts";
 import type { Database } from "../../db.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
 import { profilePhotoMaxBytes, profilePhotoTypes } from "./photo-storage.ts";
 import { createUserRepository, type ProfileChanges } from "./repository.ts";
+import { directoryQuerySchema, profileChangesBodySchema, registerBodySchema } from "./schemas.ts";
 import { createUserService } from "./service.ts";
-import { skillLevels } from "./preferences.ts";
-import { interestCategories, interestKeys } from "../../../../shared/interests.ts";
 
 type RegisterBody = { displayName: string; ageConfirmed: true };
-const languages = ["EN", "FR"] as const;
-const colorThemes = ["green", "blue", "pink"] as const;
-
-// At least one character that isn't a space, and no invisible control
-// characters (PostgreSQL can't store some of them). Used at sign-up and when
-// the name is changed in Settings.
-const displayNameSchema = {
-  type: "string",
-  maxLength: 100,
-  pattern: "^\\P{Cc}*[^\\s\\p{Cc}]\\P{Cc}*$",
-} as const;
-
-// Fields the app may change with PATCH /users/me.
-const editableFields = [
-  "displayName",
-  "skillLevel",
-  "lookingForTeam",
-  "shownBadgeKeys",
-  "instagramUrl",
-  "facebookUrl",
-  "thoughtText",
-  "interests",
-  "notificationsEnabled",
-  "language",
-  "colorTheme",
-  "colorBlindMode",
-  "darkMode",
-] as const;
 
 const noAccount = { message: "No Rally account found." };
+const photosNotConfigured = { message: "Profile photo uploads are not configured." };
+
+// Sends the user, or 404 when the person has no Rally account.
+const sendUserOrNotFound = <T>(user: T | null, reply: FastifyReply) =>
+  user ?? reply.code(404).send(noAccount);
+
+// Reads the uploaded photo. Returns an error message instead when the request
+// has no file or the file isn't a JPEG, PNG, or WebP image.
+const readProfilePhoto = async (
+  request: FastifyRequest,
+): Promise<{ body: Buffer } | { error: string }> => {
+  const file = await request.file({ limits: { files: 1, fileSize: profilePhotoMaxBytes } });
+  if (!file) return { error: "Choose a profile photo to upload." };
+  const body = await file.toBuffer();
+  const detected = await fileTypeFromBuffer(body);
+  if (!detected || !profilePhotoTypes.includes(detected.mime))
+    return { error: "Use a JPEG, PNG, or WebP image." };
+  return { body };
+};
 
 export const userRoutes: FastifyPluginAsync<{
   db: Database;
@@ -54,137 +44,36 @@ export const userRoutes: FastifyPluginAsync<{
   // Every route in this file needs a logged-in user.
   app.addHook("preHandler", requireUser(verifyIdToken));
 
-  app.get(
-    "/",
-    {
-      schema: {
-        querystring: {
-          type: "object",
-          additionalProperties: false,
-          properties: {},
-        },
-      },
-    },
-    (request) => users.getDirectory(request.firebaseUid),
+  app.get("/", { schema: { querystring: directoryQuerySchema } }, (request) =>
+    users.getDirectory(request.firebaseUid),
   );
 
   // Saves the logged-in person in Rally's database. The app calls this right after sign-up.
-  app.post<{ Body: RegisterBody }>(
-    "/me",
-    {
-      schema: {
-        body: {
-          type: "object",
-          required: ["displayName", "ageConfirmed"],
-          properties: {
-            displayName: displayNameSchema,
-            ageConfirmed: { const: true },
-          },
-        },
-      },
-    },
-    (request) => users.register(request.firebaseUid, request.body.displayName),
+  app.post<{ Body: RegisterBody }>("/me", { schema: { body: registerBodySchema } }, (request) =>
+    users.register(request.firebaseUid, request.body.displayName),
   );
 
-  app.get("/me", async (request, reply) => {
-    const user = await users.getCurrent(request.firebaseUid);
-    return user ?? reply.code(404).send(noAccount);
-  });
+  app.get("/me", async (request, reply) =>
+    sendUserOrNotFound(await users.getCurrent(request.firebaseUid), reply),
+  );
 
   app.patch<{ Body: ProfileChanges }>(
     "/me",
-    {
-      schema: {
-        body: {
-          type: "object",
-          additionalProperties: false,
-          propertyNames: { enum: editableFields },
-          // At least one field must be sent.
-          anyOf: editableFields.map((field) => ({ required: [field] })),
-          properties: {
-            displayName: displayNameSchema,
-            skillLevel: { enum: [...skillLevels, null] },
-            lookingForTeam: { enum: [true, false] },
-            shownBadgeKeys: {
-              type: "array",
-              maxItems: 4,
-              uniqueItems: true,
-              items: { type: "string", minLength: 1 },
-            },
-            instagramUrl: {
-              anyOf: [
-                { type: "null" },
-                {
-                  type: "string",
-                  maxLength: 2048,
-                  pattern: "^https://(www\\.)?instagram\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
-                },
-              ],
-            },
-            facebookUrl: {
-              anyOf: [
-                { type: "null" },
-                {
-                  type: "string",
-                  maxLength: 2048,
-                  pattern: "^https://(www\\.)?facebook\\.com/[A-Za-z0-9._-]+/?(?:[?#].*)?$",
-                },
-              ],
-            },
-            thoughtText: {
-              anyOf: [
-                { type: "null" },
-                {
-                  type: "string",
-                  maxLength: 180,
-                  pattern: "^(?:\\P{Cc}|\\n|\\r)*$",
-                },
-              ],
-            },
-            interests: {
-              type: "object",
-              additionalProperties: false,
-              required: ["formats", "positions"],
-              properties: Object.fromEntries(
-                interestCategories.map((category) => [
-                  category,
-                  { type: "array", uniqueItems: true, items: { enum: interestKeys(category) } },
-                ]),
-              ),
-            },
-            notificationsEnabled: { enum: [true, false] },
-            language: { enum: languages },
-            colorTheme: { enum: colorThemes },
-            colorBlindMode: { enum: [true, false] },
-            darkMode: { enum: [true, false] },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const user = await users.update(request.firebaseUid, request.body);
-      return user ?? reply.code(404).send(noAccount);
-    },
+    { schema: { body: profileChangesBodySchema } },
+    async (request, reply) =>
+      sendUserOrNotFound(await users.update(request.firebaseUid, request.body), reply),
   );
 
   app.delete("/me/photo", async (request, reply) => {
-    if (!photos)
-      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
-    const user = await users.removePhoto(request.firebaseUid);
-    return user ?? reply.code(404).send({ message: "No Rally account found." });
+    if (!photos) return reply.code(503).send(photosNotConfigured);
+    return sendUserOrNotFound(await users.removePhoto(request.firebaseUid), reply);
   });
 
   app.post("/me/photo", async (request, reply) => {
-    if (!photos)
-      return reply.code(503).send({ message: "Profile photo uploads are not configured." });
-    const file = await request.file({ limits: { files: 1, fileSize: profilePhotoMaxBytes } });
-    if (!file) return reply.code(400).send({ message: "Choose a profile photo to upload." });
-    const body = await file.toBuffer();
-    const detected = await fileTypeFromBuffer(body);
-    if (!detected || !profilePhotoTypes.includes(detected.mime))
-      return reply.code(400).send({ message: "Use a JPEG, PNG, or WebP image." });
-    const user = await users.uploadPhoto(request.firebaseUid, body);
-    return user ?? reply.code(404).send({ message: "No Rally account found." });
+    if (!photos) return reply.code(503).send(photosNotConfigured);
+    const photo = await readProfilePhoto(request);
+    if ("error" in photo) return reply.code(400).send({ message: photo.error });
+    return sendUserOrNotFound(await users.uploadPhoto(request.firebaseUid, photo.body), reply);
   });
 
   // Deletes the logged-in person's Rally data. The app then deletes their Firebase login.

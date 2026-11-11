@@ -50,6 +50,137 @@ function toggleValue<T>(values: T[], value: T) {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
+// Options where at most one can be picked. Tapping the picked one clears it.
+function SingleChoiceGroup<T extends string | number>({
+  title,
+  options,
+  selected,
+  label,
+  onChange,
+}: {
+  title: string;
+  options: readonly T[];
+  selected: T | undefined;
+  label: (option: T) => string;
+  onChange: (value: T | undefined) => void;
+}) {
+  return (
+    <FilterGroup title={title}>
+      {options.map((option) => (
+        <Option
+          key={option}
+          label={label(option)}
+          selected={selected === option}
+          onPress={() => onChange(selected === option ? undefined : option)}
+        />
+      ))}
+    </FilterGroup>
+  );
+}
+
+// Options where any number can be picked.
+function MultiChoiceGroup<T extends string | number>({
+  title,
+  options,
+  selected,
+  label,
+  onChange,
+}: {
+  title: string;
+  options: readonly T[];
+  selected: T[];
+  label: (option: T) => string;
+  onChange: (values: T[]) => void;
+}) {
+  return (
+    <FilterGroup title={title}>
+      {options.map((value) => (
+        <Option
+          key={value}
+          label={label(value)}
+          selected={selected.includes(value)}
+          onPress={() => onChange(toggleValue(selected, value))}
+        />
+      ))}
+    </FilterGroup>
+  );
+}
+
+// Every filter group, in the order the sheet shows them.
+function FilterOptions({ filters, onChange }: Pick<Props, "filters" | "onChange">) {
+  return (
+    <>
+      <SingleChoiceGroup
+        title={copy.filterDate}
+        options={DATE_RANGE_OPTIONS}
+        selected={filters.dateRange}
+        label={(option) => copy.dateRangeLabel(option)}
+        onChange={(dateRange) => onChange({ ...filters, dateRange })}
+      />
+      <MultiChoiceGroup
+        title={copy.filterFormat}
+        options={FORMAT_OPTIONS}
+        selected={filters.formats}
+        label={(value) => value}
+        onChange={(formats) => onChange({ ...filters, formats })}
+      />
+      <MultiChoiceGroup
+        title={copy.filterType}
+        options={TYPE_OPTIONS}
+        selected={filters.types}
+        label={(value) => tournamentCopy.divisions.types[value]}
+        onChange={(types) => onChange({ ...filters, types })}
+      />
+      <MultiChoiceGroup
+        title={copy.filterLevel}
+        options={LEVEL_OPTIONS}
+        selected={filters.levels}
+        label={(value) => value}
+        onChange={(levels) => onChange({ ...filters, levels })}
+      />
+      <SingleChoiceGroup
+        title={copy.filterPrice}
+        options={PRICE_RANGE_OPTIONS}
+        selected={filters.priceRange}
+        label={(value) => copy.priceRangeLabel(value)}
+        onChange={(priceRange) => onChange({ ...filters, priceRange })}
+      />
+    </>
+  );
+}
+
+function SheetHeader({ onClear }: { onClear: () => void }) {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.title}>{copy.filtersTitle}</Text>
+      <Pressable accessibilityRole="button" onPress={onClear} hitSlop={8}>
+        <Text style={styles.clear}>{copy.clearAll}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function SpotsAvailableSwitch({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.spotsRow}>
+      <Text style={styles.groupTitle}>{copy.filterSpots}</Text>
+      <Switch
+        accessibilityLabel={copy.filterSpots}
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: "#CFCFCA", true: colors.seam }}
+        thumbColor={colors.white}
+      />
+    </View>
+  );
+}
+
 export function TournamentFiltersSheet({
   visible,
   filters,
@@ -75,91 +206,17 @@ export function TournamentFiltersSheet({
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.sheet} accessibilityViewIsModal>
-          <View style={styles.header}>
-            <Text style={styles.title}>{copy.filtersTitle}</Text>
-            <Pressable accessibilityRole="button" onPress={onClear} hitSlop={8}>
-              <Text style={styles.clear}>{copy.clearAll}</Text>
-            </Pressable>
-          </View>
+          <SheetHeader onClear={onClear} />
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
           >
-            <FilterGroup title={copy.filterDate}>
-              {DATE_RANGE_OPTIONS.map((option) => (
-                <Option
-                  key={option}
-                  label={copy.dateRangeLabel(option)}
-                  selected={filters.dateRange === option}
-                  onPress={() =>
-                    onChange({
-                      ...filters,
-                      dateRange: filters.dateRange === option ? undefined : option,
-                    })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterFormat}>
-              {FORMAT_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={value}
-                  selected={filters.formats.includes(value)}
-                  onPress={() =>
-                    onChange({ ...filters, formats: toggleValue(filters.formats, value) })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterType}>
-              {TYPE_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={tournamentCopy.divisions.types[value]}
-                  selected={filters.types.includes(value)}
-                  onPress={() => onChange({ ...filters, types: toggleValue(filters.types, value) })}
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterLevel}>
-              {LEVEL_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={value}
-                  selected={filters.levels.includes(value)}
-                  onPress={() =>
-                    onChange({ ...filters, levels: toggleValue(filters.levels, value) })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <FilterGroup title={copy.filterPrice}>
-              {PRICE_RANGE_OPTIONS.map((value) => (
-                <Option
-                  key={value}
-                  label={copy.priceRangeLabel(value)}
-                  selected={filters.priceRange === value}
-                  onPress={() =>
-                    onChange({
-                      ...filters,
-                      priceRange: filters.priceRange === value ? undefined : value,
-                    })
-                  }
-                />
-              ))}
-            </FilterGroup>
-            <View style={styles.spotsRow}>
-              <Text style={styles.groupTitle}>{copy.filterSpots}</Text>
-              <Switch
-                accessibilityLabel={copy.filterSpots}
-                value={filters.spotsAvailable}
-                onValueChange={(spotsAvailable) => onChange({ ...filters, spotsAvailable })}
-                trackColor={{ false: "#CFCFCA", true: colors.seam }}
-                thumbColor={colors.white}
-              />
-            </View>
+            <FilterOptions filters={filters} onChange={onChange} />
+            <SpotsAvailableSwitch
+              value={filters.spotsAvailable}
+              onChange={(spotsAvailable) => onChange({ ...filters, spotsAvailable })}
+            />
           </ScrollView>
           <Pressable
             accessibilityRole="button"

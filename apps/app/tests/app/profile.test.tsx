@@ -107,10 +107,10 @@ it("opens settings from the gear button", async () => {
   expect(router.push).toHaveBeenCalledWith("/settings");
 });
 
-it("does not show bio or profile editing controls", async () => {
+it("does not show a placeholder role or profile editing controls", async () => {
   await render(<Profile />);
 
-  expect(screen.getByText("Outside hitter • Sunbirds")).toBeOnTheScreen();
+  expect(screen.queryByText("Outside hitter • Sunbirds")).not.toBeOnTheScreen();
   expect(screen.queryByText("Beach volleyball player")).not.toBeOnTheScreen();
   expect(screen.queryByRole("button", { name: "Edit profile" })).not.toBeOnTheScreen();
 });

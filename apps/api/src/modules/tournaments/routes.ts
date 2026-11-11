@@ -66,10 +66,6 @@ const registerOrganizerRoutes = (app: FastifyInstance, tournaments: TournamentSe
   // The caller's tournaments, for the Organizer section of the Events page.
   app.get("/mine", (request) => tournaments.listMine(request.firebaseUid));
 
-  app.get<Id>("/:id", { schema: { params: tournamentParams } }, (request) =>
-    tournaments.getOwn(request.firebaseUid, request.params.id),
-  );
-
   app.patch<Id & { Body: TournamentInput }>(
     "/:id",
     { schema: { params: tournamentParams, body: updateTournamentBody } },
@@ -107,6 +103,11 @@ export const tournamentRoutes: FastifyPluginAsync<{
   // Published tournaments that haven't ended, for Search (#302). Any player may
   // browse them, so this needs no permission.
   app.get("/", () => tournaments.listPublished());
+
+  // A tournament's page: any published one, or the caller's own draft.
+  app.get<Id>("/:id", { schema: { params: tournamentParams } }, (request) =>
+    tournaments.getPage(request.firebaseUid, request.params.id),
+  );
 
   // The rest are for organizers and admins. Hooks added inside this register
   // only apply to the routes inside it.

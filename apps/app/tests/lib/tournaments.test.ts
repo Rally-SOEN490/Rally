@@ -8,6 +8,7 @@ import {
   copyTournamentFilters,
   filterTournaments,
   getActiveTournamentFilterCount,
+  getTournamentPage,
   getTournaments,
   summarizeDivisions,
   type BrowseDivision,
@@ -109,6 +110,14 @@ it("loads published tournaments from the API", async () => {
 
   await expect(getTournaments(user)).resolves.toEqual([tournaments[0]]);
   expect(request).toHaveBeenCalledWith(user, "GET", "/tournaments");
+});
+
+it("loads a tournament's page from the API", async () => {
+  const user = {} as User;
+  jest.mocked(request).mockResolvedValueOnce({ id: "one" });
+
+  await expect(getTournamentPage(user, "one")).resolves.toEqual({ id: "one" });
+  expect(request).toHaveBeenCalledWith(user, "GET", "/tournaments/one");
 });
 
 it("matches the name, location and organizer, ignoring case", () => {

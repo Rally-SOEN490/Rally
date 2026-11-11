@@ -88,6 +88,17 @@ const toBadgeResponse = ({
   };
 };
 
+// The keys of the user's interests in one category, for example "format".
+const interestKeysIn = (user: UserWithBadges, category: string) =>
+  user.interests.filter((interest) => interest.category === category).map(({ key }) => key);
+
+// Most-received badges first, then alphabetical by key.
+const byBadgeOrder = (
+  left: UserWithBadges["badges"][number],
+  right: UserWithBadges["badges"][number],
+) =>
+  right.receivedCount - left.receivedCount || left.badgeType.key.localeCompare(right.badgeType.key);
+
 const toResponse = async (
   user: UserWithBadges,
   photos?: ProfilePhotoStorage,
@@ -105,12 +116,10 @@ const toResponse = async (
   facebookUrl: user.facebookUrl,
   thoughtText: user.thoughtText,
   interests: {
-    formats: user.interests.filter(({ category }) => category === "format").map(({ key }) => key),
-    positions: user.interests
-      .filter(({ category }) => category === "position")
-      .map(({ key }) => key),
-    clubs: user.interests.filter(({ category }) => category === "club").map(({ key }) => key),
-    other: user.interests.filter(({ category }) => category === "other").map(({ key }) => key),
+    formats: interestKeysIn(user, "format"),
+    positions: interestKeysIn(user, "position"),
+    clubs: interestKeysIn(user, "club"),
+    other: interestKeysIn(user, "other"),
   },
   notificationsEnabled: user.notificationsEnabled,
   // The route only stores the allowed values, so these casts are safe.
@@ -119,13 +128,7 @@ const toResponse = async (
   colorBlindMode: user.colorBlindMode,
   darkMode: user.darkMode,
   createdAt: user.createdAt.toISOString(),
-  badges: [...user.badges]
-    .sort(
-      (left, right) =>
-        right.receivedCount - left.receivedCount ||
-        left.badgeType.key.localeCompare(right.badgeType.key),
-    )
-    .map(toBadgeResponse),
+  badges: [...user.badges].sort(byBadgeOrder).map(toBadgeResponse),
 });
 
 const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryResponse> => {
@@ -141,70 +144,72 @@ const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryR
   };
 };
 
-export const createUserService = (users: UserRepository, photos?: ProfilePhotoStorage) => ({
-  getDirectory: async (firebaseUid: string) =>
-    Promise.all((await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse)),
+type UserServiceDependencies = { users: UserRepository; photos?: ProfilePhotoStorage };
 
-  // The route only accepts the request if the person confirmed their age.
-  register: async (firebaseUid: string, displayName: string) =>
-    toResponse(
-      await users.createIfMissing({
-        firebaseUid,
-        displayName: displayName.trim(),
-        ageConfirmedAt: new Date(),
-      }),
-      photos,
-    ),
+// Reads the user fresh from the database and converts them for the API.
+const findResponse = async ({ users, photos }: UserServiceDependencies, firebaseUid: string) => {
+  const user = await users.findByFirebaseUid(firebaseUid);
+  return user ? toResponse(user, photos) : null;
+};
 
-  getCurrent: async (firebaseUid: string) => {
-    const user = await users.findByFirebaseUid(firebaseUid);
-    return user ? toResponse(user, photos) : null;
-  },
+const requirePhotos = (photos?: ProfilePhotoStorage) => {
+  if (!photos) throw new Error("Profile photo uploads are not configured.");
+  return photos;
+};
 
-  updateCurrent: async (firebaseUid: string, displayName: string) => {
-    const existing = await users.findByFirebaseUid(firebaseUid);
-    if (!existing) return null;
-    await users.updateByFirebaseUid(firebaseUid, {
-      displayName: displayName.trim(),
-    });
-    const user = await users.findByFirebaseUid(firebaseUid);
-    return user ? toResponse(user, photos) : null;
-  },
+export const createUserService = (users: UserRepository, photos?: ProfilePhotoStorage) => {
+  const dependencies = { users, photos };
 
-  uploadPhoto: async (firebaseUid: string, body: Buffer) => {
-    if (!photos) throw new Error("Profile photo uploads are not configured.");
-    const existing = await users.findByFirebaseUid(firebaseUid);
-    if (!existing) return null;
-    const key = await photos.put(firebaseUid, body);
-    await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: key });
-    if (existing.profilePhotoKey && existing.profilePhotoKey !== key)
-      await photos.delete(existing.profilePhotoKey).catch(() => undefined);
-    const updated = await users.findByFirebaseUid(firebaseUid);
-    return updated ? toResponse(updated, photos) : null;
-  },
+  return {
+    getDirectory: async (firebaseUid: string) =>
+      Promise.all((await users.findAllExceptFirebaseUid(firebaseUid)).map(toDirectoryResponse)),
 
-  removePhoto: async (firebaseUid: string) => {
-    if (!photos) throw new Error("Profile photo uploads are not configured.");
-    const existing = await users.findByFirebaseUid(firebaseUid);
-    if (!existing) return null;
-    if (existing.profilePhotoKey) await photos.delete(existing.profilePhotoKey);
-    await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: null });
-    const updated = await users.findByFirebaseUid(firebaseUid);
-    return updated ? toResponse(updated, photos) : null;
-  },
+    // The route only accepts the request if the person confirmed their age.
+    register: async (firebaseUid: string, displayName: string) =>
+      toResponse(
+        await users.createIfMissing({
+          firebaseUid,
+          displayName: displayName.trim(),
+          ageConfirmedAt: new Date(),
+        }),
+        photos,
+      ),
 
-  update: async (firebaseUid: string, changes: ProfileChanges) => {
-    const user = await users.updateByFirebaseUid(firebaseUid, {
-      ...changes,
-      ...(changes.displayName !== undefined ? { displayName: changes.displayName.trim() } : {}),
-    });
-    return user ? toResponse(user, photos) : null;
-  },
+    getCurrent: (firebaseUid: string) => findResponse(dependencies, firebaseUid),
 
-  // Removes everything Rally stores about the person. Once users have teams and
-  // results, this must keep match history but replace their name with "Deleted
-  // player" (see the architecture page on the Wiki).
-  remove: async (firebaseUid: string) => {
-    await users.deleteByFirebaseUid(firebaseUid);
-  },
-});
+    uploadPhoto: async (firebaseUid: string, body: Buffer) => {
+      const storage = requirePhotos(photos);
+      const existing = await users.findByFirebaseUid(firebaseUid);
+      if (!existing) return null;
+      const key = await storage.put(firebaseUid, body);
+      await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: key });
+      if (existing.profilePhotoKey && existing.profilePhotoKey !== key)
+        await storage.delete(existing.profilePhotoKey).catch(() => undefined);
+      return findResponse(dependencies, firebaseUid);
+    },
+
+    removePhoto: async (firebaseUid: string) => {
+      const storage = requirePhotos(photos);
+      const existing = await users.findByFirebaseUid(firebaseUid);
+      if (!existing) return null;
+      if (existing.profilePhotoKey) await storage.delete(existing.profilePhotoKey);
+      await users.updateByFirebaseUid(firebaseUid, { profilePhotoKey: null });
+      return findResponse(dependencies, firebaseUid);
+    },
+
+    update: async (firebaseUid: string, changes: ProfileChanges) => {
+      const user = await users.updateByFirebaseUid(firebaseUid, {
+        ...changes,
+        ...(changes.displayName !== undefined ? { displayName: changes.displayName.trim() } : {}),
+      });
+      return user ? toResponse(user, photos) : null;
+    },
+
+    // Removes everything Rally stores about the person. Once users have teams and
+    // results, this must keep match history but replace their name with "Deleted
+    // player" (see the architecture page on the Wiki).
+    remove: async (firebaseUid: string) => {
+      await users.deleteByFirebaseUid(firebaseUid);
+    },
+  };
+};

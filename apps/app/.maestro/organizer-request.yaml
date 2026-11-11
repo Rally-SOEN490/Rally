@@ -1,0 +1,33 @@
+# AI declaration:
+# 50% or more AI-generated
+
+appId: com.rally.app
+---
+- runFlow:
+    file: signup-verify-and-home.yaml
+
+- openLink: "rally://settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Become an organizer"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Become an organizer"
+- extendedWaitUntil:
+    visible: "Tell us about the tournaments you run.*"
+    timeout: 10000
+
+- tapOn: "What do you organize?"
+- inputText: ${MAESTRO_ORGANIZER_DESCRIPTION}
+- pressKey: TAB
+- inputText: ${MAESTRO_ORGANIZER_LINK}
+- pressKey: ENTER
+- tapOn: "Send request"
+
+- extendedWaitUntil:
+    visible: "Request sent"
+    timeout: 15000
+- assertVisible: "A Rally reviewer will answer.*"

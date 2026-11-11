@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+// When registration opens and closes, already shortened: "Oct 20".
+type SignUpDates = { opens: string; closes: string };
+
 export const tournamentCopy = {
   events: {
     city: "MONTRÉAL",
@@ -17,6 +20,7 @@ export const tournamentCopy = {
     draft: "Draft",
     published: "Published",
     openDraft: (name: string) => `Continue setting up ${name}`,
+    openPublished: (name: string) => `Open ${name}`,
     deleteDraft: (name: string) => `Delete ${name}`,
     deleteTitle: (name: string) => `Delete ${name}?`,
     deleteMessage: "This deletes the draft and its divisions. It can't be undone.",
@@ -116,5 +120,54 @@ export const tournamentCopy = {
     creating: "Creating…",
     createHint: "Creating publishes the tournament so players can find it.",
     published: "Your tournament is published.",
+  },
+
+  // A tournament's page: what players see, plus the organizer's extras.
+  page: {
+    back: "Back",
+    loading: "Loading the tournament…",
+    retry: "Try again",
+    by: (name: string) => `by ${name}`,
+    datesToBeAnnounced: "Dates to be announced",
+    locationToBeAnnounced: "Location to be announced",
+    // Where sign-ups stand, by the `signUps` value the API sends. `title` and
+    // `detail` are the info card's sign-ups row (the detail is the other date).
+    // The bottom bar repeats the title, except while sign-ups are open: then a
+    // player gets Sign up and the organizer gets `organizerBar`.
+    signUps: {
+      notSet: "Sign-up dates to be announced",
+      NOT_OPEN: {
+        title: ({ opens }: SignUpDates) => `Sign-ups open ${opens}`,
+        detail: ({ closes }: SignUpDates) => `Close ${closes}`,
+      },
+      OPEN: {
+        title: ({ closes }: SignUpDates) => `Sign-ups close ${closes}`,
+        detail: ({ opens }: SignUpDates) => `Opened ${opens}`,
+        organizerBar: "Sign-ups open",
+      },
+      CLOSED: {
+        title: ({ closes }: SignUpDates) => `Sign-ups closed ${closes}`,
+        detail: ({ opens }: SignUpDates) => `Opened ${opens}`,
+      },
+    },
+    about: "About",
+    divisions: "Divisions",
+    // "6v6 Co-ed B / B+ · $240 / team"
+    divisionAndPrice: (division: string, price: string) => `${division} · ${price}`,
+    pricePerTeam: (price: string) => `${price} / team`,
+    free: "Free",
+    teams: (registered: number, max: number) => `Teams · ${registered} / ${max}`,
+    teamCount: (registered: number, max: number) => `${registered} / ${max} teams`,
+    // "$240 · 5 spots left"
+    priceAndSpots: (price: string, spots: string) => `${price} · ${spots}`,
+    spotsLeft: (count: number) => `${count} ${count === 1 ? "spot" : "spots"} left`,
+    full: "Full",
+    fullTeams: (max: number) => `Full · ${max} / ${max}`,
+    signUp: "Sign up",
+    registrationUnavailable: "Registration isn't available yet.",
+    registeredTeams: "Registered teams",
+    registeredTeamsSoon: "Available once teams can register",
+    draft: "Draft · only you can see it",
+    continueSetup: "Continue setup",
   },
 };

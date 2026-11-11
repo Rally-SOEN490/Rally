@@ -11,6 +11,7 @@ import {
   notFound,
   toDivisionFields,
   toFields,
+  toPageResponse,
   toPublishedResponse,
   toResponse,
   type Accounts,
@@ -18,6 +19,7 @@ import {
   type DivisionInput,
   type TournamentInput,
 } from "./mapping.ts";
+import { can } from "../../permissions.ts";
 import type { DivisionFields, TournamentRepository } from "./repository.ts";
 import { publishProblems } from "./rules.ts";
 
@@ -42,12 +44,20 @@ const listMine = async (deps: Deps, firebaseUid: string) => {
 const listPublished = async (deps: Deps) =>
   (await deps.tournaments.findPublishedNotEnded(deps.now())).map(toPublishedResponse);
 
-// Only the organizer sees their tournament here. The public page is #301.
-const getOwn = async (deps: Deps, firebaseUid: string, tournamentId: string) => {
-  const organizerId = await findAccountId(deps, firebaseUid);
-  const tournament = await deps.tournaments.findById(tournamentId);
-  if (!tournament || tournament.organizerId !== organizerId) throw notFound();
-  return toResponse(tournament);
+// A tournament's page (#301, #285). Any logged-in account sees a published
+// tournament; a draft only its organizer, and anyone else gets "not found", so
+// nobody learns that a draft exists. An organizer who has been demoted counts as
+// a player, like on the other tournament routes, so they lose their drafts.
+const getPage = async (deps: Deps, firebaseUid: string, tournamentId: string) => {
+  const account = await deps.accounts.findAccount(firebaseUid);
+  const tournament = await deps.tournaments.findWithOrganizer(tournamentId);
+  const isOrganizer =
+    !!tournament &&
+    !!account &&
+    tournament.organizerId === account.id &&
+    can(account.role, "tournament:create");
+  if (!tournament || (tournament.status !== "PUBLISHED" && !isOrganizer)) throw notFound();
+  return toPageResponse(tournament, isOrganizer, deps.now());
 };
 
 // Runs `change` on the caller's own draft inside one transaction, then returns the result.
@@ -149,7 +159,7 @@ export const createTournamentService = (dependencies: {
       create(deps, firebaseUid, input),
     listPublished: () => listPublished(deps),
     listMine: (firebaseUid: string) => listMine(deps, firebaseUid),
-    getOwn: (firebaseUid: string, id: string) => getOwn(deps, firebaseUid, id),
+    getPage: (firebaseUid: string, id: string) => getPage(deps, firebaseUid, id),
     update: (firebaseUid: string, id: string, input: TournamentInput) =>
       update(deps, firebaseUid, id, input),
     addDivision: (firebaseUid: string, id: string, input: DivisionInput) =>

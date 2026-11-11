@@ -36,6 +36,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
 | Real tournaments in Search       | RALLY-226 (#302), PR [#320](https://github.com/Rally-SOEN490/Rally/pull/320)                                               | 50% or more AI-generated |
 | Player filtering | RALLY-115 / #137; [#311](https://github.com/Rally-SOEN490/Rally/pull/311) | 50% or more AI-generated |
+| Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR [#322](https://github.com/Rally-SOEN490/Rally/pull/322)             | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -99,6 +100,16 @@ Claude Code (Claude Opus 5.5) wrote the `GET /tournaments` route that lists publ
 Verification: [Search route tests](apps/api/test/tournament-browse.test.ts) run against PostgreSQL and cover drafts, ended and in-progress tournaments, the order, the exact fields sent, logging in, and that the organizer routes still turn players away. The [filter tests](apps/app/tests/lib/tournaments.test.ts) and [Search screen tests](apps/app/tests/app/search.test.tsx) cover the card and filters on real data.
 
 Problems and rejected suggestions: filtering each field separately would have shown a tournament for "6v6" and "Under $50" when only its 2v2 was under $50, so one division now has to match every division filter. The date filter compares the Montreal start date as written instead of converting it. Rejected: keeping a Surface filter, which no tournament stores, and adding a tournament page in this PR. vtaing10's review on #320 found that Search didn't reload when the player came back to the tab, so a tournament published from Events stayed hidden; it now reloads on focus, with a test using the real tab navigator.
+
+### RALLY-225, RALLY-209, RALLY-68: Tournament page
+
+Pull request: [#322](https://github.com/Rally-SOEN490/Rally/pull/322).
+
+Claude Code (Claude Opus 5.5) planned the work with Hoang Vu, then wrote the change to `GET /tournaments/:id` (published tournaments for any logged-in account, drafts only for their organizer, and the sign-ups state worked out on the server), the tournament page with its player and organizer views, the links from Search and the Events page, the tests and the architecture notes. Hoang made the decisions: follow the Nov 2 "Player sign-up" mock-ups, one pull request for the three issues, a Sign up button that says registration isn't available until RALLY-36, team counts shown but not tappable and "Registered teams" greyed out until teams exist, and no Share link, "…" menu or Map button.
+
+Verification: [page route tests](apps/api/test/tournament-page.test.ts) run against PostgreSQL and cover who sees a published tournament or a draft, the exact fields each viewer gets, and the three sign-up states. The [page tests](apps/app/tests/components/tournamentPage.test.tsx) cover the player and organizer views, one or several divisions, closed, not yet open and full tournaments, a bare draft, loading, errors and going back; the [Search](apps/app/tests/app/search.test.tsx), [Events](apps/app/tests/app/events.test.tsx) and [routing](apps/app/tests/app/routing.test.tsx) tests cover opening it.
+
+Problems and rejected suggestions: the issue asked for team lists and a "Create a team" button under each division, but the agreed mock-ups have one Sign up button for the whole tournament, and teams don't exist yet, so those parts move to RALLY-36 and RALLY-38. Making `GET /tournaments/:id` public meant the setup screens could have loaded another organizer's published tournament, so they now refuse one that isn't the caller's. On the Search card, a disabled "Full" button would have blocked opening a full tournament's page, so the whole card is now the button. The Figma tool-call limit ran out while planning, so the organizer's view was read from the mock-up's layer names rather than its picture. Rejected for now: Share link, the "…" menu and the Map button.
 
 ## Additional assisted work
 

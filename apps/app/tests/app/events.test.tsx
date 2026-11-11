@@ -102,14 +102,16 @@ it("starts a new tournament from the Create button", async () => {
   expect(router.push).toHaveBeenCalledWith("/tournaments/new");
 });
 
-it("reopens a draft's setup, but has nothing to open for a published one yet", async () => {
+it("reopens a draft's setup, and opens a published tournament's page", async () => {
   await showEventsAs("ORGANIZER");
 
   await userEvent.press(
     await screen.findByRole("button", { name: "Continue setting up Verdun Winter Cup" }),
   );
-
   expect(router.push).toHaveBeenCalledWith("/tournaments/t1/setup");
+
+  await userEvent.press(screen.getByRole("button", { name: "Open Holiday Smash" }));
+  expect(router.push).toHaveBeenCalledWith("/tournaments/t2");
   expect(
     screen.queryByRole("button", { name: "Continue setting up Holiday Smash" }),
   ).not.toBeOnTheScreen();

@@ -25,8 +25,7 @@ type Props = {
   clearSearch: () => void;
   clearFilters: () => void;
   removeFilter: (update: (filters: TournamentFilters) => TournamentFilters) => void;
-  registrationNotice?: string;
-  onRegister: (tournament: Tournament) => void;
+  onOpen: (tournament: Tournament) => void;
 };
 
 function Message({
@@ -53,6 +52,135 @@ function Message({
   );
 }
 
+type Chip = {
+  key: string;
+  label: string;
+  remove: (filters: TournamentFilters) => TournamentFilters;
+};
+
+// Chips for the filters that can hold several values: formats, levels and types.
+const listFilterChips = (filters: TournamentFilters): Chip[] => [
+  ...filters.formats.map((value) => ({
+    key: `format-${value}`,
+    label: value,
+    remove: (current: TournamentFilters) => ({
+      ...current,
+      formats: current.formats.filter((item) => item !== value),
+    }),
+  })),
+  ...filters.levels.map((value) => ({
+    key: `level-${value}`,
+    label: value,
+    remove: (current: TournamentFilters) => ({
+      ...current,
+      levels: current.levels.filter((item) => item !== value),
+    }),
+  })),
+  ...filters.types.map((value) => ({
+    key: `type-${value}`,
+    label: tournamentCopy.divisions.types[value],
+    remove: (current: TournamentFilters) => ({
+      ...current,
+      types: current.types.filter((item) => item !== value),
+    }),
+  })),
+];
+
+// One removable chip per applied filter, in the order the filter sheet shows them.
+const filterChips = (filters: TournamentFilters): Chip[] => [
+  ...(filters.dateRange
+    ? [
+        {
+          key: "dateRange",
+          label: copy.dateRangeLabel(filters.dateRange),
+          remove: (current: TournamentFilters) => ({ ...current, dateRange: undefined }),
+        },
+      ]
+    : []),
+  ...listFilterChips(filters),
+  ...(filters.priceRange
+    ? [
+        {
+          key: "priceRange",
+          label: copy.priceRangeLabel(filters.priceRange),
+          remove: (current: TournamentFilters) => ({ ...current, priceRange: undefined }),
+        },
+      ]
+    : []),
+  ...(filters.spotsAvailable
+    ? [
+        {
+          key: "spotsAvailable",
+          label: copy.filterSpots,
+          remove: (current: TournamentFilters) => ({ ...current, spotsAvailable: false }),
+        },
+      ]
+    : []),
+];
+
+function ActiveFilterChips({
+  filters,
+  removeFilter,
+  clearFilters,
+}: Pick<Props, "filters" | "removeFilter" | "clearFilters">) {
+  return (
+    <View style={styles.chipsHeader}>
+      <View style={styles.chips}>
+        {filterChips(filters).map((chip) => (
+          <FilterChip
+            key={chip.key}
+            label={chip.label}
+            onRemove={() => removeFilter(chip.remove)}
+          />
+        ))}
+      </View>
+      <Pressable accessibilityRole="button" onPress={clearFilters}>
+        <Text style={styles.clearAll}>{copy.clearAll}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// How many tournaments match, then the cards, or a message when none match.
+function TournamentResults({
+  visible,
+  fonts,
+  onOpen,
+  noMatchAction,
+}: {
+  visible: Tournament[];
+  fonts: SearchFonts;
+  onOpen: (tournament: Tournament) => void;
+  // Offered as "Clear search" when nothing matches the typed search.
+  noMatchAction?: () => void;
+}) {
+  return (
+    <>
+      <Text style={[styles.resultCount, { fontFamily: fonts.regular }]}>
+        {copy.resultCount(visible.length)}
+      </Text>
+      {visible.length > 0 ? (
+        <View style={styles.list}>
+          {visible.map((tournament) => (
+            <TournamentCard
+              key={tournament.id}
+              tournament={tournament}
+              fonts={fonts}
+              onOpen={onOpen}
+            />
+          ))}
+        </View>
+      ) : (
+        <Message
+          title={copy.noTournamentMatches}
+          action={noMatchAction ? copy.clearSearch : undefined}
+          onAction={noMatchAction}
+        />
+      )}
+    </>
+  );
+}
+
 export function TournamentDirectory({
   tournaments,
   query,
@@ -64,8 +192,7 @@ export function TournamentDirectory({
   clearSearch,
   clearFilters,
   removeFilter,
-  registrationNotice,
-  onRegister,
+  onOpen,
 }: Props) {
   const visible = filterTournaments(tournaments, query, filters);
   const hasAppliedFilters = getActiveTournamentFilterCount(filters) > 0;
@@ -77,94 +204,18 @@ export function TournamentDirectory({
   return (
     <View style={styles.container}>
       {hasAppliedFilters && (
-        <View style={styles.chipsHeader}>
-          <View style={styles.chips}>
-            {filters.dateRange && (
-              <FilterChip
-                label={copy.dateRangeLabel(filters.dateRange)}
-                onRemove={() => removeFilter((current) => ({ ...current, dateRange: undefined }))}
-              />
-            )}
-            {filters.formats.map((value) => (
-              <FilterChip
-                key={`format-${value}`}
-                label={value}
-                onRemove={() =>
-                  removeFilter((current) => ({
-                    ...current,
-                    formats: current.formats.filter((item) => item !== value),
-                  }))
-                }
-              />
-            ))}
-            {filters.levels.map((value) => (
-              <FilterChip
-                key={`level-${value}`}
-                label={value}
-                onRemove={() =>
-                  removeFilter((current) => ({
-                    ...current,
-                    levels: current.levels.filter((item) => item !== value),
-                  }))
-                }
-              />
-            ))}
-            {filters.types.map((value) => (
-              <FilterChip
-                key={`type-${value}`}
-                label={tournamentCopy.divisions.types[value]}
-                onRemove={() =>
-                  removeFilter((current) => ({
-                    ...current,
-                    types: current.types.filter((item) => item !== value),
-                  }))
-                }
-              />
-            ))}
-            {filters.priceRange && (
-              <FilterChip
-                label={copy.priceRangeLabel(filters.priceRange)}
-                onRemove={() => removeFilter((current) => ({ ...current, priceRange: undefined }))}
-              />
-            )}
-            {filters.spotsAvailable && (
-              <FilterChip
-                label={copy.filterSpots}
-                onRemove={() => removeFilter((current) => ({ ...current, spotsAvailable: false }))}
-              />
-            )}
-          </View>
-          <Pressable accessibilityRole="button" onPress={clearFilters}>
-            <Text style={styles.clearAll}>{copy.clearAll}</Text>
-          </Pressable>
-        </View>
-      )}
-      {registrationNotice && (
-        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.notice}>
-          {registrationNotice}
-        </Text>
-      )}
-      <Text style={[styles.resultCount, { fontFamily: fonts.regular }]}>
-        {copy.resultCount(visible.length)}
-      </Text>
-      {visible.length > 0 ? (
-        <View style={styles.list}>
-          {visible.map((tournament) => (
-            <TournamentCard
-              key={tournament.id}
-              tournament={tournament}
-              fonts={fonts}
-              onRegister={onRegister}
-            />
-          ))}
-        </View>
-      ) : (
-        <Message
-          title={copy.noTournamentMatches}
-          action={!hasAppliedFilters && query.trim() ? copy.clearSearch : undefined}
-          onAction={clearSearch}
+        <ActiveFilterChips
+          filters={filters}
+          removeFilter={removeFilter}
+          clearFilters={clearFilters}
         />
       )}
+      <TournamentResults
+        visible={visible}
+        fonts={fonts}
+        onOpen={onOpen}
+        noMatchAction={!hasAppliedFilters && query.trim() ? clearSearch : undefined}
+      />
     </View>
   );
 }
@@ -201,13 +252,6 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.forest, fontSize: 11 },
   clearAll: { color: colors.forest, fontSize: 12, fontWeight: "600", paddingTop: 6 },
-  notice: {
-    color: colors.forest,
-    backgroundColor: "#E8EEDC",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 13,
-  },
   resultCount: { color: colors.textMuted, fontSize: 12 },
   message: {
     alignItems: "center",

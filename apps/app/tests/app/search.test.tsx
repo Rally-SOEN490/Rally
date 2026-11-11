@@ -2,7 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import { act, render, screen, userEvent, waitFor } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import SearchScreen from "@/app/(tabs)/search";
 import { SearchBar } from "@/components/searchBar";
@@ -27,6 +27,7 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("expo-router", () => {
   const { useEffect } = jest.requireActual("react");
   return {
+    router: { push: jest.fn() },
     // Runs the effect once, as when Search first comes into view.
     // search-navigation.test.tsx checks coming back with the real navigator.
     useFocusEffect: (effect: () => void) => useEffect(effect, [effect]),
@@ -206,7 +207,7 @@ it("shows and searches published tournaments", async () => {
   expect(screen.getByText("B / B+")).toBeOnTheScreen();
   expect(screen.getByText("$80 per team")).toBeOnTheScreen();
   expect(screen.getByText("8 of 16 spots left")).toBeOnTheScreen();
-  expect(screen.getByRole("button", { name: "Full" })).toBeDisabled();
+  expect(screen.getByText("Full")).toBeOnTheScreen();
   expect(getTournaments).toHaveBeenCalledWith(user);
 
   await userEvent.type(
@@ -218,22 +219,17 @@ it("shows and searches published tournaments", async () => {
   expect(screen.queryByText("Montreal Spring Open")).not.toBeOnTheScreen();
 });
 
-it("shows registration unavailability after clicking Register on web", async () => {
-  const originalOS = Platform.OS;
-  const platformOS = jest.replaceProperty(Platform, "OS", "web");
-  jest.mocked(getTournaments).mockResolvedValueOnce([tournaments[0]]);
+it("opens a tournament's page from its card, even when it's full", async () => {
+  await render(<SearchScreen />);
+  await screen.findByText("Montreal Spring Open");
 
-  try {
-    await render(<SearchScreen />);
-    await screen.findByText("Montreal Spring Open");
-    await userEvent.press(screen.getByRole("button", { name: "Register" }));
+  await userEvent.press(screen.getByRole("button", { name: "Open Montreal Spring Open" }));
+  expect(router.push).toHaveBeenLastCalledWith("/tournaments/spring-open");
 
-    expect(await screen.findByText("Registration isn't available yet.")).toBeOnTheScreen();
-  } finally {
-    platformOS.restore();
-    expect(Platform.OS).toBe(originalOS);
-  }
+  await userEvent.press(screen.getByRole("button", { name: "Open Concordia Fall Classic" }));
+  expect(router.push).toHaveBeenLastCalledWith("/tournaments/fall-classic");
 });
+
 it("searches tournament names, venues, and organizers without case sensitivity", async () => {
   await render(<SearchScreen />);
   await screen.findByText("Montreal Spring Open");
@@ -366,7 +362,7 @@ it("combines several divisions into one card", async () => {
   expect(screen.getByText("From $40.50 per team")).toBeOnTheScreen();
   expect(screen.getByText("10 of 18 spots left")).toBeOnTheScreen();
   expect(screen.getByText("9:00 AM – Nov 8, 7:00 PM")).toBeOnTheScreen();
-  expect(screen.getByRole("button", { name: "Register" })).toBeEnabled();
+  expect(screen.getByText("Register")).toBeOnTheScreen();
 });
 
 it("filters by division type and removes the type and format chips", async () => {
