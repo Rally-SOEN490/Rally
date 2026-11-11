@@ -67,18 +67,13 @@ export function bottomBar(page: TournamentPage): BottomBar {
   return spotsLeft > 0 ? { kind: "signUp", spotsLeft } : { kind: "message", text: copy.full };
 }
 
-// The page once the server confirms a new team: the viewer is on it, and its
-// division has one more team.
-export function withMyTeam(page: TournamentPage, team: MyTeam): TournamentPage {
-  const divisions = page.divisions.map((division) =>
-    division.id === team.divisionId
-      ? { ...division, registeredTeams: division.registeredTeams + 1 }
-      : division,
-  );
-  return page.isOrganizer
-    ? { ...page, myTeam: team, divisions, registeredTeams: page.registeredTeams + 1 }
-    : { ...page, myTeam: team, divisions };
-}
+// The page once the server confirms a new team: the viewer is on it. The team
+// counts are left alone: others may have signed up since the page loaded, so
+// the page is fetched again for the server's counts instead of adding one.
+export const withMyTeam = (page: TournamentPage, team: MyTeam): TournamentPage => ({
+  ...page,
+  myTeam: team,
+});
 
 // A division's second line: "$240 · 5 spots left" or "$240 · Full" for players,
 // "$240 · 10 / 15 teams" or "Full · 8 / 8" for the organizer.

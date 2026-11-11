@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { render, screen, userEvent, within } from "@testing-library/react-native";
+import { act, render, screen, userEvent, within } from "@testing-library/react-native";
 import type { User } from "firebase/auth";
 import { TournamentPageScreen } from "@/components/tournaments/page/tournamentPageScreen";
 import { ApiError } from "@/lib/api";
@@ -139,9 +139,20 @@ it("doesn't mention paying for a free division", async () => {
   expect(screen.queryByText(/outside Rally/)).not.toBeOnTheScreen();
 });
 
-it("signs the team up and shows it once the server confirms", async () => {
+// The page as the server sends it after the sign-up: our team, and another
+// one that signed up in Co-ed B while the page was open.
+const afterSignUp = <Page extends TournamentPage>(before: Page): Page => ({
+  ...before,
+  myTeam: team,
+  divisions: before.divisions.map((d) =>
+    d.id === "d1" ? { ...d, registeredTeams: d.registeredTeams + 2 } : d,
+  ),
+});
+
+it("signs the team up, shows it once the server confirms and fetches the counts again", async () => {
   jest.mocked(signUpTeam).mockResolvedValue(team);
   await openSheet();
+  jest.mocked(getTournamentPage).mockResolvedValue(afterSignUp(page));
   await fillIn("  Spike   Lee ");
 
   await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
@@ -149,8 +160,76 @@ it("signs the team up and shows it once the server confirms", async () => {
   expect(signUpTeam).toHaveBeenCalledWith(user, "t1", { divisionId: "d1", name: "Spike Lee" });
   expect(await screen.findByText("You're captain of Spike Lee")).toBeOnTheScreen();
   expect(screen.queryByRole("header", { name: "Check your team" })).not.toBeOnTheScreen();
-  expect(screen.getByText("$240 · 4 spots left")).toBeOnTheScreen();
+  expect(await screen.findByText("$240 · 3 spots left")).toBeOnTheScreen();
+  expect(getTournamentPage).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole("button", { name: "Sign up" })).not.toBeOnTheScreen();
+});
+
+it("still shows the team if fetching the page again fails", async () => {
+  jest.mocked(signUpTeam).mockResolvedValue(team);
+  await openSheet();
+  jest.mocked(getTournamentPage).mockRejectedValue(new ApiError(503, "Rally is unavailable."));
+  await fillIn();
+
+  await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
+
+  expect(await screen.findByText("You're captain of Spike Lee")).toBeOnTheScreen();
+  expect(getTournamentPage).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText("Rally is unavailable.")).not.toBeOnTheScreen();
+  expect(screen.getByText("$240 · 5 spots left")).toBeOnTheScreen();
+});
+
+it("fetches the divisions again when the picked one fills up meanwhile", async () => {
+  jest.mocked(signUpTeam).mockRejectedValue(new ApiError(409, "This division is full."));
+  await openSheet();
+  jest.mocked(getTournamentPage).mockResolvedValue({
+    ...page,
+    divisions: page.divisions.map((d) => (d.id === "d1" ? { ...d, registeredTeams: 15 } : d)),
+  });
+  await fillIn();
+
+  await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
+
+  expect(await screen.findByText("This division is full.")).toBeOnTheScreen();
+  expect(getTournamentPage).toHaveBeenCalledTimes(2);
+  expect(await screen.findByRole("button", { name: "Create team and sign up" })).toBeDisabled();
+  await userEvent.press(screen.getByRole("button", { name: "Back to the team details" }));
+  expect(screen.getByRole("radio", { name: "6v6 Co-ed B" })).toBeDisabled();
+  expect(screen.getByLabelText("Team name")).toHaveDisplayValue("Spike Lee");
+  expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+});
+
+it("ignores an older refresh that answers after the team is signed up", async () => {
+  jest
+    .mocked(signUpTeam)
+    .mockRejectedValueOnce(new ApiError(409, "This division is full."))
+    .mockResolvedValueOnce(team);
+  await openSheet();
+  let answerFirstRefresh = (_: TournamentPage) => {};
+  jest
+    .mocked(getTournamentPage)
+    .mockReturnValueOnce(new Promise((resolve) => (answerFirstRefresh = resolve)))
+    .mockResolvedValueOnce(afterSignUp(page));
+  await fillIn();
+
+  await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
+  await userEvent.press(await screen.findByRole("button", { name: "Create team and sign up" }));
+  expect(await screen.findByText("$240 · 3 spots left")).toBeOnTheScreen();
+  await act(async () => answerFirstRefresh(page));
+
+  expect(screen.getByText("You're captain of Spike Lee")).toBeOnTheScreen();
+  expect(screen.getByText("$240 · 3 spots left")).toBeOnTheScreen();
+});
+
+it("doesn't fetch the page again when the server can't be reached", async () => {
+  jest.mocked(signUpTeam).mockRejectedValue(new Error("Network request failed"));
+  await openSheet();
+  await fillIn();
+
+  await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
+
+  expect(await screen.findByRole("alert")).toBeOnTheScreen();
+  expect(getTournamentPage).toHaveBeenCalledTimes(1);
 });
 
 it("says it is signing up and can't be sent twice meanwhile", async () => {
@@ -187,6 +266,9 @@ it("keeps what was typed when the server refuses, and lets you go back to fix it
   expect(screen.getByRole("radio", { name: "6v6 Co-ed B" })).toBeChecked();
   await userEvent.type(screen.getByLabelText("Team name"), " 2");
   await userEvent.press(screen.getByRole("button", { name: "Continue" }));
+  jest
+    .mocked(getTournamentPage)
+    .mockResolvedValue({ ...afterSignUp(page), myTeam: { ...team, name: "Spike Lee 2" } });
   await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
 
   expect(signUpTeam).toHaveBeenLastCalledWith(user, "t1", {
@@ -205,20 +287,24 @@ it("closes without signing up", async () => {
   expect(signUpTeam).not.toHaveBeenCalled();
 });
 
-it("updates the organizer's team total too", async () => {
+it("updates the organizer's team total from the server too", async () => {
   jest.mocked(signUpTeam).mockResolvedValue(team);
-  await openSheet({
+  const forOrganizer: Extract<TournamentPage, { isOrganizer: true }> = {
     ...page,
     isOrganizer: true,
     status: "PUBLISHED",
     courts: 3,
     publishedAt: "2027-10-01T12:00:00.000Z",
     registeredTeams: 25,
-  });
+  };
+  await openSheet(forOrganizer);
+  jest
+    .mocked(getTournamentPage)
+    .mockResolvedValue({ ...afterSignUp(forOrganizer), registeredTeams: 27 });
   await fillIn();
 
   await userEvent.press(screen.getByRole("button", { name: "Create team and sign up" }));
 
-  expect(await screen.findByText("26 / 38 teams")).toBeOnTheScreen();
-  expect(screen.getByText("$240 · 11 / 15 teams")).toBeOnTheScreen();
+  expect(await screen.findByText("27 / 38 teams")).toBeOnTheScreen();
+  expect(screen.getByText("$240 · 12 / 15 teams")).toBeOnTheScreen();
 });

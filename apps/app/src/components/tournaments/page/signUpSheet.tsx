@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiErrorMessage } from "@/lib/api";
+import { ApiError, apiErrorMessage } from "@/lib/api";
 import { formatPrice } from "@/lib/organizer-tournaments";
 import { useSession } from "@/lib/session";
 import {
@@ -37,6 +37,9 @@ const copy = tournamentCopy.signUp;
 type Props = {
   page: TournamentPage;
   onClose: () => void;
+  // Called when the server refuses because the tournament changed since the
+  // page loaded (a division filled up, a name was taken…), to fetch it again.
+  onOutdated: () => void;
   // Called once the server confirms the team.
   onSignedUp: (team: MyTeam) => void;
 };
@@ -44,8 +47,8 @@ type Props = {
 // The "Create a team" sheet from the Figma mock-ups (C1): pick a division with
 // room and a team name, then check them and the price before signing up. The
 // mock-up's "Join a team" choice (S1) and join-request switch come with RALLY-38.
-export function SignUpSheet({ page, onClose, onSignedUp }: Props) {
-  const form = useSignUpForm(page, onSignedUp);
+export function SignUpSheet({ page, onClose, onOutdated, onSignedUp }: Props) {
+  const form = useSignUpForm(page, onSignedUp, onOutdated);
   const close = () => !form.saving && onClose();
   return (
     <Modal visible transparent animationType="slide" onRequestClose={close} statusBarTranslucent>
@@ -78,8 +81,13 @@ export function SignUpSheet({ page, onClose, onSignedUp }: Props) {
 type Form = ReturnType<typeof useSignUpForm>;
 
 // What the sheet keeps while it is open, so nothing typed is lost when a
-// request fails or the player goes back a step.
-function useSignUpForm(page: TournamentPage, onSignedUp: (team: MyTeam) => void) {
+// request fails or the player goes back a step. The page may be fetched again
+// while the sheet is open, so a picked division can fill up meanwhile.
+function useSignUpForm(
+  page: TournamentPage,
+  onSignedUp: (team: MyTeam) => void,
+  onOutdated: () => void,
+) {
   const { user } = useSession();
   const withRoom = page.divisions.filter((division) => spotsLeftIn(division) > 0);
   const [divisionId, setDivisionId] = useState(withRoom.length === 1 ? withRoom[0].id : undefined);
@@ -88,10 +96,11 @@ function useSignUpForm(page: TournamentPage, onSignedUp: (team: MyTeam) => void)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const division = page.divisions.find(({ id }) => id === divisionId);
+  const hasRoom = !!division && spotsLeftIn(division) > 0;
   const teamName = tidyTeamName(name);
 
   const submit = async () => {
-    if (!user || !division) return;
+    if (!user || !division || !hasRoom) return;
     setSaving(true);
     setError(undefined);
     try {
@@ -99,6 +108,7 @@ function useSignUpForm(page: TournamentPage, onSignedUp: (team: MyTeam) => void)
     } catch (failure) {
       setError(apiErrorMessage(failure));
       setSaving(false);
+      if (failure instanceof ApiError && failure.status === 409) onOutdated();
     }
   };
 
@@ -112,7 +122,8 @@ function useSignUpForm(page: TournamentPage, onSignedUp: (team: MyTeam) => void)
     teamName,
     saving,
     error,
-    canContinue: !!division && teamName.length > 0,
+    hasRoom,
+    canContinue: hasRoom && teamName.length > 0,
     next: () => setStep("review"),
     back: () => {
       setError(undefined);
@@ -255,7 +266,7 @@ function Review({ form }: { form: Form }) {
       )}
       <SheetButton
         label={form.saving ? copy.submitting : copy.submit}
-        disabled={form.saving}
+        disabled={form.saving || !form.hasRoom}
         busy={form.saving}
         onPress={form.submit}
       />

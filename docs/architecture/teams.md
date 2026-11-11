@@ -72,8 +72,8 @@ Following the Nov 2 "Player sign-up" mock-ups (C1, A2):
 
 - **Sign up** on the tournament page opens the **Create a team** sheet: the divisions with their spots left (full ones greyed out and not selectable; the only division with room is picked already), the team name, and a note that the player will be captain and can be on only one team.
 - **Continue** shows **Check your team**: the name, division and price, with "Pay $240 to the organizer outside Rally." for a paid division. **Create team and sign up** sends it.
-- Once the server confirms, the sheet closes and the bottom bar says "You're captain of Spike Lee" over the division, in place of Sign up, and the division's count goes up. It stays after sign-ups close.
-- If the server refuses (name taken, division just filled…), its message shows above the button and nothing typed is lost; Back returns to the details.
+- Once the server confirms, the sheet closes and the bottom bar says "You're captain of Spike Lee" over the division, in place of Sign up. It stays after sign-ups close. The page is then fetched again for the server's team counts, rather than adding one to counts that may be out of date; if that fails, the old counts stay.
+- If the server refuses (name taken, division just filled…), its message shows above the button and nothing typed is lost; Back returns to the details. A refusal with 409 also fetches the page again, so a division that filled up meanwhile shows as full and can't be sent again. Only the latest refresh is applied.
 - The organizer sees Sign up on their own published tournament too, above their extras.
 
 **Differences from the mock-ups:** there is no "Sign up" choice sheet (S1) yet, because its other choice, "Join a team", is RALLY-38. The "Open to join requests" switch, the live "Available in this tournament" name check and the "View my team" button wait for RALLY-38 and RALLY-46; the server checks the name when the team is created. Hoang Vu asked for the review step on Nov 9.
