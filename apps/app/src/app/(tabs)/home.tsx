@@ -3,6 +3,7 @@
 
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { RallyUser } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 const sponsoredTournament = {
@@ -30,6 +31,123 @@ const announcements = [
   },
 ];
 
+// The greeting with the player's name.
+function WelcomeCard({ account }: { account: RallyUser | null | undefined }) {
+  return (
+    <View style={styles.heroCard}>
+      <Text style={styles.heroTitle}>Welcome back,</Text>
+      <Text style={styles.heroName}>{account?.displayName}</Text>
+      {account && (
+        <Text style={styles.heroNote}>
+          Member since {new Date(account.createdAt).toLocaleDateString()}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+// Placeholder until matches exist.
+function UpcomingMatchCard() {
+  return (
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionLabel}>Upcoming Match</Text>
+      <View style={styles.matchHeader}>
+        <View>
+          <Text style={styles.matchTitle}>Sunbirds vs Falcons</Text>
+          <Text style={styles.matchMeta}>Sat, Oct 10 • 2:00 PM</Text>
+          <Text style={styles.matchMeta}>Loyola Gym</Text>
+        </View>
+        <View style={styles.pinBadge}>
+          <Text style={styles.pinText}>📍</Text>
+        </View>
+      </View>
+      <Pressable style={styles.primaryButton} accessibilityRole="button">
+        <Text style={styles.primaryText}>View Match Details →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// Placeholder until sponsored tournaments exist.
+function SponsoredTournaments() {
+  return (
+    <View style={styles.tournamentSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionHeading}>Sponsored Tournaments</Text>
+        <Text style={styles.linkText}>See all</Text>
+      </View>
+
+      <View style={styles.tournamentCard}>
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateMonth}>SAT</Text>
+          <Text style={styles.dateDay}>17</Text>
+        </View>
+        <View style={styles.tournamentBody}>
+          <Text style={styles.tournamentName}>{sponsoredTournament.name}</Text>
+          <Text style={styles.tournamentDetails}>{sponsoredTournament.details}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaTag}>Indoor 6s</Text>
+            <Text style={styles.metaTag}>Mixed C+</Text>
+          </View>
+          <View style={styles.progressRow}>
+            <View style={styles.progressBar} />
+          </View>
+          <Text style={styles.slotsText}>{sponsoredTournament.slots}</Text>
+        </View>
+        <Pressable style={styles.registerButton} accessibilityRole="button">
+          <Text style={styles.registerText}>Register</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// Placeholder until team recruiting exists.
+function RecruitingTeams() {
+  return (
+    <View style={styles.tournamentSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionHeading}>Team Recruiting Near You</Text>
+        <Text style={styles.linkText}>See all</Text>
+      </View>
+      <View style={styles.recruitingList}>
+        {recruitingCards.map((card) => (
+          <View key={card.team} style={styles.recruitingCard}>
+            <View style={[styles.badgeBubble, { backgroundColor: card.accent }]}>
+              <Text style={styles.badgeEmoticon}>🏐</Text>
+            </View>
+            <View style={styles.recruitingInfo}>
+              <Text style={styles.recruitingTitle}>{card.team}</Text>
+              <Text style={styles.recruitingNeeds}>{card.needs}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Placeholder until announcements exist.
+function Announcements() {
+  return (
+    <View style={styles.announcementSection}>
+      <Text style={styles.sectionHeading}>Latest Announcements</Text>
+      {announcements.map((item) => (
+        <View key={item.title} style={styles.announcementItem}>
+          <View style={styles.announcementIcon}>
+            <Text style={styles.announcementEmoji}>📣</Text>
+          </View>
+          <View style={styles.announcementBody}>
+            <Text style={styles.announcementTitle}>{item.title}</Text>
+            <Text style={styles.announcementDetail}>{item.detail}</Text>
+          </View>
+          <Text style={styles.announcementTime}>{item.time}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function Home() {
   // The guards in _layout.tsx only show Home to someone with a Rally account.
   const { account } = useSession();
@@ -42,97 +160,11 @@ export default function Home() {
             <Text style={styles.brand}>RALLY</Text>
           </View>
 
-          <View style={styles.heroCard}>
-            <Text style={styles.heroTitle}>Welcome back,</Text>
-            <Text style={styles.heroName}>{account?.displayName}</Text>
-            {account && (
-              <Text style={styles.heroNote}>
-                Member since {new Date(account.createdAt).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionLabel}>Upcoming Match</Text>
-            <View style={styles.matchHeader}>
-              <View>
-                <Text style={styles.matchTitle}>Sunbirds vs Falcons</Text>
-                <Text style={styles.matchMeta}>Sat, Oct 10 • 2:00 PM</Text>
-                <Text style={styles.matchMeta}>Loyola Gym</Text>
-              </View>
-              <View style={styles.pinBadge}>
-                <Text style={styles.pinText}>📍</Text>
-              </View>
-            </View>
-            <Pressable style={styles.primaryButton} accessibilityRole="button">
-              <Text style={styles.primaryText}>View Match Details →</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.tournamentSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeading}>Sponsored Tournaments</Text>
-              <Text style={styles.linkText}>See all</Text>
-            </View>
-
-            <View style={styles.tournamentCard}>
-              <View style={styles.dateBadge}>
-                <Text style={styles.dateMonth}>SAT</Text>
-                <Text style={styles.dateDay}>17</Text>
-              </View>
-              <View style={styles.tournamentBody}>
-                <Text style={styles.tournamentName}>{sponsoredTournament.name}</Text>
-                <Text style={styles.tournamentDetails}>{sponsoredTournament.details}</Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.metaTag}>Indoor 6s</Text>
-                  <Text style={styles.metaTag}>Mixed C+</Text>
-                </View>
-                <View style={styles.progressRow}>
-                  <View style={styles.progressBar} />
-                </View>
-                <Text style={styles.slotsText}>{sponsoredTournament.slots}</Text>
-              </View>
-              <Pressable style={styles.registerButton} accessibilityRole="button">
-                <Text style={styles.registerText}>Register</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.tournamentSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeading}>Team Recruiting Near You</Text>
-              <Text style={styles.linkText}>See all</Text>
-            </View>
-            <View style={styles.recruitingList}>
-              {recruitingCards.map((card) => (
-                <View key={card.team} style={styles.recruitingCard}>
-                  <View style={[styles.badgeBubble, { backgroundColor: card.accent }]}>
-                    <Text style={styles.badgeEmoticon}>🏐</Text>
-                  </View>
-                  <View style={styles.recruitingInfo}>
-                    <Text style={styles.recruitingTitle}>{card.team}</Text>
-                    <Text style={styles.recruitingNeeds}>{card.needs}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.announcementSection}>
-            <Text style={styles.sectionHeading}>Latest Announcements</Text>
-            {announcements.map((item) => (
-              <View key={item.title} style={styles.announcementItem}>
-                <View style={styles.announcementIcon}>
-                  <Text style={styles.announcementEmoji}>📣</Text>
-                </View>
-                <View style={styles.announcementBody}>
-                  <Text style={styles.announcementTitle}>{item.title}</Text>
-                  <Text style={styles.announcementDetail}>{item.detail}</Text>
-                </View>
-                <Text style={styles.announcementTime}>{item.time}</Text>
-              </View>
-            ))}
-          </View>
+          <WelcomeCard account={account} />
+          <UpcomingMatchCard />
+          <SponsoredTournaments />
+          <RecruitingTeams />
+          <Announcements />
         </View>
       </ScrollView>
     </SafeAreaView>

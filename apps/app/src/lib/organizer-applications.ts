@@ -23,13 +23,24 @@ export type ApplicationForReview = Omit<OrganizerApplication, "id"> & { applican
 export const DESCRIPTION_MAX_LENGTH = 1000;
 export const REASON_MAX_LENGTH = 500;
 
+// A host with a dot inside it, then anything. Plain string checks instead of
+// one regex, so there is no backtracking on long input.
+const isWebAddress = (link: string): boolean => {
+  if (/\s/.test(link)) return false;
+  const afterScheme = link.slice(link.indexOf("//") + 2);
+  const slash = afterScheme.indexOf("/");
+  const host = slash === -1 ? afterScheme : afterScheme.slice(0, slash);
+  const dot = host.indexOf(".");
+  return dot > 0 && (dot < host.length - 1 || slash !== -1);
+};
+
 // Adds "https://" when someone types "instagram.com/club". Returns null for a
 // blank link and undefined for one that still isn't a web address.
 export const normalizeLink = (text: string): string | null | undefined => {
   const trimmed = text.trim();
   if (!trimmed) return null;
   const link = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  return /^https?:\/\/[^\s/]+\.[^\s]+$/i.test(link) ? link : undefined;
+  return isWebAddress(link) ? link : undefined;
 };
 
 // The person's latest application, or null if they never applied.

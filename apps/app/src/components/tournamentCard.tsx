@@ -28,20 +28,93 @@ function display(value?: string | number | null) {
   return value === undefined || value === null || value === "" ? copy.detailsToBeAnnounced : value;
 }
 
-export function TournamentCard({ tournament, fonts, onOpen }: Props) {
-  const startDate = dateTile(tournament.startsAt);
+// What the card shows, worked out from the tournament and its divisions.
+function cardModel(tournament: Tournament) {
   const summary = summarizeDivisions(tournament.divisions);
   const availableSpots =
     summary.spotsTotal > 0 ? { left: summary.spotsLeft, total: summary.spotsTotal } : undefined;
-  const full = availableSpots !== undefined && availableSpots.left === 0;
-  const progress = availableSpots ? availableSpots.left / availableSpots.total : 0;
-  const price = priceLabel(summary.lowestPriceCents, summary.highestPriceCents);
-  const tags = [
-    ...summary.formatsAndTypes.map(
-      ({ format, type }) => `${format} ${tournamentCopy.divisions.types[type]}`,
-    ),
-    ...(summary.levels.length > 0 ? [summary.levels.join(" / ")] : []),
-  ];
+  return {
+    startDate: dateTile(tournament.startsAt),
+    availableSpots,
+    full: availableSpots !== undefined && availableSpots.left === 0,
+    progress: availableSpots ? availableSpots.left / availableSpots.total : 0,
+    price: priceLabel(summary.lowestPriceCents, summary.highestPriceCents),
+    tags: [
+      ...summary.formatsAndTypes.map(
+        ({ format, type }) => `${format} ${tournamentCopy.divisions.types[type]}`,
+      ),
+      ...(summary.levels.length > 0 ? [summary.levels.join(" / ")] : []),
+    ],
+  };
+}
+
+type CardModel = ReturnType<typeof cardModel>;
+
+function DateTile({ startDate, fonts }: { startDate: CardModel["startDate"]; fonts: SearchFonts }) {
+  return (
+    <View
+      style={styles.dateBlock}
+      accessibilityLabel={
+        startDate
+          ? `${startDate.day}, ${startDate.month} ${startDate.date}`
+          : copy.dateToBeAnnounced
+      }
+    >
+      <Text style={[styles.dateDay, { fontFamily: fonts.medium }]}>
+        {startDate?.day ?? copy.dateToBeAnnounced}
+      </Text>
+      {startDate && (
+        <>
+          <Text style={[styles.dateMonth, { fontFamily: fonts.semibold }]}>{startDate.month}</Text>
+          <Text style={[styles.dateNumber, { fontFamily: fonts.semibold }]}>{startDate.date}</Text>
+        </>
+      )}
+    </View>
+  );
+}
+
+function Tags({ tags, fonts }: { tags: string[]; fonts: SearchFonts }) {
+  if (tags.length === 0) return null;
+  return (
+    <View style={styles.tags}>
+      {tags.map((tag) => (
+        <Text key={tag} style={[styles.tag, { fontFamily: fonts.medium }]}>
+          {tag}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+// Spots left with a progress bar, and the price.
+function Availability({ model, fonts }: { model: CardModel; fonts: SearchFonts }) {
+  const { availableSpots } = model;
+  return (
+    <View style={styles.availability}>
+      <View style={styles.availabilityHeader}>
+        <Text style={[styles.spots, { fontFamily: fonts.medium }]}>
+          {availableSpots
+            ? copy.spotsLeft(availableSpots.left, availableSpots.total)
+            : copy.spotsUnavailable}
+        </Text>
+        <Text style={[styles.price, { fontFamily: fonts.semibold }]}>{model.price}</Text>
+      </View>
+      {availableSpots && (
+        <View
+          style={styles.progressTrack}
+          accessibilityRole="progressbar"
+          accessibilityLabel={copy.spotsProgress(availableSpots.left, availableSpots.total)}
+          accessibilityValue={{ min: 0, max: availableSpots.total, now: availableSpots.left }}
+        >
+          <View style={[styles.progress, { width: `${model.progress * 100}%` }]} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+export function TournamentCard({ tournament, fonts, onOpen }: Props) {
+  const model = cardModel(tournament);
 
   // The whole card opens the tournament's page, full or not; "Register" is
   // only its label, so there is one button, not a button inside a button.
@@ -53,28 +126,7 @@ export function TournamentCard({ tournament, fonts, onOpen }: Props) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.top}>
-        <View
-          style={styles.dateBlock}
-          accessibilityLabel={
-            startDate
-              ? `${startDate.day}, ${startDate.month} ${startDate.date}`
-              : copy.dateToBeAnnounced
-          }
-        >
-          <Text style={[styles.dateDay, { fontFamily: fonts.medium }]}>
-            {startDate?.day ?? copy.dateToBeAnnounced}
-          </Text>
-          {startDate && (
-            <>
-              <Text style={[styles.dateMonth, { fontFamily: fonts.semibold }]}>
-                {startDate.month}
-              </Text>
-              <Text style={[styles.dateNumber, { fontFamily: fonts.semibold }]}>
-                {startDate.date}
-              </Text>
-            </>
-          )}
-        </View>
+        <DateTile startDate={model.startDate} fonts={fonts} />
         <View style={styles.details}>
           <Text style={[styles.name, { fontFamily: fonts.semibold }]}>
             {display(tournament.name)}
@@ -87,51 +139,18 @@ export function TournamentCard({ tournament, fonts, onOpen }: Props) {
           </Text>
         </View>
       </View>
-
-      {tags.length > 0 && (
-        <View style={styles.tags}>
-          {tags.map((tag) => (
-            <Text key={tag} style={[styles.tag, { fontFamily: fonts.medium }]}>
-              {tag}
-            </Text>
-          ))}
-        </View>
-      )}
-
+      <Tags tags={model.tags} fonts={fonts} />
       <View style={styles.bottom}>
-        <View style={styles.availability}>
-          <View style={styles.availabilityHeader}>
-            <Text style={[styles.spots, { fontFamily: fonts.medium }]}>
-              {availableSpots
-                ? copy.spotsLeft(availableSpots.left, availableSpots.total)
-                : copy.spotsUnavailable}
-            </Text>
-            <Text style={[styles.price, { fontFamily: fonts.semibold }]}>{price}</Text>
-          </View>
-          {availableSpots && (
-            <View
-              style={styles.progressTrack}
-              accessibilityRole="progressbar"
-              accessibilityLabel={copy.spotsProgress(availableSpots.left, availableSpots.total)}
-              accessibilityValue={{
-                min: 0,
-                max: availableSpots.total,
-                now: availableSpots.left,
-              }}
-            >
-              <View style={[styles.progress, { width: `${progress * 100}%` }]} />
-            </View>
-          )}
-        </View>
-        <View style={[styles.register, full && styles.registerDisabled]}>
+        <Availability model={model} fonts={fonts} />
+        <View style={[styles.register, model.full && styles.registerDisabled]}>
           <Text
             style={[
               styles.registerText,
               { fontFamily: fonts.semibold },
-              full && styles.disabledText,
+              model.full && styles.disabledText,
             ]}
           >
-            {full ? copy.full : copy.register}
+            {model.full ? copy.full : copy.register}
           </Text>
         </View>
       </View>
