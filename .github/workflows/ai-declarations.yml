@@ -1,0 +1,53 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+name: AI declarations
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-ai-declarations:
+    name: Check AI declarations
+    runs-on: ubuntu-latest
+    # Bot pull requests (for example Dependabot) have no AI-use declarations to check.
+    if: ${{ github.event.pull_request.user.type != 'Bot' }}
+    env:
+      # Findings are reported as warnings until the backfill in #245 is done.
+      # Then set this to "true" and make the check required in branch protection.
+      ENFORCE: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The pull request's own commits, not the merge commit GitHub builds for it.
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check the files, commits and description changed by this pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          status=0
+          node .agents/skills/ai-checklist/scripts/check.mjs --pr "$PR_NUMBER" --base "origin/$BASE_REF" > result.txt || status=$?
+          cat result.txt
+          {
+            echo '## AI declarations'
+            echo '```'
+            cat result.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            echo "::warning title=AI declarations::Missing or incomplete AI-use declarations. See the job summary and CONTRIBUTING.md."
+            if [ "$ENFORCE" = "true" ]; then
+              exit 1
+            fi
+          fi
