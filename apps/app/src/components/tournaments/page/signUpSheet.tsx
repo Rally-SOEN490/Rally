@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { colors, radii } from "@/constants/rallyTheme";
 import { ApiError, apiErrorMessage } from "@/lib/api";
 import { formatPrice } from "@/lib/organizer-tournaments";
 import { useSession } from "@/lib/session";
@@ -28,9 +29,9 @@ import {
   type TournamentPage,
 } from "@/lib/tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
-import { GREEN, MUTED, RED, styles as formStyles } from "../styles";
+import { RED } from "../styles";
 import { pricePerTeam, spotsLeftIn } from "./pageModel";
-import { FADED, pageStyles } from "./pageStyles";
+import { pageStyles } from "./pageStyles";
 
 const copy = tournamentCopy.signUp;
 
@@ -153,7 +154,7 @@ function SheetHeader({
             onPress={onBack}
             style={sheet.roundButton}
           >
-            <Ionicons name="chevron-back" size={20} color={GREEN} />
+            <Ionicons name="chevron-back" size={20} color={colors.forest} />
           </Pressable>
         )}
         <Text style={sheet.title} accessibilityRole="header">
@@ -165,7 +166,7 @@ function SheetHeader({
           onPress={onClose}
           style={sheet.roundButton}
         >
-          <Ionicons name="close" size={20} color={GREEN} />
+          <Ionicons name="close" size={20} color={colors.forest} />
         </Pressable>
       </View>
     </View>
@@ -175,7 +176,7 @@ function SheetHeader({
 function Details({ form, page }: { form: Form; page: TournamentPage }) {
   return (
     <>
-      <Text style={formStyles.label}>{copy.division}</Text>
+      <Text style={sheet.label}>{copy.division}</Text>
       <View accessibilityRole="radiogroup" style={sheet.options}>
         {page.divisions.map((division) => (
           <DivisionOption
@@ -186,7 +187,7 @@ function Details({ form, page }: { form: Form; page: TournamentPage }) {
           />
         ))}
       </View>
-      <Text style={formStyles.label}>{copy.teamName}</Text>
+      <Text style={sheet.label}>{copy.teamName}</Text>
       <TextInput
         accessibilityLabel={copy.teamName}
         value={form.name}
@@ -196,11 +197,11 @@ function Details({ form, page }: { form: Form; page: TournamentPage }) {
         autoCorrect={false}
         returnKeyType="next"
         onSubmitEditing={() => form.canContinue && form.next()}
-        style={formStyles.input}
+        style={sheet.input}
       />
-      <View style={formStyles.note}>
-        <Ionicons name="information-circle-outline" size={16} color={MUTED} />
-        <Text style={formStyles.noteText}>{copy.captainNote}</Text>
+      <View style={sheet.note}>
+        <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+        <Text style={sheet.noteText}>{copy.captainNote}</Text>
       </View>
       <SheetButton label={copy.next} disabled={!form.canContinue} onPress={form.next} />
     </>
@@ -227,14 +228,14 @@ function DivisionOption({
       accessibilityState={{ checked: selected, disabled: full }}
       disabled={full}
       onPress={onSelect}
-      style={[sheet.option, selected && sheet.optionOn]}
+      style={[sheet.option, selected && sheet.optionOn, full && sheet.optionFull]}
     >
       <Ionicons
         name={selected ? "radio-button-on" : "radio-button-off"}
         size={22}
-        color={full ? FADED : GREEN}
+        color={full ? colors.textMuted : colors.forest}
       />
-      <Text style={[sheet.optionName, full && pageStyles.faded]}>{division.name}</Text>
+      <Text style={[sheet.optionName, full && sheet.optionNameFull]}>{division.name}</Text>
       {full ? (
         <Text style={sheet.fullChip}>{copy.full}</Text>
       ) : (
@@ -254,9 +255,9 @@ function Review({ form }: { form: Form }) {
         <SummaryRow label={copy.price} value={pricePerTeam(priceCents)} />
       </View>
       {priceCents > 0 && (
-        <View style={formStyles.note}>
-          <Ionicons name="information-circle-outline" size={16} color={MUTED} />
-          <Text style={formStyles.noteText}>{copy.payOutside(formatPrice(priceCents))}</Text>
+        <View style={sheet.note}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+          <Text style={sheet.noteText}>{copy.payOutside(formatPrice(priceCents))}</Text>
         </View>
       )}
       {form.error && (
@@ -301,22 +302,23 @@ function SheetButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        pageStyles.primaryButton,
         sheet.button,
         disabled && !busy && sheet.buttonOff,
         pressed && pageStyles.pressed,
       ]}
     >
-      {busy && <ActivityIndicator color="#ffffff" />}
-      <Text style={pageStyles.primaryText}>{label}</Text>
+      {busy && <ActivityIndicator color={colors.white} />}
+      <Text style={sheet.buttonText}>{label}</Text>
     </Pressable>
   );
 }
 
+// The sheet's colours come from the app theme (constants/rallyTheme), like the
+// Search filters sheet. The theme has no red yet, so errors keep the forms' red.
 const sheet = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 20, 15, 0.45)" },
+  backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.38)" },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "90%",
@@ -326,20 +328,35 @@ const sheet = StyleSheet.create({
     alignSelf: "center",
     width: 40,
     height: 5,
-    borderRadius: 3,
-    backgroundColor: "#d6d8d2",
+    borderRadius: radii.pill,
+    backgroundColor: colors.border,
   },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  title: { flex: 1, fontSize: 22, fontWeight: "800", color: "#101b15" },
+  title: { flex: 1, fontSize: 22, fontWeight: "800", color: colors.forest },
   roundButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f2f2ed",
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   content: { padding: 16, gap: 10 },
+  label: { fontSize: 13, color: colors.textMuted },
+  input: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  note: { flexDirection: "row", gap: 6, alignItems: "center" },
+  noteText: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
   options: { gap: 8 },
   option: {
     flexDirection: "row",
@@ -349,33 +366,54 @@ const sheet = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e4e4de",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  optionOn: { borderColor: GREEN, backgroundColor: "#f4f7ee" },
-  optionName: { flex: 1, fontSize: 15, fontWeight: "600", color: "#101b15" },
-  optionDetail: { fontSize: 13, color: MUTED },
+  optionOn: { borderColor: colors.forest, borderWidth: 2 },
+  optionFull: { backgroundColor: colors.background },
+  optionName: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+  optionNameFull: { color: colors.textMuted },
+  optionDetail: { fontSize: 13, color: colors.textMuted },
   fullChip: {
     fontSize: 12,
     fontWeight: "700",
-    color: MUTED,
-    backgroundColor: "#ecebe6",
-    borderRadius: 8,
+    color: colors.textMuted,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,
     overflow: "hidden",
   },
-  summary: { borderRadius: 14, borderWidth: 1, borderColor: "#e4e4de" },
+  summary: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
     padding: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e4e4de",
+    borderBottomColor: colors.border,
   },
-  summaryLabel: { fontSize: 14, color: MUTED },
-  summaryValue: { flexShrink: 1, fontSize: 15, fontWeight: "600", color: "#101b15" },
+  summaryLabel: { fontSize: 14, color: colors.textMuted },
+  summaryValue: { flexShrink: 1, fontSize: 15, fontWeight: "600", color: colors.textPrimary },
   error: { fontSize: 14, color: RED },
-  button: { flexDirection: "row", gap: 8, marginTop: 6 },
+  button: {
+    minHeight: 48,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+    paddingHorizontal: 26,
+    borderRadius: radii.button,
+    backgroundColor: colors.forest,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: { color: colors.white, fontSize: 16, fontWeight: "700" },
   buttonOff: { opacity: 0.4 },
 });
