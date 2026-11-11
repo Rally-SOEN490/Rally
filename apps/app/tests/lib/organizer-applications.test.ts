@@ -38,7 +38,7 @@ describe("normalizeLink", () => {
     expect(normalizeLink(text)).toBe(expected);
   });
 
-  it.each(["not a link", "club", "https://", "https://club ca"])("rejects %j", (text) => {
+  it.each(["not a link", "club", "https://", "https://club ca", "https://.club", "https://club."])("rejects %j", (text) => {
     expect(normalizeLink(text)).toBeUndefined();
   });
 });
