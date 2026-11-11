@@ -107,6 +107,24 @@ const assignAutoAwardedBadges = async (db: Database, userId: string) => {
   });
 };
 
+// Deletes the account in one transaction, after `beforeDelete` removes what
+// other modules keep about it. Does nothing if the user is already gone, so
+// retrying a deletion is safe.
+const deleteAccount = (
+  db: Database,
+  firebaseUid: string,
+  beforeDelete: (userId: string, transaction: Prisma.TransactionClient) => Promise<void>,
+) =>
+  db.$transaction(async (transaction) => {
+    const user = await transaction.user.findUnique({
+      where: { firebaseUid },
+      select: { id: true },
+    });
+    if (!user) return;
+    await beforeDelete(user.id, transaction);
+    await transaction.user.deleteMany({ where: { id: user.id } });
+  });
+
 // Saves the changes and replaces the interests in one transaction. Returns null
 // when the person has no Rally account.
 const updateProfile = (db: Database, firebaseUid: string, changes: ProfileChanges) => {
@@ -179,22 +197,8 @@ export const createUserRepository = (db: Database) => ({
   updateByFirebaseUid: (firebaseUid: string, changes: ProfileChanges) =>
     updateProfile(db, firebaseUid, changes),
 
-  // Deletes the account in one transaction, after `beforeDelete` removes what
-  // other modules keep about it. Does nothing if the user is already gone, so
-  // retrying a deletion is safe.
-  deleteByFirebaseUid: (
-    firebaseUid: string,
-    beforeDelete: (userId: string, transaction: Prisma.TransactionClient) => Promise<void>,
-  ) =>
-    db.$transaction(async (transaction) => {
-      const user = await transaction.user.findUnique({
-        where: { firebaseUid },
-        select: { id: true },
-      });
-      if (!user) return;
-      await beforeDelete(user.id, transaction);
-      await transaction.user.deleteMany({ where: { id: user.id } });
-    }),
+  deleteByFirebaseUid: (firebaseUid: string, beforeDelete: Parameters<typeof deleteAccount>[2]) =>
+    deleteAccount(db, firebaseUid, beforeDelete),
 });
 
 export type UserRepository = ReturnType<typeof createUserRepository>;
