@@ -39,6 +39,8 @@ See [Code Quality Rubric §8](docs/course/soen-490/CODE-QUALITY.md#8-responsible
 
 The `ai-checklist` agent skill in [.agents/skills](.agents/skills/ai-checklist/SKILL.md) checks a branch against these rules and helps fill in missing declarations.
 
+The [AI declarations workflow](.github/workflows/ai-declarations.yml) runs the same check on every pull request, for the files, commits, and description the pull request changes. Bot pull requests are skipped. It only reports warnings for now. It will become a required check once the backfill in [#245](https://github.com/Rally-SOEN490/Rally/issues/245) is done.
+
 ## Source-file license notice
 
 Start each source file with the license notice, followed by its AI-contribution declaration, using the comment syntax of its language:
