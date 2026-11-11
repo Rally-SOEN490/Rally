@@ -114,7 +114,6 @@ export function AvatarSection({
         <Text style={sharedStyles.photoError}>{photo.error}</Text>
       )}
       <Text style={styles.playerName}>{account?.displayName}</Text>
-      <Text style={styles.playerMeta}>Outside hitter • Sunbirds</Text>
       <SocialLinks account={account} />
       {lookingForTeam && <LookingForTeamBadge />}
     </View>
@@ -241,11 +240,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "800",
     color: "#12382d",
-  },
-  playerMeta: {
-    marginTop: 2,
-    fontSize: 15,
-    color: "#536761",
   },
   lookingBadge: {
     flexDirection: "row",
