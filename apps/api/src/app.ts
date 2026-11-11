@@ -9,7 +9,7 @@ import type { Database } from "./db.ts";
 import type { ProfilePhotoStorage } from "./modules/users/photo-storage.ts";
 import { healthRoutes } from "./health.ts";
 import { organizerApplicationRoutes } from "./modules/organizer-applications/routes.ts";
-import { createTeamLookup } from "./modules/teams/lookup.ts";
+import { createTeamLeaver, createTeamLookup } from "./modules/teams/lookup.ts";
 import { teamRoutes } from "./modules/teams/routes.ts";
 import { tournamentRoutes } from "./modules/tournaments/routes.ts";
 import { createSignUpLookup } from "./modules/tournaments/sign-up-lookup.ts";
@@ -60,7 +60,13 @@ export const buildApp = async ({
   });
 
   await app.register(healthRoutes, { db });
-  await app.register(userRoutes, { db, verifyIdToken, photos, prefix: "/users" });
+  await app.register(userRoutes, {
+    db,
+    verifyIdToken,
+    photos,
+    teams: createTeamLeaver(db),
+    prefix: "/users",
+  });
   const users = createUserRepository(db);
   await app.register(organizerApplicationRoutes, {
     db,

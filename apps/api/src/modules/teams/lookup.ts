@@ -12,3 +12,9 @@ export const createTeamLookup = (db: Database) => {
 };
 
 export type TeamLookup = ReturnType<typeof createTeamLookup>;
+
+// What the users module needs when an account is deleted: taking the player
+// off their teams, and deleting any team left with no players.
+export const createTeamLeaver = (db: Database) => ({
+  leaveAllTeams: createTeamRepository(db).leaveAllTeams,
+});

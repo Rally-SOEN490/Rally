@@ -36,6 +36,21 @@ export const createTeamRepository = (db: Database) => ({
       select: { id: true, name: true, divisionId: true },
     }),
 
+  // Takes a player off every team they are on and deletes the teams left with
+  // nobody, so those no longer take a spot or a name. Runs in the caller's
+  // transaction, before their account is deleted.
+  leaveAllTeams: async (userId: string, transaction: Transaction) => {
+    const memberships = await transaction.teamMember.findMany({
+      where: { userId },
+      select: { teamId: true },
+    });
+    if (memberships.length === 0) return;
+    await transaction.teamMember.deleteMany({ where: { userId } });
+    await transaction.team.deleteMany({
+      where: { id: { in: memberships.map(({ teamId }) => teamId) }, members: { none: {} } },
+    });
+  },
+
   // How many teams each division has. Divisions without teams are left out.
   countByDivision: async (divisionIds: string[]) => {
     if (divisionIds.length === 0) return new Map<string, number>();

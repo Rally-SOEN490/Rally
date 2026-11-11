@@ -342,6 +342,44 @@ test.each([
   ).rejects.toThrow();
 });
 
+// ---------- Deleting an account ----------
+
+const deleteAccount = (uid: string) =>
+  app.inject({ method: "DELETE", url: "/users/me", headers: authHeader(uid) });
+
+test("deletes the team of a captain who deletes their account, freeing its spot and name", async () => {
+  await signUp("lea", cup, { divisionId: coed, name: "Spike Lee" });
+
+  expect((await deleteAccount("lea")).statusCode).toBe(204);
+
+  expect(await testDb.team.count()).toBe(0);
+  expect((await call.get("sam", cup)).json()).toMatchObject({
+    divisions: [{ id: coed, registeredTeams: 0 }, { registeredTeams: 0 }],
+  });
+  expect((await signUp("sam", cup, { divisionId: coed, name: "spike lee" })).statusCode).toBe(201);
+});
+
+test("keeps a team that still has players when one of them deletes their account", async () => {
+  const sam = await testDb.user.findUniqueOrThrow({ where: { firebaseUid: "sam" } });
+  const { id } = (await signUp("lea", cup, { divisionId: coed, name: "Spike Lee" })).json();
+  await testDb.teamMember.create({ data: { teamId: id, tournamentId: cup, userId: sam.id } });
+
+  expect((await deleteAccount("lea")).statusCode).toBe(204);
+
+  const team = await testDb.team.findUniqueOrThrow({ where: { id }, include: { members: true } });
+  expect(team.members.map(({ userId }) => userId)).toEqual([sam.id]);
+});
+
+test("leaves other players' teams alone when an account is deleted", async () => {
+  await signUp("lea", cup, { divisionId: coed, name: "Spike Lee" });
+  await signUp("sam", cup, { divisionId: women, name: "Block Party" });
+
+  await deleteAccount("lea");
+  expect((await deleteAccount("lea")).statusCode).toBe(204);
+
+  expect((await testDb.team.findMany()).map(({ name }) => name)).toEqual(["Block Party"]);
+});
+
 // ---------- Team name rules ----------
 
 test("compares team names without case or extra spaces", () => {

@@ -40,7 +40,7 @@ The database enforces the rules itself, so a bug or two requests at once can't b
 - A member points at its team with `(team_id, tournament_id)`, so the copied tournament must match the team's.
 - A check keeps a stored name 1 to 40 characters with no spaces around it.
 
-Deleting a division or tournament deletes its teams; only drafts can be deleted, and drafts never have teams. Deleting a player's account removes them from their teams.
+Deleting a division or tournament deletes its teams; only drafts can be deleted, and drafts never have teams. Deleting a player's account removes them from their teams, in the same transaction, and deletes any team left with no players, so it no longer takes a spot in its division or keeps its name. The users module calls the teams module's `leaveAllTeams` for this (`teams/lookup.ts`).
 
 ## Signing up
 
@@ -81,5 +81,5 @@ Following the Nov 2 "Player sign-up" mock-ups (C1, A2):
 ## Open points
 
 - **The organizer deleting their account** still deletes their tournaments, now with every team signed up in them. This needs a decision before Release 1 (see the note in `tournaments.md`).
-- **The captain deleting their account** leaves the team without a captain. It matters once teams have other players (RALLY-38).
+- **The captain deleting their account** deletes the team for now, because teams have only their captain until RALLY-38. Once teams have other players, the team stays without a captain, and RALLY-38 must decide who takes over. Once teams have results, deleting an empty team would erase match history, so this must change then (see the "Deleted player" note in `users/service.ts`).
 - Name-only teammates (RALLY-62 #84) will need `team_members.user_id` to become optional.

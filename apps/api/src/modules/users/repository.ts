@@ -184,8 +184,22 @@ export const createUserRepository = (db: Database) => {
       return updatedUser;
     },
 
-    // Does nothing if the user is already gone, so retrying a deletion is safe.
-    deleteByFirebaseUid: (firebaseUid: string) => db.user.deleteMany({ where: { firebaseUid } }),
+    // Deletes the account in one transaction, after `beforeDelete` removes what
+    // other modules keep about it. Does nothing if the user is already gone, so
+    // retrying a deletion is safe.
+    deleteByFirebaseUid: (
+      firebaseUid: string,
+      beforeDelete: (userId: string, transaction: Prisma.TransactionClient) => Promise<void>,
+    ) =>
+      db.$transaction(async (transaction) => {
+        const user = await transaction.user.findUnique({
+          where: { firebaseUid },
+          select: { id: true },
+        });
+        if (!user) return;
+        await beforeDelete(user.id, transaction);
+        await transaction.user.deleteMany({ where: { id: user.id } });
+      }),
   };
 };
 
