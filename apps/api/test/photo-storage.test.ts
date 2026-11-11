@@ -1,6 +1,5 @@
-// Copyright (c) 2026 Rally contributors
+// Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
-// SPDX-License-Identifier: MIT
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
