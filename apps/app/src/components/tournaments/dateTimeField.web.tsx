@@ -3,26 +3,49 @@
 
 import type { CSSProperties } from "react";
 import type { DateTimeFieldProps } from "./dateTimeField";
+import { MUTED } from "./styles";
+import { tournamentCopy } from "@/translations/tournaments.en";
 
 // The web version of DateTimeField: the browser's own date and time inputs,
 // which every current browser supports, with its calendar and keyboard entry.
 // They read and write "YYYY-MM-DD" and "HH:mm", the same format the app uses.
 export function DateTimeField({ mode, value, onChange, accessibilityLabel }: DateTimeFieldProps) {
   return (
-    <input
-      type={mode}
-      aria-label={accessibilityLabel}
-      value={value ?? ""}
-      // Clearing the field gives "", which isn't a value: keep the last one instead.
-      onChange={(event) => event.target.value && onChange(event.target.value)}
-      style={inputStyle}
-    />
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <input
+        type={mode}
+        aria-label={accessibilityLabel}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value || null)}
+        style={inputStyle}
+      />
+      {!!value && (
+        <button
+          type="button"
+          aria-label={tournamentCopy.setup.clearDateTime(accessibilityLabel)}
+          title={tournamentCopy.setup.clearDateTimeHint}
+          onClick={() => onChange(null)}
+          style={{
+            border: 0,
+            background: "transparent",
+            color: MUTED,
+            minWidth: 44,
+            minHeight: 44,
+            cursor: "pointer",
+            fontSize: 22,
+          }}
+        >
+          ×
+        </button>
+      )}
+    </div>
   );
 }
 
 const inputStyle: CSSProperties = {
   boxSizing: "border-box",
   width: "100%",
+  minWidth: 0,
   backgroundColor: "#f2f2ed",
   border: "1px solid #e4e4de",
   borderRadius: 12,

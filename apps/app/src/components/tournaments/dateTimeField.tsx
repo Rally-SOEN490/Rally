@@ -18,7 +18,7 @@ export type DateTimeFieldProps = {
   // "YYYY-MM-DD" for a date, "HH:mm" for a time. Montreal time, so it is never
   // converted to the phone's time zone: only the numbers shown are used.
   value: string | null;
-  onChange: (value: string) => void;
+  onChange: (value: string | null) => void;
   accessibilityLabel: string;
 };
 
@@ -55,7 +55,13 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
 
   return (
     <View>
-      <FieldButton mode={mode} value={value} label={accessibilityLabel} onPress={open} />
+      <FieldButton
+        mode={mode}
+        value={value}
+        label={accessibilityLabel}
+        onPress={open}
+        onClear={() => onChange(null)}
+      />
       {iosOpen && (
         <IosPickerSheet
           mode={mode}
@@ -77,11 +83,13 @@ function FieldButton({
   value,
   label,
   onPress,
+  onClear,
 }: {
   mode: "date" | "time";
   value: string | null;
   label: string;
   onPress: () => void;
+  onClear: () => void;
 }) {
   const copy = tournamentCopy.setup;
   const text = value
@@ -92,19 +100,32 @@ function FieldButton({
       ? copy.pickDate
       : copy.pickTime;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityValue={{ text }}
-      onPress={onPress}
-      style={styles.pickerButton}
-    >
-      <Ionicons
-        name={mode === "date" ? "calendar-outline" : "time-outline"}
-        size={18}
-        color={value ? GREEN : MUTED}
-      />
-      <Text style={[styles.pickerText, !value && styles.placeholder]}>{text}</Text>
-    </Pressable>
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityValue={{ text }}
+        onPress={onPress}
+        style={[styles.pickerButton, !!value && styles.pickerHasClear]}
+      >
+        <Ionicons
+          name={mode === "date" ? "calendar-outline" : "time-outline"}
+          size={18}
+          color={value ? GREEN : MUTED}
+        />
+        <Text style={[styles.pickerText, !value && styles.placeholder]}>{text}</Text>
+      </Pressable>
+      {!!value && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.clearDateTime(label)}
+          accessibilityHint={copy.clearDateTimeHint}
+          onPress={onClear}
+          style={styles.clearPickerButton}
+        >
+          <Ionicons name="close-circle" size={20} color={MUTED} />
+        </Pressable>
+      )}
+    </View>
   );
 }

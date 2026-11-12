@@ -139,8 +139,8 @@ function MomentRow({
   label: string;
 }) {
   const value = state.form[moment];
-  const set = (part: "date" | "time", text: string) =>
-    state.change(moment, { ...value, [part]: text });
+  const set = (part: "date" | "time", text: string | null) =>
+    state.change(moment, text === null ? { date: null, time: null } : { ...value, [part]: text });
   return (
     <View style={styles.row}>
       <View style={styles.flex}>
