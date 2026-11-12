@@ -1,7 +1,5 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more
 
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { authHeader, buildTestApp, testDb } from "./helpers.ts";
