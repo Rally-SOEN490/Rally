@@ -27,9 +27,9 @@ Problems and corrections: the first web export failed without Firebase configura
 
 ### RALLY-187: dependency and security scanning
 
-Issue: [#248](https://github.com/Rally-SOEN490/Rally/issues/248). The Dependabot configuration, the CodeQL workflow, and the bot exceptions in the naming and SonarQube workflows are 50% or more AI-generated. Claude Code wrote them and the README section, and checked the Expo-managed package list against `expo/bundledNativeModules.json`. CI configuration is recorded here separately because rubric §1 excludes it from substantive features.
+Issue: [#248](https://github.com/Rally-SOEN490/Rally/issues/248). Pull request: [#355](https://github.com/Rally-SOEN490/Rally/pull/355). The Dependabot configuration, the CodeQL workflow, and the bot exceptions in the naming and SonarQube workflows are 50% or more AI-generated. Claude Code wrote them and the README section, and checked the Expo-managed package list against `expo/bundledNativeModules.json`. CI configuration is recorded here separately because rubric §1 excludes it from substantive features.
 
-Verification: the workflow files were checked locally and the AI checklist reports no problems. Dependabot and CodeQL have only run once the pull request is open and merged, so their first results are recorded in the pull request, not here.
+Verification: the AI checklist reports no problems. The CodeQL workflow ran on the pull request for both languages: `javascript-typescript` (87 rules) and `actions` (17 rules) completed with no alerts. Dependabot reads its configuration only from `main`, so its first pull requests appear after the merge and are not covered by this verification.
 
 ## Features with substantial AI assistance
 
