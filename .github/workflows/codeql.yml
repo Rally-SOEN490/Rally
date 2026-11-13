@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+# CodeQL advanced setup. GitHub's default setup is not enabled for this
+# repository; do not enable it as well, because the two setups conflict.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    # Weekly, so that new CodeQL queries also run on main between merges.
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      # Only needed if the repository becomes private.
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # The app, API and shared TypeScript, and the workflow files.
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # Neither language needs a build, so dependencies are not installed.
+          build-mode: none
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
