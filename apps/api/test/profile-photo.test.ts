@@ -1,6 +1,5 @@
-// Copyright (c) 2026 Rally contributors
+// Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
-// SPDX-License-Identifier: MIT
 
 import { afterAll, beforeEach, expect, test, vi } from "vitest";
 import { buildApp } from "../src/app.ts";
