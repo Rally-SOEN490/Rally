@@ -11,6 +11,9 @@ jobs:
   check-naming:
     name: Check branch name and PR title
     runs-on: ubuntu-latest
+    # Bot pull requests (for example Dependabot's dependabot/npm_and_yarn/...
+    # branches) do not follow the RALLY ticket naming, so they are skipped.
+    if: ${{ github.event.pull_request.user.type != 'Bot' }}
     steps:
       - name: Check branch name
         env:
