@@ -14,6 +14,9 @@ jobs:
   sonar:
     name: Analyze
     runs-on: ubuntu-latest
+    # Bot pull requests (for example Dependabot) cannot read SONAR_TOKEN, so the
+    # scan would fail on them. Pushes to main are still analyzed.
+    if: ${{ github.event.pull_request.user.type != 'Bot' }}
     # A temporary PostgreSQL for the API tests.
     services:
       postgres:
