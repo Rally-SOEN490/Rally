@@ -25,6 +25,12 @@ npm run typecheck
 
 Both formatting commands use the shared root `.prettierrc.json` and `.prettierignore`; they check each app's source, tests, configuration, and documentation while excluding generated code, dependencies, and build output. CI uses explicit dummy Firebase values for the static web export, so it needs no Firebase secrets or live API. That export checks compilation and rendering; it is not a deployable production build or a live authentication test. Tests remain in SonarQube, and architecture-boundary lint rules are deferred to [#247](https://github.com/Rally-SOEN490/Rally/issues/247).
 
+### Dependency and security scanning
+
+The [CodeQL workflow](.github/workflows/codeql.yml) scans the TypeScript code and the GitHub Actions workflows for security problems on every pull request, on every push to `main`, and once a week. New alerts appear on the pull request, and all alerts are listed under the repository's **Security > Code scanning** tab.
+
+[Dependabot](.github/dependabot.yml) checks the npm dependencies of `apps/app` and `apps/api` and the GitHub Actions versions every Monday and opens pull requests for new versions. Minor and patch updates are grouped into one pull request per directory. Dependabot ignores the packages pinned by the Expo SDK (`expo`, `expo-*`, `react`, `react-native`, and the others listed in the file), because it would propose versions that do not match the SDK. Update those in `apps/app` with `npx expo install --check` and `npx expo install --fix`. Dependabot pull requests skip the branch name and PR title check.
+
 ## Release demos
 
 | Release | Demo |
