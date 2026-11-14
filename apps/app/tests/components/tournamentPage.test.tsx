@@ -4,10 +4,14 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
-import { Alert, Platform } from "react-native";
 import { TournamentPageScreen } from "@/components/tournaments/page/tournamentPageScreen";
 import { ApiError } from "@/lib/api";
-import { getTournamentPage, type BrowseDivision, type TournamentPage } from "@/lib/tournaments";
+import {
+  getTournamentPage,
+  signUpTeam,
+  type BrowseDivision,
+  type TournamentPage,
+} from "@/lib/tournaments";
 import { useSession } from "@/lib/session";
 import { fakeSession } from "../fake-session";
 
@@ -18,6 +22,7 @@ jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/tournaments", () => ({
   ...jest.requireActual("@/lib/tournaments"),
   getTournamentPage: jest.fn(),
+  signUpTeam: jest.fn(),
 }));
 
 const division = (overrides: Partial<BrowseDivision>): BrowseDivision => ({
@@ -51,6 +56,7 @@ const forPlayer: TournamentPage = {
   ],
   isOrganizer: false,
   signUps: "OPEN",
+  myTeam: null,
 };
 
 // What its organizer gets.
@@ -72,6 +78,7 @@ const show = async (page: TournamentPage) => {
 beforeEach(() => {
   jest.mocked(useSession).mockReturnValue(fakeSession({ user: {} as User }));
   jest.mocked(getTournamentPage).mockReset();
+  jest.mocked(signUpTeam).mockReset();
   jest.mocked(router.canGoBack).mockReturnValue(true);
 });
 
@@ -134,44 +141,52 @@ it("says the tournament is full when no division has room", async () => {
   expect(screen.queryByRole("button", { name: "Sign up" })).not.toBeOnTheScreen();
 });
 
-it("explains that registration isn't available yet on a phone", async () => {
-  const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-  await show(forPlayer);
+it("shows the viewer's team instead of Sign up", async () => {
+  const myTeam = {
+    id: "team1",
+    name: "Spike Lee",
+    divisionId: "d1",
+    divisionName: "6v6 Co-ed B",
+    isCaptain: true,
+  };
+  await show({ ...forPlayer, myTeam });
 
-  await userEvent.press(screen.getByRole("button", { name: "Sign up" }));
-
-  expect(alert).toHaveBeenCalledWith("Sign up", "Registration isn't available yet.");
+  expect(screen.getByText("You're captain of Spike Lee")).toBeOnTheScreen();
+  // Its division under it, besides the Divisions list.
+  expect(screen.getAllByText("6v6 Co-ed B")).toHaveLength(2);
+  expect(screen.queryByRole("button", { name: "Sign up" })).not.toBeOnTheScreen();
 });
 
-it("explains it on the page on the web", async () => {
-  const platform = jest.replaceProperty(Platform, "OS", "web");
-  try {
-    await show(forPlayer);
-    await userEvent.press(screen.getByRole("button", { name: "Sign up" }));
+it("shows the viewer's team after sign-ups close too", async () => {
+  const myTeam = {
+    id: "team1",
+    name: "Spike Lee",
+    divisionId: "d1",
+    divisionName: "6v6 Co-ed B",
+    isCaptain: false,
+  };
+  await show({ ...forPlayer, signUps: "CLOSED", myTeam });
 
-    expect(screen.getByText("Registration isn't available yet.")).toBeOnTheScreen();
-  } finally {
-    platform.restore();
-  }
+  expect(screen.getByText("You're on Spike Lee")).toBeOnTheScreen();
+  expect(screen.getAllByText("Sign-ups closed Nov 9")).toHaveLength(1);
 });
 
 // ---------- What the organizer sees ----------
 
-it("shows the organizer the teams of each division", async () => {
+it("shows the organizer the teams of each division, and lets them sign up a team", async () => {
   await show(forOrganizer);
 
   expect(screen.getByText("$240 · 0 / 15 teams")).toBeOnTheScreen();
   expect(screen.getByText("Full · 8 / 8")).toBeOnTheScreen();
   expect(screen.getByText("8 / 23 teams")).toBeOnTheScreen();
-  expect(screen.getByText("Sign-ups open")).toBeOnTheScreen();
-  expect(screen.queryByRole("button", { name: "Sign up" })).not.toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Sign up" })).toBeOnTheScreen();
 });
 
-it("shows Registered teams greyed out until teams can register", async () => {
+it("shows Registered teams greyed out until the list exists", async () => {
   await show(forOrganizer);
 
   expect(screen.getByRole("button", { name: "Registered teams" })).toBeDisabled();
-  expect(screen.getByText("Available once teams can register")).toBeOnTheScreen();
+  expect(screen.getByText("The list of teams is coming soon")).toBeOnTheScreen();
 });
 
 it("offers to continue setting up a draft", async () => {

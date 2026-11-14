@@ -1,8 +1,3 @@
-/*
-AI declaration:
-50% or more AI-generated
-*/
-
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
@@ -58,6 +53,7 @@ model User {
   interests      UserInterest[]
   organizerApplications OrganizerApplication[]
   organizedTournaments  Tournament[]
+  teamMemberships       TeamMember[]
 
   @@map("users")
 }
@@ -217,7 +213,8 @@ model Tournament {
   createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz
   // Deleting the organizer's account deletes their tournaments for now.
-  // Revisit once teams can register (#58).
+  // That now includes the teams signed up in them: still to decide (see the open
+  // points in docs/architecture/tournaments.md).
   organizer            User             @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   divisions            Division[]
 
@@ -241,7 +238,53 @@ model Division {
   createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz
   tournament   Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teams        Team[]
 
   @@unique([tournamentId, name])
+  // Lets a team point at its division and tournament together, so the database
+  // ensures a team's division belongs to the team's tournament.
+  @@unique([id, tournamentId])
   @@map("divisions")
+}
+
+// A team signed up in one division of one tournament (RALLY-36). Teams last
+// only for that tournament (decision #180) and have no player limit.
+// See docs/architecture/teams.md.
+model Team {
+  id           String       @id @default(uuid()) @db.Uuid
+  tournamentId String       @map("tournament_id") @db.Uuid
+  divisionId   String       @map("division_id") @db.Uuid
+  name         String
+  // The name in lower case. Unique per tournament, so "Spikers" and "spikers"
+  // can't both sign up, even when two requests arrive at once.
+  nameKey      String       @map("name_key")
+  // When the organizer marked the team as paid (RALLY-54). Null means unpaid.
+  paidAt       DateTime?    @map("paid_at") @db.Timestamptz
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+  division     Division     @relation(fields: [divisionId, tournamentId], references: [id, tournamentId], onDelete: Cascade)
+  members      TeamMember[]
+
+  @@unique([tournamentId, nameKey])
+  // Lets a member row repeat the team's tournament (see TeamMember).
+  @@unique([id, tournamentId])
+  @@index([divisionId])
+  @@map("teams")
+}
+
+// A player on a team. The tournament is copied from the team (the database
+// checks it matches), so one player can be on only one team per tournament.
+model TeamMember {
+  teamId       String   @map("team_id") @db.Uuid
+  tournamentId String   @map("tournament_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  isCaptain    Boolean  @default(false) @map("is_captain")
+  joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz
+  team         Team     @relation(fields: [teamId, tournamentId], references: [id, tournamentId], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@unique([tournamentId, userId])
+  @@index([userId])
+  @@map("team_members")
 }

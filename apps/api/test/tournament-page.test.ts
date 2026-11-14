@@ -80,6 +80,7 @@ test("shows a player a published tournament with its description, and nothing pr
     divisions,
     isOrganizer: false,
     signUps: "NOT_OPEN",
+    myTeam: null,
   });
 });
 
