@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { Redirect } from "expo-router";
 import { signOut } from "firebase/auth";
 import { ActivityIndicator, Text } from "react-native";

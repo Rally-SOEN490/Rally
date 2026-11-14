@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { initializeApp } from "firebase-admin/app";
