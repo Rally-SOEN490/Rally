@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
+
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import { AuthScreen, Button, Field, Footer } from "@/components/auth";
