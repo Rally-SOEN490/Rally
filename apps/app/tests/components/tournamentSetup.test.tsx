@@ -376,15 +376,15 @@ const clearCases = (
     ["registrationOpensAt", "Opens"],
     ["registrationClosesAt", "Closes"],
   ] as const
-).flatMap(([field, label]) => (["date", "time"] as const).map((part) => ({ field, label, part })));
+).map(([field, label]) => ({ field, label }));
 
 it.each(clearCases)(
-  "clears $label via its $part control and saves the pair as null",
-  async ({ field, label, part }) => {
+  "clears $label via its row control and saves the pair as null",
+  async ({ field, label }) => {
     jest.mocked(getTournament).mockResolvedValue(datedDraft);
     await render(<SetupScreen id="t1" />);
     await screen.findByDisplayValue("Verdun Winter Cup");
-    await press(`Clear ${label.toLowerCase()} ${part}`);
+    await press(`Clear ${label.toLowerCase()} date and time`);
     expect(screen.getByRole("button", { name: `${label} date` })).toHaveAccessibilityValue({
       text: "Pick a date",
     });
@@ -392,7 +392,7 @@ it.each(clearCases)(
       text: "Pick a time",
     });
     expect(
-      screen.queryByRole("button", { name: `Clear ${label.toLowerCase()} date` }),
+      screen.queryByRole("button", { name: `Clear ${label.toLowerCase()} date and time` }),
     ).not.toBeOnTheScreen();
     expect(mockPreventRemove.blocked).toBe(true);
     await press("Save draft");
@@ -409,7 +409,7 @@ it("can select a date and time again after clearing, and keeps the clear on a fa
   jest.mocked(updateTournament).mockRejectedValueOnce(new ApiError(503, "Please try again."));
   await render(<SetupScreen id="t1" />);
   await screen.findByDisplayValue("Verdun Winter Cup");
-  await press("Clear starts date");
+  await press("Clear starts date and time");
   await press("Save draft");
   expect(screen.getByText("Please try again.")).toBeOnTheScreen();
   expect(screen.getByRole("button", { name: "Starts date" })).toHaveAccessibilityValue({
@@ -431,7 +431,7 @@ it("clears on Android without opening the picker and still opens the picker norm
     jest.mocked(getTournament).mockResolvedValue(datedDraft);
     await render(<SetupScreen id="t1" />);
     await screen.findByDisplayValue("Verdun Winter Cup");
-    await press("Clear starts date");
+    await press("Clear starts date and time");
     expect(DateTimePickerAndroid.open).not.toHaveBeenCalled();
     await press("Starts date");
     expect(DateTimePickerAndroid.open).toHaveBeenCalledWith(

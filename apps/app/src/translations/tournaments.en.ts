@@ -48,7 +48,7 @@ export const tournamentCopy = {
   },
 
   setup: {
-    clearDateTime: (field: string) => `Clear ${field.toLowerCase()}`,
+    clearDateTime: (field: string) => `Clear ${field.toLowerCase()} date and time`,
     clearDateTimeHint: "Clears both the date and time for this entry.",
     stepName: "SETUP",
     title: "Setup",

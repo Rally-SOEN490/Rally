@@ -7,7 +7,7 @@ import {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text } from "react-native";
 import { formatDate, formatTime } from "@/lib/organizer-tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
 import { IosPickerSheet } from "./iosPickerSheet";
@@ -18,7 +18,7 @@ export type DateTimeFieldProps = {
   // "YYYY-MM-DD" for a date, "HH:mm" for a time. Montreal time, so it is never
   // converted to the phone's time zone: only the numbers shown are used.
   value: string | null;
-  onChange: (value: string | null) => void;
+  onChange: (value: string) => void;
   accessibilityLabel: string;
 };
 
@@ -54,14 +54,8 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
       : setIosOpen(true);
 
   return (
-    <View>
-      <FieldButton
-        mode={mode}
-        value={value}
-        label={accessibilityLabel}
-        onPress={open}
-        onClear={() => onChange(null)}
-      />
+    <>
+      <FieldButton mode={mode} value={value} label={accessibilityLabel} onPress={open} />
       {iosOpen && (
         <IosPickerSheet
           mode={mode}
@@ -74,7 +68,7 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
           onCancel={() => setIosOpen(false)}
         />
       )}
-    </View>
+    </>
   );
 }
 
@@ -83,13 +77,11 @@ function FieldButton({
   value,
   label,
   onPress,
-  onClear,
 }: {
   mode: "date" | "time";
   value: string | null;
   label: string;
   onPress: () => void;
-  onClear: () => void;
 }) {
   const copy = tournamentCopy.setup;
   const text = value
@@ -100,32 +92,19 @@ function FieldButton({
       ? copy.pickDate
       : copy.pickTime;
   return (
-    <View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityValue={{ text }}
-        onPress={onPress}
-        style={[styles.pickerButton, !!value && styles.pickerHasClear]}
-      >
-        <Ionicons
-          name={mode === "date" ? "calendar-outline" : "time-outline"}
-          size={18}
-          color={value ? GREEN : MUTED}
-        />
-        <Text style={[styles.pickerText, !value && styles.placeholder]}>{text}</Text>
-      </Pressable>
-      {!!value && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.clearDateTime(label)}
-          accessibilityHint={copy.clearDateTimeHint}
-          onPress={onClear}
-          style={styles.clearPickerButton}
-        >
-          <Ionicons name="close-circle" size={20} color={MUTED} />
-        </Pressable>
-      )}
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityValue={{ text }}
+      onPress={onPress}
+      style={styles.pickerButton}
+    >
+      <Ionicons
+        name={mode === "date" ? "calendar-outline" : "time-outline"}
+        size={18}
+        color={value ? GREEN : MUTED}
+      />
+      <Text style={[styles.pickerText, !value && styles.placeholder]}>{text}</Text>
+    </Pressable>
   );
 }

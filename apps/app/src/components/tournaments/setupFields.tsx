@@ -139,8 +139,8 @@ function MomentRow({
   label: string;
 }) {
   const value = state.form[moment];
-  const set = (part: "date" | "time", text: string | null) =>
-    state.change(moment, text === null ? { date: null, time: null } : { ...value, [part]: text });
+  const set = (part: "date" | "time", text: string) =>
+    state.change(moment, { ...value, [part]: text });
   return (
     <View style={styles.row}>
       <View style={styles.flex}>
@@ -161,6 +161,17 @@ function MomentRow({
           accessibilityLabel={`${label} ${copy.time.toLowerCase()}`}
         />
       </View>
+      {(value.date || value.time) && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.clearDateTime(label)}
+          accessibilityHint={copy.clearDateTimeHint}
+          onPress={() => state.change(moment, { date: null, time: null })}
+          style={styles.clearMomentButton}
+        >
+          <Ionicons name="close-circle" size={20} color={MUTED} />
+        </Pressable>
+      )}
     </View>
   );
 }

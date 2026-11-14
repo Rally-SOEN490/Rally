@@ -74,12 +74,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
-  pickerHasClear: { paddingRight: 48 },
-  clearPickerButton: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
+  clearMomentButton: {
+    alignSelf: "flex-end",
     width: 44,
     minHeight: 44,
     alignItems: "center",

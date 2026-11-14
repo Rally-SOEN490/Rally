@@ -19,7 +19,7 @@ const renderInput = async (props: Partial<Parameters<typeof DateTimeField>[0]> =
       />,
     );
   });
-  return { input: renderer.root.findByType("input"), root: renderer.root, onChange };
+  return { input: renderer.root.findByType("input"), onChange };
 };
 
 it("uses the browser's date input with its label", async () => {
@@ -38,28 +38,18 @@ it("uses the browser's time input for times, empty when not set", async () => {
   expect(input.props).toMatchObject({ type: "time", value: "" });
 });
 
-it("passes on browser values and reports an empty field as null", async () => {
-  const { input, onChange } = await renderInput();
+it.each([
+  ["date", "2027-11-15", "2027-12-15"],
+  ["time", "09:00", "10:30"],
+] as const)(
+  "ignores an incomplete browser %s edit and accepts the completed value",
+  async (mode, initial, completed) => {
+    const { input, onChange } = await renderInput({ mode, value: initial });
 
-  input.props.onChange({ target: { value: "2027-11-15" } });
-  input.props.onChange({ target: { value: "" } });
+    input.props.onChange({ target: { value: "" } });
+    expect(onChange).not.toHaveBeenCalled();
 
-  expect(onChange.mock.calls).toEqual([["2027-11-15"], [null]]);
-});
-
-it.each(["date", "time"] as const)("clears a filled %s with an accessible button", async (mode) => {
-  const { root, onChange } = await renderInput({
-    mode,
-    value: mode === "date" ? "2027-11-15" : "09:00",
-    accessibilityLabel: `Starts ${mode}`,
-  });
-  const button = root.findByType("button");
-  expect(button.props["aria-label"]).toBe(`Clear starts ${mode}`);
-  button.props.onClick();
-  expect(onChange).toHaveBeenCalledWith(null);
-});
-
-it("hides the clear button when empty", async () => {
-  const { root } = await renderInput();
-  expect(root.findAllByType("button")).toHaveLength(0);
-});
+    input.props.onChange({ target: { value: completed } });
+    expect(onChange.mock.calls).toEqual([[completed]]);
+  },
+);
