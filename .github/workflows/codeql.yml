@@ -32,7 +32,7 @@ jobs:
         # The app, API and shared TypeScript, and the workflow files.
         language: [javascript-typescript, actions]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
