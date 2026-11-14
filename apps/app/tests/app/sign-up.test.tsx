@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { fireEvent, renderRouter } from "expo-router/testing-library";

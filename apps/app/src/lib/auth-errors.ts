@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 const messages: Record<string, string> = {
   "auth/invalid-credential": "Wrong email or password.",

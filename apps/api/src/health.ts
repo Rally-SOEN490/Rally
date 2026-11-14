@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import type { FastifyPluginAsync } from "fastify";
 import type { Database } from "./db.ts";

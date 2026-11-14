@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rally contributors
-// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: 50% or more AI-generated
 
 import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { signOut, type User } from "firebase/auth";
