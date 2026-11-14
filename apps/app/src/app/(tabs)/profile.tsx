@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AvatarSection } from "@/components/profile/avatarSection";
 import { AwardsPreview } from "@/components/profile/awardsPreview";
 import { BadgeDetailsModal } from "@/components/profile/badgeDetailsModal";
+import { ProfileSkillLevel } from "@/components/profileSkillLevel";
 import { InterestSection } from "@/components/profile/interestSection";
 import { LookingForTeamCard } from "@/components/profile/lookingForTeamCard";
 import { PhotoActionsModal } from "@/components/profile/photoActionsModal";
@@ -68,6 +69,7 @@ export default function Profile() {
           onSelectBadge={setSelectedBadge}
         />
 
+        <ProfileSkillLevel />
         <InterestSection
           selection={interests.selection}
           saving={interests.saving}

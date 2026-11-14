@@ -6,6 +6,10 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PlayerFilterBar } from "@/components/playerFilterBar";
+import { PlayerFiltersSheet } from "@/components/playerFilters";
+import { usePlayerFilters } from "@/hooks/usePlayerFilters";
+import type { SavedInterests } from "@/lib/player-preferences";
 import { PlayerDirectory } from "@/components/playerDirectory";
 import { SearchBanner } from "@/components/searchBanner";
 import { SearchBar } from "@/components/searchBar";
@@ -33,7 +37,7 @@ let lastSelectedTab: SearchTab = "tournaments";
 
 const openTournament = (tournament: Tournament) => router.push(tournamentPaths.page(tournament.id));
 
-// The search field (with the filter button on the Tournaments tab) and the tabs.
+// The search field, the current mode’s filter button, and the tabs.
 function SearchControls({
   tab,
   onSelectTab,
@@ -41,6 +45,7 @@ function SearchControls({
   onChangeQuery,
   fonts,
   filters,
+  playerFilters,
 }: {
   tab: SearchTab;
   onSelectTab: (tab: SearchTab) => void;
@@ -48,6 +53,7 @@ function SearchControls({
   onChangeQuery: (query: string) => void;
   fonts: ReturnType<typeof useSearchFonts>;
   filters: ReturnType<typeof useTournamentFilterState>;
+  playerFilters: ReturnType<typeof usePlayerFilters>;
 }) {
   return (
     <View style={styles.controls}>
@@ -56,8 +62,8 @@ function SearchControls({
         onChangeText={onChangeQuery}
         mode={tab}
         fontFamily={fonts.regular}
-        onPressFilter={tab === "tournaments" ? filters.openSheet : undefined}
-        activeFilterCount={tab === "tournaments" ? filters.activeCount : 0}
+        onPressFilter={tab === "tournaments" ? filters.openSheet : playerFilters.open}
+        activeFilterCount={tab === "tournaments" ? filters.activeCount : playerFilters.count}
       />
       <SegmentedToggle
         options={TABS}
@@ -78,6 +84,8 @@ function SearchResults({
   players,
   tournaments,
   filters,
+  playerFilters,
+  viewerInterests,
 }: {
   tab: SearchTab;
   query: string;
@@ -86,6 +94,8 @@ function SearchResults({
   players: ReturnType<typeof usePlayerResults>;
   tournaments: ReturnType<typeof useTournamentResults>;
   filters: ReturnType<typeof useTournamentFilterState>;
+  playerFilters: ReturnType<typeof usePlayerFilters>;
+  viewerInterests?: SavedInterests;
 }) {
   return (
     <>
@@ -107,7 +117,20 @@ function SearchResults({
       )}
 
       {tab === "players" && (
+        <PlayerFilterBar
+          filters={playerFilters.filters}
+          sort={playerFilters.sort}
+          fonts={fonts}
+          onRemove={playerFilters.remove}
+          onSort={playerFilters.setSort}
+        />
+      )}
+      {tab === "players" && (
         <PlayerDirectory
+          filters={playerFilters.filters}
+          sort={playerFilters.sort}
+          clearFilters={playerFilters.clear}
+          viewerInterests={viewerInterests}
           players={players.players}
           query={query}
           loading={players.loading}
@@ -125,7 +148,8 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const fonts = useSearchFonts();
   const [tab, setTab] = useState<SearchTab>(lastSelectedTab);
-  const { user } = useSession();
+  const { user, account } = useSession();
+  const playerFilters = usePlayerFilters();
   const players = usePlayerResults(tab === "players", user);
   const tournaments = useTournamentResults(tab === "tournaments", user);
   const filters = useTournamentFilterState();
@@ -151,6 +175,7 @@ export default function SearchScreen() {
           onChangeQuery={setQuery}
           fonts={fonts}
           filters={filters}
+          playerFilters={playerFilters}
         />
 
         <SearchResults
@@ -161,8 +186,18 @@ export default function SearchScreen() {
           players={players}
           tournaments={tournaments}
           filters={filters}
+          playerFilters={playerFilters}
+          viewerInterests={account?.interests}
         />
       </ScrollView>
+      <PlayerFiltersSheet
+        visible={tab === "players" && playerFilters.visible}
+        filters={playerFilters.draft}
+        onChange={playerFilters.setDraft}
+        onClose={playerFilters.close}
+        onApply={playerFilters.apply}
+        fonts={fonts}
+      />
       <TournamentFiltersSheet
         visible={filters.sheetVisible}
         filters={filters.draft}

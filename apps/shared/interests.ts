@@ -6,6 +6,9 @@ export const interestCatalog = {
     { key: "indoor-6s", label: "Indoor 6s", visible: true },
     { key: "beach-2s", label: "Beach 2s", visible: true },
     { key: "9-man", label: "9-man", visible: true },
+    { key: "indoor-4s", label: "Indoor 4s", visible: true },
+    { key: "beach-4s", label: "Beach 4s", visible: true },
+    { key: "grass-4s", label: "Grass 4s", visible: true },
   ],
   positions: [
     { key: "libero", label: "Libero", visible: true },

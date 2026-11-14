@@ -35,6 +35,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Roles and organizer applications | RALLY-161 (#183), RALLY-140 (#162), RALLY-135 (#157), PR [#313](https://github.com/Rally-SOEN490/Rally/pull/313)           | 50% or more AI-generated |
 | Tournament setup                 | RALLY-48 (#70), RALLY-49 (#71), RALLY-68 (#90), RALLY-51 (#73), PR [#315](https://github.com/Rally-SOEN490/Rally/pull/315) | 50% or more AI-generated |
 | Real tournaments in Search       | RALLY-226 (#302), PR [#320](https://github.com/Rally-SOEN490/Rally/pull/320)                                               | 50% or more AI-generated |
+| Player filtering | RALLY-115 / #137; [#311](https://github.com/Rally-SOEN490/Rally/pull/311) | 50% or more AI-generated |
 | Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR [#322](https://github.com/Rally-SOEN490/Rally/pull/322)             | 50% or more AI-generated |
 | Team sign-up                     | RALLY-36 (#58), RALLY-51 (#73), PR [#335](https://github.com/Rally-SOEN490/Rally/pull/335)                                 | 50% or more AI-generated |
 
@@ -53,6 +54,13 @@ Verification: <tests or substantive review comments that check the behaviour, wi
 
 Problems and rejected suggestions: <generated code that was wrong, corrected, or rejected, or "None found">
 ```
+
+### RALLY-115: Player filtering
+
+Issue: [#137](https://github.com/Rally-SOEN490/Rally/issues/137). Pull request: [#311](https://github.com/Rally-SOEN490/Rally/pull/311).
+OpenAI Codex generated the Players filter sheet, applied chips/count, player filtering, shared-interest sorting, profile level and saved interests, API support, migration and tests. The contributor selected **50% or more AI-generated**. Existing declarations were preserved. Vincent's separate positions and existing saved formats remain the basis; the user rejected a grouped Hitter option and the older story's additional looking-for-team filter in favor of the approved scope.
+
+Verification covers every level, position and derived interest; combined selections, text search, Apply/dismiss/remove, missing preferences, stable sorting, profile save/failure, public response fields and older-client preservation. The final branch, including main’s removal of the cancelled gender setting, passed 316 app and 163 API tests; an independent main/#309 integration copy passed 323 app and 163 API tests. Both projects passed type, lint and formatting checks, and the app web export passed. Test/build evidence is recorded in PR #311. Phone-width web checks used actual Search/Profile components and the actual API with isolated fixture accounts/database; only authentication and the unavailable native image-picker module were replaced in the ignored preview. Corrections included strict level/competition-array validation, the newly supported format's old invalid-test fixture, navigation placeholder expectations, and test-state types. Overloaded parallel test runs caused unrelated timeouts, so those suites were rerun separately. Native visual interaction and real Firebase sign-in remain unverified; the native-control service could not start. Figma's call limit prevented a fresh export after the initial specified-frame capture. The remote branch history was preserved without a force-push; three inherited Search commits still lack AI acknowledgments and issue references. Current source declarations and the new filtering commit pass those checks. Review corrections follow main’s managed interest catalog, remove the proposed gendered competition preferences at the contributor’s request, restrict text search to names, expose public-field hints, add an empty-state filter reset and use shared theme colors for the skill selector. Current verification is recorded separately in PR #311.
 
 ### RALLY-112: Tournament search and filters
 

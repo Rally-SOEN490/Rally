@@ -3,6 +3,7 @@
 
 import type { Database } from "../../db.ts";
 import type { Prisma } from "../../generated/prisma/client.ts";
+import type { SkillLevel } from "./preferences.ts";
 import type { AccountRole } from "../../permissions.ts";
 import { badgeCatalog } from "../badges/catalog.ts";
 
@@ -17,6 +18,7 @@ export type ColorTheme = "green" | "blue" | "pink";
 
 export type ProfileChanges = {
   displayName?: string;
+  skillLevel?: SkillLevel | null;
   profilePhotoKey?: string | null;
   lookingForTeam?: boolean;
   shownBadgeKeys?: string[];

@@ -13,7 +13,7 @@ export const searchCopy = {
   banner: { brand: "RALLY", title: "Search", subtitle: "Find your next game" },
   placeholders: {
     tournaments: "Search for events, venue, organizer",
-    players: "Search name",
+    players: "Search players by name",
   },
   openFilters: "Open filters",
   filtersUnavailable: "Filters are coming soon",

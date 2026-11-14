@@ -90,14 +90,14 @@ it("keeps player browsing and its query inside the single shared navigation bar"
   await userEvent.press(screen.getByRole("tab", { name: "Search" }));
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   expect(await screen.findByText("Alex Kim")).toBeOnTheScreen();
-  await userEvent.type(screen.getByPlaceholderText("Search name"), "sAM");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "sAM");
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
   expect(screen.queryByText("Alex Kim")).not.toBeOnTheScreen();
   expect(screen.getAllByTestId("nav-bar")).toHaveLength(1);
   await userEvent.press(screen.getByRole("tab", { name: "Home" }));
   expect(screen.getByText("Home page")).toBeOnTheScreen();
   await userEvent.press(screen.getByRole("tab", { name: "Search" }));
-  expect(screen.getByPlaceholderText("Search name")).toHaveDisplayValue("sAM");
+  expect(screen.getByPlaceholderText("Search players by name")).toHaveDisplayValue("sAM");
   expect(screen.getByRole("tab", { name: "Players" })).toBeSelected();
   expect(screen.getByRole("tab", { name: "Search" })).toBeSelected();
   expect(screen.getByRole("button", { name: "Message: Sam Lee" })).toBeDisabled();

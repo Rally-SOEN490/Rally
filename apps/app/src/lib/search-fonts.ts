@@ -7,16 +7,19 @@ const assets = {
   InterRegular: require("@/assets/fonts/inter/Inter_400Regular.ttf"),
   InterMedium: require("@/assets/fonts/inter/Inter_500Medium.ttf"),
   InterSemiBold: require("@/assets/fonts/inter/Inter_600SemiBold.ttf"),
+  InterBold: require("@/assets/fonts/inter/Inter_700Bold.ttf"),
 };
 export type SearchFonts = {
   regular?: string;
   medium?: string;
   semibold?: string;
+  bold?: string;
 };
 const families: SearchFonts = {
   regular: "InterRegular",
   medium: "InterMedium",
   semibold: "InterSemiBold",
+  bold: "InterBold",
 };
 const fallback: SearchFonts = {};
 

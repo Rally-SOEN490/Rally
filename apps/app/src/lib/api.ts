@@ -3,6 +3,7 @@
 
 import type { User } from "firebase/auth";
 import { Platform } from "react-native";
+import type { SavedInterests, SkillLevel } from "@/lib/player-preferences";
 
 // Where the Rally API runs. On an Android emulator or a phone, set
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
@@ -17,6 +18,7 @@ export type AccountRole = "PLAYER" | "ORGANIZER" | "ADMIN";
 export type RallyUser = {
   id: string;
   displayName: string;
+  skillLevel?: SkillLevel | null;
   // The API always sends it; treat a missing role as "PLAYER", the safe default.
   role?: AccountRole;
   profilePhotoUrl: string | null;
@@ -25,12 +27,7 @@ export type RallyUser = {
   instagramUrl?: string | null;
   facebookUrl?: string | null;
   thoughtText?: string | null;
-  interests?: {
-    formats: string[];
-    positions: string[];
-    clubs?: string[];
-    other?: string[];
-  };
+  interests?: SavedInterests;
   // App settings from the Settings screen.
   notificationsEnabled?: boolean;
   language?: Language;
@@ -55,19 +52,18 @@ export type RallyUser = {
 
 export type RallyPlayer = Pick<
   RallyUser,
-  "id" | "displayName" | "lookingForTeam" | "createdAt" | "badges"
+  "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
 export type ProfileChanges =
   | { displayName: string }
+  | { skillLevel: SkillLevel | null }
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
   | { facebookUrl: string | null }
   | { thoughtText: string | null }
-  | {
-      interests: { formats: string[]; positions: string[]; clubs: string[]; other: string[] };
-    }
+  | { interests: SavedInterests }
   | { notificationsEnabled: boolean }
   | { language: Language }
   | { colorTheme: ColorTheme }

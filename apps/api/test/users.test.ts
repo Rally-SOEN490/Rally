@@ -47,7 +47,9 @@ describe("GET /users", () => {
         "createdAt",
         "displayName",
         "id",
+        "interests",
         "lookingForTeam",
+        "skillLevel",
       ]);
     }
     expect(
@@ -150,6 +152,7 @@ describe("POST /users/me", () => {
       "profilePhotoUrl",
       "role",
       "shownBadgeKeys",
+      "skillLevel",
       "thoughtText",
     ]);
     expect(response.json().profilePhotoUrl).toBeNull();
@@ -551,7 +554,7 @@ describe("PATCH /users/me", () => {
   });
 
   test.each([
-    { interests: { formats: ["beach-4s"], positions: [] } },
+    { interests: { formats: ["beach-3s"], positions: [] } },
     { interests: { formats: [], positions: ["defensive-specialist"] } },
     { interests: { formats: ["indoor-6s", "indoor-6s"], positions: [] } },
   ])("rejects invalid interest payloads: %j", async (body) => {

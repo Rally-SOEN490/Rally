@@ -6,6 +6,11 @@ import type { RallyPlayer } from "@/lib/api";
 import type { SearchFonts } from "@/lib/search-fonts";
 import { PlayerCard } from "@/components/playerCard";
 import { searchCopy as copy } from "@/translations/search.en";
+import { playerFilterCopy } from "@/translations/player-filters.en";
+import { emptyPlayerFilters, filterPlayers, playerFilterCount } from "@/lib/player-filters";
+import type { PlayerFilters, PlayerSort } from "@/lib/player-filters";
+import { PLAYER_POSITIONS, PROFILE_FORMATS } from "@/lib/player-preferences";
+import type { SavedInterests } from "@/lib/player-preferences";
 
 type Props = {
   players: RallyPlayer[];
@@ -14,7 +19,11 @@ type Props = {
   error?: string;
   retry: () => void;
   clearSearch: () => void;
+  clearFilters?: () => void;
   fonts: SearchFonts;
+  filters?: PlayerFilters;
+  sort?: PlayerSort;
+  viewerInterests?: SavedInterests;
 };
 
 function Message({
@@ -51,12 +60,13 @@ export function PlayerDirectory({
   error,
   retry,
   clearSearch,
+  clearFilters,
   fonts,
+  filters = emptyPlayerFilters(),
+  sort = "recommended",
+  viewerInterests,
 }: Props) {
-  const normalized = query.trim().toLocaleLowerCase();
-  const visible = players.filter((player) =>
-    player.displayName.toLocaleLowerCase().includes(normalized),
-  );
+  const visible = filterPlayers(players, query, filters, sort, viewerInterests);
   if (loading) return <Message title={copy.loading} loading />;
   if (error) return <Message title={error} action={copy.retry} onAction={retry} />;
   if (players.length === 0) return <Message title={copy.empty} detail={copy.emptyDetail} />;
@@ -64,21 +74,46 @@ export function PlayerDirectory({
     return (
       <Message
         title={copy.noMatches}
-        detail={copy.noMatchesDetail}
-        action={copy.clearSearch}
-        onAction={clearSearch}
+        detail={playerFilterCopy.noMatchesDetail}
+        action={playerFilterCount(filters) > 0 ? playerFilterCopy.clearFilters : copy.clearSearch}
+        onAction={playerFilterCount(filters) > 0 ? clearFilters : clearSearch}
       />
     );
   return (
-    <View style={styles.list}>
+    <View style={styles.list} accessibilityLabel={playerFilterCopy.matchingPlayers(visible.length)}>
       {visible.map((player) => (
-        <PlayerCard key={player.id} player={player} fonts={fonts} />
+        <PlayerCard
+          key={player.id}
+          player={cardData(player)}
+          fonts={fonts}
+          highlightedFormat={
+            PROFILE_FORMATS.find(
+              (format) =>
+                player.interests?.formats.includes(format.key) &&
+                format.filters.some((tag) => filters.interests.includes(tag)),
+            )?.label
+          }
+        />
       ))}
       <Text style={[styles.availability, { fontFamily: fonts.regular }]}>
         {copy.actionsUnavailable}
       </Text>
     </View>
   );
+}
+
+function cardData(player: RallyPlayer) {
+  const formats = (player.interests?.formats ?? []).map(
+    (key) => PROFILE_FORMATS.find((option) => option.key === key)?.label ?? key,
+  );
+  return {
+    ...player,
+    level: player.skillLevel,
+    positions: (player.interests?.positions ?? []).map(
+      (key) => PLAYER_POSITIONS.find((option) => option.key === key)?.label ?? key,
+    ),
+    formats,
+  };
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { playerFilterCopy } from "@/translations/player-filters.en";
+import { colors } from "@/constants/rallyTheme";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -192,6 +194,9 @@ export const InterestSection = ({
   return (
     <View style={styles.section}>
       <Text style={styles.title}>Interested in</Text>
+      <Text style={{ color: colors.textMuted, marginTop: 6 }}>
+        {playerFilterCopy.publicInterests}
+      </Text>
       <View style={styles.row}>
         {shown.map((interest) => (
           <SelectedInterestPill

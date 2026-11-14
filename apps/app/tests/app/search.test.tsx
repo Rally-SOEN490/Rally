@@ -19,6 +19,11 @@ jest.mock("@/lib/search-fonts", () => ({
   }),
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
 jest.mock("expo-router", () => {
   const { useEffect } = jest.requireActual("react");
   return {
@@ -129,7 +134,7 @@ it("uses the player placeholder and invokes the optional filter action", async (
     <SearchBar value="" onChangeText={jest.fn()} mode="players" onPressFilter={onPressFilter} />,
   );
 
-  expect(screen.getByPlaceholderText("Search name")).toBeOnTheScreen();
+  expect(screen.getByPlaceholderText("Search players by name")).toBeOnTheScreen();
   await userEvent.press(screen.getByRole("button", { name: "Open filters" }));
 
   expect(onPressFilter).toHaveBeenCalledTimes(1);
@@ -160,7 +165,7 @@ it("filters player names using the search bar", async () => {
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Alex Kim");
-  const searchInput = screen.getByPlaceholderText("Search name");
+  const searchInput = screen.getByPlaceholderText("Search players by name");
   await userEvent.type(searchInput, "sam");
 
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
@@ -173,7 +178,7 @@ it("shows an empty result message when no players match", async () => {
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Alex Kim");
-  await userEvent.type(screen.getByPlaceholderText("Search name"), "Taylor");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Taylor");
 
   expect(screen.getByText("No matching players")).toBeOnTheScreen();
 });
@@ -421,11 +426,11 @@ it("preserves the name query when retrying a failed directory request", async ()
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Directory unavailable");
-  await userEvent.type(screen.getByPlaceholderText("Search name"), "SAM");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "SAM");
   await userEvent.press(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByText("Sam Lee")).toBeOnTheScreen();
   expect(screen.queryByText("Alex Kim")).not.toBeOnTheScreen();
-  expect(screen.getByPlaceholderText("Search name")).toHaveDisplayValue("SAM");
+  expect(screen.getByPlaceholderText("Search players by name")).toHaveDisplayValue("SAM");
   expect(getPlayers).toHaveBeenCalledTimes(2);
 });
 
@@ -434,7 +439,7 @@ it("clears an unmatched name without reloading the directory", async () => {
   await render(<SearchScreen />);
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   await screen.findByText("Alex Kim");
-  await userEvent.type(screen.getByPlaceholderText("Search name"), "Nobody");
+  await userEvent.type(screen.getByPlaceholderText("Search players by name"), "Nobody");
   await userEvent.press(screen.getByRole("button", { name: "Clear search" }));
   expect(screen.getByText("Alex Kim")).toBeOnTheScreen();
   expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
@@ -447,7 +452,7 @@ it("shows the empty directory separately from an unmatched search", async () => 
   await userEvent.press(screen.getByRole("tab", { name: "Players" }));
   expect(await screen.findByText("No players yet")).toBeOnTheScreen();
   expect(screen.queryByText("No matching players")).not.toBeOnTheScreen();
-  expect(screen.getByRole("button", { name: "Filters are coming soon" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Open filters" })).toBeEnabled();
 });
 
 it("shows loading until the player directory request finishes", async () => {
