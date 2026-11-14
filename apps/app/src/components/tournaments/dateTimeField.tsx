@@ -7,7 +7,7 @@ import {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text } from "react-native";
 import { formatDate, formatTime } from "@/lib/organizer-tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
 import { IosPickerSheet } from "./iosPickerSheet";
@@ -54,7 +54,7 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
       : setIosOpen(true);
 
   return (
-    <View>
+    <>
       <FieldButton mode={mode} value={value} label={accessibilityLabel} onPress={open} />
       {iosOpen && (
         <IosPickerSheet
@@ -68,7 +68,7 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
           onCancel={() => setIosOpen(false)}
         />
       )}
-    </View>
+    </>
   );
 }
 

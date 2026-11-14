@@ -143,6 +143,21 @@ test("clears a field sent as null, and a blank description", async () => {
   expect(response.json()).toMatchObject({ location: null, description: null });
 });
 
+test.each(["startsAt", "endsAt", "registrationOpensAt", "registrationClosesAt"] as const)(
+  "persists a cleared draft %s without changing the other dates",
+  async (field) => {
+    const { id } = await createDraft({ name: "Cup", ...completeSetup });
+    const response = await call.update("organizer", id, { [field]: null });
+    expect(response.statusCode).toBe(200);
+    const expected = { ...completeSetup, [field]: null };
+    expect(response.json()).toMatchObject(expected);
+    expect((await call.get("organizer", id)).json()).toMatchObject(expected);
+    const stored = await testDb.tournament.findUniqueOrThrow({ where: { id } });
+    expect(stored[field]).toBeNull();
+    expect((await call.publish("organizer", id)).statusCode).toBe(400);
+  },
+);
+
 test.each([
   ["no fields", {}],
   ["an unknown field", { organizerId: "00000000-0000-4000-8000-000000000000" }],

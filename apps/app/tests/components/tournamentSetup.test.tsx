@@ -2,6 +2,8 @@
 // AI contribution: 50% or more AI-generated
 
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
+import { Platform } from "react-native";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import type { User } from "firebase/auth";
 import { SetupScreen } from "@/components/tournaments/setupScreen";
@@ -357,4 +359,85 @@ it("takes the time the wheel shows when Done is tapped without scrolling", async
   expect(screen.getByRole("button", { name: "Ends time" }).props.accessibilityValue.text).toMatch(
     /^\d{1,2}:\d{2} (AM|PM)$/,
   );
+});
+
+// ---------- Clearing optional dates (RALLY-230 / #317) ----------
+const savedDates = {
+  startsAt: "2027-11-15T09:00",
+  endsAt: "2027-11-15T19:00",
+  registrationOpensAt: "2027-10-20T12:00",
+  registrationClosesAt: "2027-11-09T23:59",
+};
+const datedDraft = { ...saved, ...savedDates, location: null, courts: null, description: null };
+const clearCases = (
+  [
+    ["startsAt", "Starts"],
+    ["endsAt", "Ends"],
+    ["registrationOpensAt", "Opens"],
+    ["registrationClosesAt", "Closes"],
+  ] as const
+).map(([field, label]) => ({ field, label }));
+
+it.each(clearCases)(
+  "clears $label via its row control and saves the pair as null",
+  async ({ field, label }) => {
+    jest.mocked(getTournament).mockResolvedValue(datedDraft);
+    await render(<SetupScreen id="t1" />);
+    await screen.findByDisplayValue("Verdun Winter Cup");
+    await press(`Clear ${label.toLowerCase()} date and time`);
+    expect(screen.getByRole("button", { name: `${label} date` })).toHaveAccessibilityValue({
+      text: "Pick a date",
+    });
+    expect(screen.getByRole("button", { name: `${label} time` })).toHaveAccessibilityValue({
+      text: "Pick a time",
+    });
+    expect(
+      screen.queryByRole("button", { name: `Clear ${label.toLowerCase()} date and time` }),
+    ).not.toBeOnTheScreen();
+    expect(mockPreventRemove.blocked).toBe(true);
+    await press("Save draft");
+    expect(updateTournament).toHaveBeenCalledWith(
+      user,
+      "t1",
+      expect.objectContaining({ ...savedDates, [field]: null }),
+    );
+  },
+);
+
+it("can select a date and time again after clearing, and keeps the clear on a failed save", async () => {
+  jest.mocked(getTournament).mockResolvedValue(datedDraft);
+  jest.mocked(updateTournament).mockRejectedValueOnce(new ApiError(503, "Please try again."));
+  await render(<SetupScreen id="t1" />);
+  await screen.findByDisplayValue("Verdun Winter Cup");
+  await press("Clear starts date and time");
+  await press("Save draft");
+  expect(screen.getByText("Please try again.")).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Starts date" })).toHaveAccessibilityValue({
+    text: "Pick a date",
+  });
+  await pick("Starts date", new Date(2027, 10, 15, 12));
+  await pick("Starts time", new Date(2027, 0, 1, 10));
+  await press("Save draft");
+  expect(updateTournament).toHaveBeenLastCalledWith(
+    user,
+    "t1",
+    expect.objectContaining({ ...savedDates, startsAt: "2027-11-15T10:00" }),
+  );
+});
+
+it("clears on Android without opening the picker and still opens the picker normally", async () => {
+  const platform = jest.replaceProperty(Platform, "OS", "android");
+  try {
+    jest.mocked(getTournament).mockResolvedValue(datedDraft);
+    await render(<SetupScreen id="t1" />);
+    await screen.findByDisplayValue("Verdun Winter Cup");
+    await press("Clear starts date and time");
+    expect(DateTimePickerAndroid.open).not.toHaveBeenCalled();
+    await press("Starts date");
+    expect(DateTimePickerAndroid.open).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "date" }),
+    );
+  } finally {
+    platform.restore();
+  }
 });

@@ -13,8 +13,10 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
       type={mode}
       aria-label={accessibilityLabel}
       value={value ?? ""}
-      // Clearing the field gives "", which isn't a value: keep the last one instead.
-      onChange={(event) => event.target.value && onChange(event.target.value)}
+      onChange={({ target: { value } }) => {
+        // Browsers also emit an empty value while a date or time is incomplete.
+        if (value) onChange(value);
+      }}
       style={inputStyle}
     />
   );
@@ -23,6 +25,7 @@ export function DateTimeField({ mode, value, onChange, accessibilityLabel }: Dat
 const inputStyle: CSSProperties = {
   boxSizing: "border-box",
   width: "100%",
+  minWidth: 0,
   backgroundColor: "#f2f2ed",
   border: "1px solid #e4e4de",
   borderRadius: 12,

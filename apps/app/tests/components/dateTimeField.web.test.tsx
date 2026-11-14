@@ -38,11 +38,18 @@ it("uses the browser's time input for times, empty when not set", async () => {
   expect(input.props).toMatchObject({ type: "time", value: "" });
 });
 
-it("passes on the value the browser gives, and ignores a cleared field", async () => {
-  const { input, onChange } = await renderInput();
+it.each([
+  ["date", "2027-11-15", "2027-12-15"],
+  ["time", "09:00", "10:30"],
+] as const)(
+  "ignores an incomplete browser %s edit and accepts the completed value",
+  async (mode, initial, completed) => {
+    const { input, onChange } = await renderInput({ mode, value: initial });
 
-  input.props.onChange({ target: { value: "2027-11-15" } });
-  input.props.onChange({ target: { value: "" } });
+    input.props.onChange({ target: { value: "" } });
+    expect(onChange).not.toHaveBeenCalled();
 
-  expect(onChange.mock.calls).toEqual([["2027-11-15"]]);
-});
+    input.props.onChange({ target: { value: completed } });
+    expect(onChange.mock.calls).toEqual([[completed]]);
+  },
+);

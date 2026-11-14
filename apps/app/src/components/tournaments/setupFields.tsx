@@ -161,6 +161,17 @@ function MomentRow({
           accessibilityLabel={`${label} ${copy.time.toLowerCase()}`}
         />
       </View>
+      {(value.date || value.time) && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.clearDateTime(label)}
+          accessibilityHint={copy.clearDateTimeHint}
+          onPress={() => state.change(moment, { date: null, time: null })}
+          style={styles.clearMomentButton}
+        >
+          <Ionicons name="close-circle" size={20} color={MUTED} />
+        </Pressable>
+      )}
     </View>
   );
 }
