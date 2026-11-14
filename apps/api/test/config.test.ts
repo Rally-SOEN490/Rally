@@ -72,6 +72,33 @@ test("names an invalid reviewer email", () => {
   ).toThrow("ORGANIZER_REVIEWER_EMAILS has an invalid email address: not-an-email");
 });
 
+test.each(["a@@b.c", "a@b", "a@b.", "@b.c", "a b@c.d"])(
+  "rejects malformed reviewer email %s",
+  (email) => {
+    expect(() => loadConfig({ ...requiredSettings, ORGANIZER_REVIEWER_EMAILS: email })).toThrow(
+      "ORGANIZER_REVIEWER_EMAILS has an invalid email address",
+    );
+  },
+);
+
+test("accepts a reviewer email with one-character local and domain labels", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    ORGANIZER_REVIEWER_EMAILS: "a@b.c",
+  });
+
+  expect(config.organizerReviewerEmails).toEqual(["a@b.c"]);
+});
+
+test("removes all trailing slashes from the app URL", () => {
+  const config = loadConfig({
+    ...requiredSettings,
+    APP_URL: "https://rally.example///",
+  });
+
+  expect(config.appUrl).toBe("https://rally.example");
+});
+
 test("uses port 3000 and the Expo dev server when those aren't set", () => {
   const config = loadConfig(requiredSettings);
 
