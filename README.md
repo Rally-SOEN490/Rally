@@ -154,6 +154,18 @@ Run `npm run test:coverage` in either folder to see which lines the tests cover.
 - [Meeting minutes](https://github.com/Rally-SOEN490/Rally/wiki/Meeting-Minutes)
 - [Risks](https://github.com/Rally-SOEN490/Rally/wiki/Risks)
 
+## Diversity and equity
+
+Rally is committed to making volleyball easy to join for everyone in Montreal, whatever their background, skill level or experience. Many newcomers miss games that are shared only through personal networks, so we designed Rally to open those games up.
+
+- **Skill levels:** tournaments list a skill level, so beginners and experienced players can each find a fit.
+- **Divisions:** women's, men's and co-ed divisions let players join the kind of play they're comfortable with.
+- **Newcomers:** players can mark themselves as "Looking for a team" to help them find a spot.
+- **Inclusive profiles:** profiles have no gender field. We considered one and removed it because it was a sensitive and divisive topic, and we want every player to feel welcome. Date of birth is never public.
+- **Planned:** dark mode, colour-blind mode and French.
+
+See our full [Diversity Statement](https://github.com/Rally-SOEN490/Rally/wiki/Diversity-Statement) in the wiki.
+
 ## Course records
 
 The [SOEN 490 reference](docs/course/soen-490/README.md) records the project requirements, deadlines, and instruction conflicts. Keep signed administrative forms and other personal records outside Git.
