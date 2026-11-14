@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { interestCatalog } from "@/lib/interests";
 import { playerFilterCopy as copy } from "@/translations/player-filters.en";
 
 export const PLAYER_LEVELS = ["C", "C+", "B-", "B"] as const;
@@ -12,21 +13,7 @@ export type SavedInterests = {
   other?: string[];
 };
 
-export const PROFILE_FORMATS = [
-  { key: "indoor-6s", label: copy.formats.indoor6s, filters: ["indoors", "6s"] },
-  { key: "beach-2s", label: copy.formats.beach2s, filters: ["beach", "2s"] },
-  { key: "9-man", label: copy.formats.nineMan, filters: ["9s"] },
-  { key: "indoor-4s", label: copy.formats.indoor4s, filters: ["indoors", "4s"] },
-  { key: "beach-4s", label: copy.formats.beach4s, filters: ["beach", "4s"] },
-  { key: "grass-4s", label: copy.formats.grass4s, filters: ["4s"] },
-] as const;
-export const PLAYER_POSITIONS = [
-  { key: "libero", label: copy.positions.libero },
-  { key: "outside", label: copy.positions.outside },
-  { key: "setter", label: copy.positions.setter },
-  { key: "middle", label: copy.positions.middle },
-  { key: "opposite", label: copy.positions.opposite },
-] as const;
+export const PLAYER_POSITIONS = interestCatalog.positions;
 export const PLAYER_INTEREST_OPTIONS = [
   { key: "beach", label: copy.interests.beach },
   { key: "indoors", label: copy.interests.indoors },
@@ -38,6 +25,24 @@ export const PLAYER_INTEREST_OPTIONS = [
 ] as const;
 export type PositionKey = (typeof PLAYER_POSITIONS)[number]["key"];
 export type InterestKey = (typeof PLAYER_INTEREST_OPTIONS)[number]["key"];
+
+// The directory groups saved formats under broader surface and team-size filters.
+const formatFilters: Record<
+  (typeof interestCatalog.formats)[number]["key"],
+  readonly InterestKey[]
+> = {
+  "indoor-6s": ["indoors", "6s"],
+  "beach-2s": ["beach", "2s"],
+  "9-man": ["9s"],
+  "indoor-4s": ["indoors", "4s"],
+  "beach-4s": ["beach", "4s"],
+  "grass-4s": ["4s"],
+};
+
+export const PROFILE_FORMATS = interestCatalog.formats.map((format) => ({
+  ...format,
+  filters: formatFilters[format.key],
+}));
 
 export function getInterestTags(interests?: SavedInterests): Set<string> {
   const tags = new Set<string>();

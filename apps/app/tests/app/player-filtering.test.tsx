@@ -52,7 +52,7 @@ const players: RallyPlayer[] = [
     lookingForTeam: false,
     createdAt: "2026-11-02",
     badges: [],
-    interests: { formats: ["grass-4s"], positions: ["opposite"], other: ["co-ed"] },
+    interests: { formats: ["grass-4s"], positions: ["opposite", "power"], other: ["co-ed"] },
   },
 ];
 beforeEach(() => {
@@ -84,6 +84,17 @@ it("applies multiple filters with text search and removes individual chips", asy
   await userEvent.press(screen.getByRole("button", { name: "Remove B filter" }));
   expect(screen.getByLabelText("1 active filter")).toBeOnTheScreen();
   expect(screen.getByDisplayValue("ZOE")).toBeOnTheScreen();
+});
+
+it("shows the catalog label for Power and filters by it", async () => {
+  await showPlayers();
+  expect(screen.getByText(/Power/)).toBeOnTheScreen();
+  await open();
+  await userEvent.press(screen.getByRole("checkbox", { name: "Power" }));
+  await apply();
+  expect(screen.getByText("Sam Lee")).toBeOnTheScreen();
+  expect(screen.queryByText("Alex Kim")).not.toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Remove Power filter" })).toBeOnTheScreen();
 });
 
 it("discards draft choices on close and reopens the applied selections", async () => {

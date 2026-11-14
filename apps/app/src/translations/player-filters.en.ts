@@ -23,13 +23,6 @@ export const playerFilterCopy = {
   removeFilter: (label: string) => `Remove ${label} filter`,
   activeFilters: (count: number) => `${count} active filter${count === 1 ? "" : "s"}`,
   matchingPlayers: (count: number) => `${count} matching player${count === 1 ? "" : "s"}`,
-  positions: {
-    libero: "Libero",
-    outside: "Outside",
-    setter: "Setter",
-    middle: "Middle",
-    opposite: "Opposite",
-  },
   interests: {
     beach: "Beach",
     indoors: "Indoors",
@@ -38,13 +31,5 @@ export const playerFilterCopy = {
     fours: "4s",
     twos: "2s",
     mixed: "Co-ed",
-  },
-  formats: {
-    indoor6s: "Indoor 6s",
-    beach2s: "Beach 2s",
-    nineMan: "9-man",
-    indoor4s: "Indoor 4s",
-    beach4s: "Beach 4s",
-    grass4s: "Grass 4s",
   },
 };
