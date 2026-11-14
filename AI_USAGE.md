@@ -25,6 +25,12 @@ Verification after merging the profile update from `main`: both projects' lint a
 
 Problems and corrections: the first web export failed without Firebase configuration, so CI explicitly supplies dummy values and disables dotenv loading. Initial app lint found an unescaped JSX apostrophe and existing effect-state updates; the text was escaped without changing its displayed value, and the remaining search effect exception documents its existing request/reset lifecycle. Sonar then reported 18 duplicated new lines (3.7%) in the formatted Home/Search navigation. Their renderer is now shared while each screen retains its existing styles and navigation behavior; Sonar exclusions and thresholds were not relaxed. A later merge from `main` retained the profile thought/interests tests and their new migrations, resolving the formatting conflict in the users test file. Size/complexity warnings remain as required by #171. Legacy source files without an AI-contribution level still need their authors' declarations before contribution compliance can be claimed.
 
+### RALLY-187: dependency and security scanning
+
+Issue: [#248](https://github.com/Rally-SOEN490/Rally/issues/248). Pull request: [#355](https://github.com/Rally-SOEN490/Rally/pull/355). The Dependabot configuration, the CodeQL workflow, and the bot exceptions in the naming and SonarQube workflows are 50% or more AI-generated. Claude Code wrote them and the README section, and checked the Expo-managed package list against `expo/bundledNativeModules.json`. CI configuration is recorded here separately because rubric §1 excludes it from substantive features.
+
+Verification: the AI checklist reports no problems. The CodeQL workflow ran on the pull request for both languages: `javascript-typescript` (87 rules) and `actions` (17 rules) completed with no alerts. Dependabot reads its configuration only from `main`, so its first pull requests appear after the merge and are not covered by this verification.
+
 ## Features with substantial AI assistance
 
 List every substantive feature, as defined in [rubric §1](docs/course/soen-490/CODE-QUALITY.md#1-feature-implementation-and-volume-of-work), whose implementation had substantial AI assistance.

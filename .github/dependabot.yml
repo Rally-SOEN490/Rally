@@ -1,0 +1,78 @@
+# Copyright (c) 2026 Rally. All rights reserved.
+# AI contribution: 50% or more AI-generated
+
+# Weekly version updates for the app and API npm dependencies and the GitHub
+# Actions used by the workflows. Dependabot pull requests are exempt from the
+# branch name and PR title check (see .github/workflows/branch-pr-naming.yml).
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /apps/app
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Toronto
+    # The Expo SDK pins the versions of these packages, and Dependabot does not
+    # know about the SDK, so it would propose versions that do not match it.
+    # Ignoring them (rather than grouping them) is the only way to stop that:
+    # a group still bumps exact pins such as react-native 0.86.3. Keep them in
+    # line with `npx expo install --check` and `npx expo install --fix`, and
+    # move to a new SDK with `npx expo install expo@^<version> --fix`.
+    # The list matches node_modules/expo/bundledNativeModules.json, plus jest,
+    # typescript and their type packages, which `expo install --check` also
+    # validates. When you add a package with `npx expo install`, add it here if
+    # the SDK pins it.
+    ignore:
+      - dependency-name: expo
+      - dependency-name: expo-*
+      - dependency-name: "@expo/*"
+      - dependency-name: jest-expo
+      - dependency-name: eslint-config-expo
+      - dependency-name: react
+      - dependency-name: react-dom
+      - dependency-name: react-native
+      - dependency-name: react-native-gesture-handler
+      - dependency-name: react-native-reanimated
+      - dependency-name: react-native-safe-area-context
+      - dependency-name: react-native-screens
+      - dependency-name: react-native-svg
+      - dependency-name: react-native-web
+      - dependency-name: react-native-worklets
+      - dependency-name: "@react-native-community/datetimepicker"
+      - dependency-name: jest
+      - dependency-name: "@types/jest"
+      - dependency-name: "@types/react"
+      - dependency-name: typescript
+    groups:
+      # One pull request for the minor and patch updates; majors stay separate.
+      app-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Toronto
+    groups:
+      # The Prisma CLI, client and adapter must stay on the same version.
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      # The coverage provider must match the Vitest version.
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      api-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Toronto
+    groups:
+      github-actions:
+        patterns: ["*"]
