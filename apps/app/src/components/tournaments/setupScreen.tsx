@@ -13,6 +13,7 @@ import { styles } from "./styles";
 import { useSetupForm, type SetupFormState } from "./useSetupForm";
 import { LoadTournament } from "./loadTournament";
 import { useLeaveConfirmation } from "./useLeaveConfirmation";
+import { ConfirmDialog } from "./confirmDialog";
 
 const copy = tournamentCopy.setup;
 
@@ -58,6 +59,14 @@ function SetupStep({ tournament }: { tournament?: OrganizerTournament }) {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog
+        visible={!!state.error}
+        title={copy.saveErrorTitle}
+        message={state.error}
+        confirmLabel={copy.ok}
+        onCancel={state.clearError}
+        onConfirm={state.clearError}
+      />
       {guard.dialog}
     </SafeAreaView>
   );
@@ -93,11 +102,6 @@ function DatesAndAbout({ state }: { state: SetupFormState }) {
 function SetupFooter({ state, onNext }: { state: SetupFormState; onNext: () => void }) {
   return (
     <>
-      {!!state.error && (
-        <Text style={styles.error} accessibilityLiveRegion="polite">
-          {state.error}
-        </Text>
-      )}
       <View style={styles.footer}>
         <Pressable
           accessibilityRole="button"

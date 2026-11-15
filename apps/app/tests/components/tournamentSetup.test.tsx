@@ -83,8 +83,13 @@ it("needs a name before saving a draft", async () => {
 
   await press("Save draft");
 
+  expect(screen.getByTestId("confirm-dialog")).toBeOnTheScreen();
   expect(screen.getByText("Give the tournament a name.")).toBeOnTheScreen();
   expect(createTournament).not.toHaveBeenCalled();
+
+  await press("OK");
+
+  expect(screen.queryByTestId("confirm-dialog")).not.toBeOnTheScreen();
 });
 
 it("saves a draft with only a name, then returns to Events", async () => {
@@ -162,9 +167,17 @@ it("keeps what was typed when saving fails", async () => {
 
   await press("Divisions");
 
+  expect(screen.getByTestId("confirm-dialog")).toBeOnTheScreen();
+  expect(screen.getByText("Couldn't save tournament")).toBeOnTheScreen();
   expect(await screen.findByText("Can't reach the Rally server.")).toBeOnTheScreen();
   expect(screen.getByLabelText("Tournament name")).toHaveDisplayValue("Verdun Winter Cup");
   expect(router.replace).not.toHaveBeenCalled();
+
+  await press("OK");
+
+  expect(screen.queryByTestId("confirm-dialog")).not.toBeOnTheScreen();
+  expect(screen.queryByText("Can't reach the Rally server.")).not.toBeOnTheScreen();
+  expect(screen.getByLabelText("Tournament name")).toHaveDisplayValue("Verdun Winter Cup");
 });
 
 it("reopens a draft and saves changes over it", async () => {

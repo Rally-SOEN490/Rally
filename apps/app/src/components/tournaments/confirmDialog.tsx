@@ -22,7 +22,7 @@ export function ConfirmDialog({
   visible: boolean;
   title: string;
   message: string;
-  cancelLabel: string;
+  cancelLabel?: string;
   confirmLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
@@ -63,7 +63,7 @@ function DialogActions({
   danger,
   busy,
 }: {
-  cancelLabel: string;
+  cancelLabel?: string;
   confirmLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
@@ -72,9 +72,11 @@ function DialogActions({
 }) {
   return (
     <View style={dialog.actions}>
-      <Pressable accessibilityRole="button" onPress={onCancel} style={dialog.cancel}>
-        <Text style={dialog.cancelText}>{cancelLabel}</Text>
-      </Pressable>
+      {!!cancelLabel && (
+        <Pressable accessibilityRole="button" onPress={onCancel} style={dialog.cancel}>
+          <Text style={dialog.cancelText}>{cancelLabel}</Text>
+        </Pressable>
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: !!busy }}
