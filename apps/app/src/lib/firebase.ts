@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Rally. All rights reserved.
+// AI contribution: No substantial AI-generated code
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
