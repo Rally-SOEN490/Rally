@@ -134,10 +134,11 @@ export function useSetupForm(tournament?: OrganizerTournament) {
 
   const change = <K extends keyof SetupForm>(field: K, value: SetupForm[K]) =>
     setForm((current) => ({ ...current, [field]: value }));
+  const clearError = () => setError("");
 
   const hasUnsavedChanges = JSON.stringify(form) !== JSON.stringify(savedForm);
 
-  return { form, change, saving, error, save, hasUnsavedChanges };
+  return { form, change, saving, error, clearError, save, hasUnsavedChanges };
 }
 
 export type SetupFormState = ReturnType<typeof useSetupForm>;

@@ -78,6 +78,8 @@ export const tournamentCopy = {
       "Tell players what to expect: games guaranteed, prizes, rules, where to check in…",
     montrealTime: "All times are Montreal time.",
     next: "Divisions",
+    saveErrorTitle: "Couldn't save tournament",
+    ok: "OK",
     nameRequired: "Give the tournament a name.",
     halfDateTime: (label: string) => `Pick both a date and a time for "${label}", or neither.`,
     endBeforeStart: "The end must be after the start.",
