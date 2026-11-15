@@ -61,6 +61,10 @@ cp .env.example .env                 # then set FIREBASE_PROJECT_ID (same value 
 
 The app needs a development build installed once on each simulator or phone. See [Setup step 1 in the app README](apps/app/README.md#setup).
 
+### Test accounts
+
+To make several test accounts with one inbox, add `+` and a number to your email address. For instance your email is `email@gmail.com`, you can do `email+1@gmail.com`, `email+2@gmail.com`, and so on. Firebase treats each one as a new account, and their verification emails all arrive in `email@gmail.com`. It is confirmed that this works for Gmail and Outlook.
+
 ### Run the project with Docker
 
 This is the simplest way to run Rally: one command starts PostgreSQL, the API and the app. To run the API and the app directly on your computer instead, see [Run the frontend and backend in separate terminals](#run-the-frontend-and-backend-in-separate-terminals).
