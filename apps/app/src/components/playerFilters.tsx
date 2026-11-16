@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ReactNode } from "react";
 import type { PlayerFilters } from "@/lib/player-filters";
 import { togglePlayerFilter } from "@/lib/player-filters";
-import { PLAYER_INTEREST_OPTIONS, PLAYER_LEVELS, PLAYER_POSITIONS } from "@/lib/player-preferences";
+import { PLAYER_INTEREST_OPTIONS, PLAYER_POSITIONS } from "@/lib/player-preferences";
 import type { SearchFonts } from "@/lib/search-fonts";
 import { playerFilterCopy as copy } from "@/translations/player-filters.en";
 import { playerFiltersStyles as styles } from "./playerFilters.styles";
@@ -129,19 +129,6 @@ export function PlayerFiltersSheet({ visible, filters, onChange, onClose, onAppl
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
           >
-            <Section title={copy.level} fonts={fonts}>
-              {PLAYER_LEVELS.map((value) => (
-                <Option
-                  key={value}
-                  label={value}
-                  fonts={fonts}
-                  selected={filters.levels.includes(value)}
-                  onPress={() =>
-                    onChange({ ...filters, levels: togglePlayerFilter(filters.levels, value) })
-                  }
-                />
-              ))}
-            </Section>
             <Section title={copy.position} fonts={fonts}>
               {PLAYER_POSITIONS.map(({ key, label }) => (
                 <Option

@@ -20,6 +20,10 @@ jest.mock("@/lib/session", () => ({ useSession: jest.fn() }));
 jest.mock("@/lib/search-fonts", () => ({ useSearchFonts: () => ({}) }));
 jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), getPlayers: jest.fn() }));
 
+beforeEach(() => {
+  jest.mocked(useSession).mockReturnValue(fakeSession());
+});
+
 // Stand-ins for the real screens: this checks the navigation, not the pages.
 const page = (title: string) =>
   function Page() {
@@ -58,6 +62,26 @@ it.each([
 
   expect(screen.getByText(text)).toBeOnTheScreen();
   expect(screen.getByRole("tab", { name: tab })).toBeSelected();
+});
+
+it("shows the logged-in player's photo on the You tab", async () => {
+  jest.mocked(useSession).mockReturnValue(
+    fakeSession({
+      account: {
+        id: "1",
+        displayName: "Sam Lee",
+        profilePhotoUrl: "https://photos.example/sam.jpg",
+        lookingForTeam: false,
+        createdAt: "2026-10-17",
+        badges: [],
+      },
+    }),
+  );
+  await renderTabs("/home");
+
+  expect(screen.getByTestId("nav-profile-photo")).toHaveProp("source", {
+    uri: "https://photos.example/sam.jpg",
+  });
 });
 
 it("goes back Home from another tab", async () => {

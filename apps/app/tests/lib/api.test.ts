@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { File } from "expo-file-system";
 import type { User } from "firebase/auth";
+import { Platform } from "react-native";
 import {
   ApiError,
   apiErrorMessage,
@@ -16,6 +18,16 @@ import {
 } from "@/lib/api";
 
 jest.mock("react-native", () => ({ Platform: { OS: "web" } }));
+// A stand-in for expo-file-system's File, which reads the photo from the phone's disk.
+jest.mock("expo-file-system", () => ({
+  File: class extends Blob {
+    uri: string;
+    constructor(mockUri: string) {
+      super(["photo"]);
+      this.uri = mockUri;
+    }
+  },
+}));
 
 const user = { getIdToken: jest.fn().mockResolvedValue("the-token") } as unknown as User;
 const account = {
@@ -164,6 +176,32 @@ describe("uploadMyProfilePhoto", () => {
         "Can't reach the Rally server. Check your internet connection and try again.",
       ),
     );
+  });
+
+  // Expo's fetch refuses React Native's { uri, name, type } parts, so the phone
+  // must send the photo as an expo-file-system File.
+  it("uploads a photo from the phone as a file Expo's fetch can send", async () => {
+    Platform.OS = "ios";
+    const append = jest.spyOn(FormData.prototype, "append");
+    respond(200, account);
+
+    try {
+      await uploadMyProfilePhoto(user, { uri: "file:///photo.jpg", mimeType: "image/jpeg" });
+    } finally {
+      Platform.OS = "web";
+    }
+
+    expect(append).toHaveBeenCalledTimes(1);
+    const [field, part] = append.mock.calls[0];
+    expect(field).toBe("photo");
+    expect(part).toBeInstanceOf(File);
+    expect(part).toHaveProperty("uri", "file:///photo.jpg");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/users/me/photo",
+      expect.objectContaining({ method: "POST", body: expect.any(FormData) }),
+    );
+    append.mockRestore();
   });
 
   it("passes the API's upload validation message to the caller", async () => {

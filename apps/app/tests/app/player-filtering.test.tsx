@@ -30,7 +30,6 @@ const players: RallyPlayer[] = [
   {
     id: "a",
     displayName: "Alex Kim",
-    skillLevel: "C",
     lookingForTeam: false,
     createdAt: "2026-11-02",
     badges: [],
@@ -39,7 +38,6 @@ const players: RallyPlayer[] = [
   {
     id: "z",
     displayName: "Zoe Tran",
-    skillLevel: "B",
     lookingForTeam: true,
     createdAt: "2026-11-02",
     badges: [],
@@ -48,7 +46,6 @@ const players: RallyPlayer[] = [
   {
     id: "s",
     displayName: "Sam Lee",
-    skillLevel: "C+",
     lookingForTeam: false,
     createdAt: "2026-11-02",
     badges: [],
@@ -75,13 +72,13 @@ it("applies multiple filters with text search and removes individual chips", asy
   await showPlayers();
   await userEvent.type(screen.getByPlaceholderText("Search players by name"), "ZOE");
   await open();
-  await userEvent.press(screen.getByRole("checkbox", { name: "B" }));
+  await userEvent.press(screen.getByRole("checkbox", { name: "Beach" }));
   await userEvent.press(screen.getByRole("checkbox", { name: "Setter" }));
   await apply();
   expect(screen.getByText("Zoe Tran")).toBeOnTheScreen();
   expect(screen.queryByText("Alex Kim")).not.toBeOnTheScreen();
   expect(screen.getByLabelText("2 active filters")).toBeOnTheScreen();
-  await userEvent.press(screen.getByRole("button", { name: "Remove B filter" }));
+  await userEvent.press(screen.getByRole("button", { name: "Remove Beach filter" }));
   expect(screen.getByLabelText("1 active filter")).toBeOnTheScreen();
   expect(screen.getByDisplayValue("ZOE")).toBeOnTheScreen();
 });
@@ -100,29 +97,39 @@ it("shows the catalog label for Power and filters by it", async () => {
 it("discards draft choices on close and reopens the applied selections", async () => {
   await showPlayers();
   await open();
-  await userEvent.press(screen.getByRole("checkbox", { name: "C" }));
+  await userEvent.press(screen.getByRole("checkbox", { name: "Outside" }));
   await apply();
   await open();
-  expect(screen.getByRole("checkbox", { name: "C" })).toBeChecked();
-  await userEvent.press(screen.getByRole("checkbox", { name: "B" }));
+  expect(screen.getByRole("checkbox", { name: "Outside" })).toBeChecked();
+  await userEvent.press(screen.getByRole("checkbox", { name: "Setter" }));
   await userEvent.press(screen.getAllByRole("button", { name: "Close player filters" }).at(-1)!);
   expect(screen.getByText("Alex Kim")).toBeOnTheScreen();
   expect(screen.queryByText("Zoe Tran")).not.toBeOnTheScreen();
   await open();
-  expect(screen.getByRole("checkbox", { name: "B" })).not.toBeChecked();
-  expect(screen.getByRole("checkbox", { name: "C" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Setter" })).not.toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Outside" })).toBeChecked();
+});
+
+// Players no longer declare a skill level, so Search can't filter by one.
+it("has no skill level filter", async () => {
+  await showPlayers();
+  await open();
+  expect(screen.queryByText("Level")).not.toBeOnTheScreen();
+  for (const level of ["C", "C+", "B-", "B"])
+    expect(screen.queryByRole("checkbox", { name: level })).not.toBeOnTheScreen();
+  expect(screen.getByRole("checkbox", { name: "Setter" })).toBeOnTheScreen();
 });
 
 it("discards pending selections when the native modal requests dismissal", async () => {
   await showPlayers();
   await open();
-  await userEvent.press(screen.getByRole("checkbox", { name: "B" }));
-  let modal = screen.getByRole("checkbox", { name: "B" });
+  await userEvent.press(screen.getByRole("checkbox", { name: "Setter" }));
+  let modal = screen.getByRole("checkbox", { name: "Setter" });
   while (modal.parent && !modal.props.onRequestClose) modal = modal.parent;
   await fireEvent(modal, "requestClose");
   expect(screen.getByText("Alex Kim")).toBeOnTheScreen();
   await open();
-  expect(screen.getByRole("checkbox", { name: "B" })).not.toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Setter" })).not.toBeChecked();
 });
 
 it("allows deselection, shows no matches, and recovers by removing the filter", async () => {

@@ -3,7 +3,6 @@
 
 export const playerFilterCopy = {
   title: "Filter Players",
-  level: "Level",
   position: "Position",
   interestedIn: "Interested In",
   apply: "Apply",
@@ -13,12 +12,7 @@ export const playerFilterCopy = {
   recommended: "Recommended",
   nameAscending: "Name A–Z",
   sortHint: "Recommended puts shared profile interests first, then sorts by name.",
-  profileLevel: "Skill level",
-  publicLevel: "Public · Visible to other players",
-  publicInterests: "Public · Your interests are visible to other players.",
   clearFilters: "Clear filters",
-  unsetLevel: "Not set",
-  levelHint: "Choose your current level. Other players can use it to find you in Search.",
   noMatchesDetail: "Try another name or remove a filter.",
   removeFilter: (label: string) => `Remove ${label} filter`,
   activeFilters: (count: number) => `${count} active filter${count === 1 ? "" : "s"}`,

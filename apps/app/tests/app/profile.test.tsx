@@ -656,42 +656,18 @@ describe("Profile interests", () => {
   });
 });
 
-it("saves and clears a skill level without replacing other preferences", async () => {
-  jest.mocked(useSession).mockImplementation(function useFakeSession() {
-    const [shown, setShown] = useState<RallyUser>(account);
-    return fakeSession({ user, account: shown, setAccount: setShown });
-  });
-  jest
-    .mocked(updateMyAccount)
-    .mockResolvedValueOnce({ ...account, skillLevel: "B-" })
-    .mockResolvedValueOnce({ ...account, skillLevel: null });
+// The skill level was removed, and Interested in no longer carries the grey "Public" note.
+it("shows no skill level section or public note on the profile", async () => {
+  jest.mocked(useSession).mockReturnValue(fakeSession({ user, account }));
   await render(<Profile />);
-  await userEvent.press(screen.getByRole("radio", { name: "B-" }));
-  expect(updateMyAccount).toHaveBeenCalledWith(user, { skillLevel: "B-" });
-  expect(screen.getByRole("radio", { name: "B-" })).toBeChecked();
-  await userEvent.press(screen.getByRole("radio", { name: "Not set" }));
-  expect(updateMyAccount).toHaveBeenLastCalledWith(user, { skillLevel: null });
-  expect(screen.getByRole("radio", { name: "Not set" })).toBeChecked();
+  expect(screen.getByText("Interested in")).toBeOnTheScreen();
+  expect(screen.queryByText("Skill level")).not.toBeOnTheScreen();
+  for (const level of ["C", "C+", "B-", "B", "Not set"])
+    expect(screen.queryByRole("radio", { name: level })).not.toBeOnTheScreen();
+  expect(screen.queryByText(/^Public ·/)).not.toBeOnTheScreen();
 });
 
-it("restores a saved level after a failure and allows another attempt", async () => {
-  jest.mocked(useSession).mockImplementation(function useFakeSession() {
-    const [shown, setShown] = useState<RallyUser>({ ...account, skillLevel: "C" });
-    return fakeSession({ user, account: shown, setAccount: setShown });
-  });
-  jest
-    .mocked(updateMyAccount)
-    .mockRejectedValueOnce(new ApiError(0, "Can't reach the Rally server."))
-    .mockResolvedValueOnce({ ...account, skillLevel: "B" });
-  await render(<Profile />);
-  await userEvent.press(screen.getByRole("radio", { name: "B" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Can't reach the Rally server.");
-  expect(screen.getByRole("radio", { name: "C" })).toBeChecked();
-  await userEvent.press(screen.getByRole("radio", { name: "B" }));
-  expect(screen.getByRole("radio", { name: "B" })).toBeChecked();
-});
-
-it("labels preferences as public and saves grass 4s through the existing interest picker", async () => {
+it("saves grass 4s through the existing interest picker", async () => {
   const interests = { formats: [], positions: ["opposite"], clubs: ["ckvc"], other: ["co-ed"] };
   jest
     .mocked(useSession)
@@ -700,10 +676,6 @@ it("labels preferences as public and saves grass 4s through the existing interes
     .mocked(updateMyAccount)
     .mockResolvedValueOnce({ ...account, interests: { ...interests, formats: ["grass-4s"] } });
   await render(<Profile />);
-  expect(screen.getByText("Public · Visible to other players")).toBeOnTheScreen();
-  expect(
-    screen.getByText("Public · Your interests are visible to other players."),
-  ).toBeOnTheScreen();
   await userEvent.press(screen.getByRole("button", { name: "Add interest" }));
   expect(screen.queryByRole("button", { name: "Men’s" })).not.toBeOnTheScreen();
   expect(screen.queryByRole("button", { name: "Women’s" })).not.toBeOnTheScreen();

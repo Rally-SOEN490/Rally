@@ -49,7 +49,6 @@ describe("GET /users", () => {
         "id",
         "interests",
         "lookingForTeam",
-        "skillLevel",
       ]);
     }
     expect(
@@ -152,7 +151,6 @@ describe("POST /users/me", () => {
       "profilePhotoUrl",
       "role",
       "shownBadgeKeys",
-      "skillLevel",
       "thoughtText",
     ]);
     expect(response.json().profilePhotoUrl).toBeNull();

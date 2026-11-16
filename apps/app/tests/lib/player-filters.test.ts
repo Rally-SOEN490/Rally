@@ -3,25 +3,18 @@
 
 import { emptyPlayerFilters, filterPlayers, playerFilterCount } from "@/lib/player-filters";
 import type { SearchablePlayer } from "@/lib/player-filters";
-import { PLAYER_LEVELS, PLAYER_POSITIONS } from "@/lib/player-preferences";
+import { PLAYER_POSITIONS } from "@/lib/player-preferences";
 
 const makePlayer = (changes: Partial<SearchablePlayer> = {}): SearchablePlayer => ({
   id: "1",
   displayName: "Alex Kim",
-  skillLevel: "C",
   interests: { formats: ["indoor-6s"], positions: ["outside"], other: ["co-ed"] },
   ...changes,
 });
 
-it.each(PLAYER_LEVELS)("filters level %s independently", (level) => {
-  const matching = makePlayer({ skillLevel: level });
-  const other = makePlayer({ id: "other", skillLevel: level === "B" ? "C" : "B" });
-  expect(
-    filterPlayers([matching, other, makePlayer({ id: "unknown", skillLevel: null })], "", {
-      ...emptyPlayerFilters(),
-      levels: [level],
-    }),
-  ).toEqual([matching]);
+// Players no longer declare a skill level, so Search can't filter by one.
+it("offers only position and interest filters", () => {
+  expect(emptyPlayerFilters()).toEqual({ positions: [], interests: [] });
 });
 
 it.each(PLAYER_POSITIONS)("filters position $label independently", ({ key }) => {
@@ -65,16 +58,13 @@ it("combines OR within each group, AND across groups, and case-insensitive text"
   const sam = makePlayer({
     id: "2",
     displayName: "Sam",
-    skillLevel: "B",
     interests: { formats: ["beach-2s"], positions: ["setter"] },
   });
   const filters = {
-    levels: ["C", "B"] as const,
     positions: ["outside", "setter"] as const,
     interests: ["indoors", "beach"] as const,
   };
   const selected = {
-    levels: [...filters.levels],
     positions: [...filters.positions],
     interests: [...filters.interests],
   };
@@ -85,7 +75,7 @@ it("combines OR within each group, AND across groups, and case-insensitive text"
 });
 
 it("returns unknown preferences unfiltered but excludes them when a value is required", () => {
-  const unknown = makePlayer({ interests: undefined, skillLevel: undefined });
+  const unknown = makePlayer({ interests: undefined });
   expect(filterPlayers([unknown], "", emptyPlayerFilters())).toEqual([unknown]);
   expect(filterPlayers([unknown], "", { ...emptyPlayerFilters(), positions: ["setter"] })).toEqual(
     [],
@@ -131,19 +121,7 @@ it("offers alphabetical order independently of shared interests and stable ties 
 });
 
 it("counts selected values, rather than groups or results", () => {
-  expect(
-    playerFilterCount({ levels: ["C", "B"], positions: ["setter"], interests: ["beach", "2s"] }),
-  ).toBe(5);
-});
-
-it("does not match a player's skill level as their name", () => {
-  expect(
-    filterPlayers(
-      [makePlayer({ displayName: "Zoe Tran", skillLevel: "C" })],
-      "c",
-      emptyPlayerFilters(),
-    ),
-  ).toEqual([]);
+  expect(playerFilterCount({ positions: ["setter"], interests: ["beach", "2s"] })).toBe(3);
 });
 
 it("ranks shared managed club and other interests without confusing categories", () => {

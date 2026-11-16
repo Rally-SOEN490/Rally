@@ -1,9 +1,10 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
+import { File } from "expo-file-system";
 import type { User } from "firebase/auth";
 import { Platform } from "react-native";
-import type { SavedInterests, SkillLevel } from "@/lib/player-preferences";
+import type { SavedInterests } from "@/lib/player-preferences";
 
 // Where the Rally API runs. On an Android emulator or a phone, set
 // EXPO_PUBLIC_API_URL in .env.local instead (see the README).
@@ -18,7 +19,6 @@ export type AccountRole = "PLAYER" | "ORGANIZER" | "ADMIN";
 export type RallyUser = {
   id: string;
   displayName: string;
-  skillLevel?: SkillLevel | null;
   // The API always sends it; treat a missing role as "PLAYER", the safe default.
   role?: AccountRole;
   profilePhotoUrl: string | null;
@@ -52,12 +52,11 @@ export type RallyUser = {
 
 export type RallyPlayer = Pick<
   RallyUser,
-  "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
+  "id" | "displayName" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
 export type ProfileChanges =
   | { displayName: string }
-  | { skillLevel: SkillLevel | null }
   | { lookingForTeam: boolean }
   | { shownBadgeKeys: string[] }
   | { instagramUrl: string | null }
@@ -143,11 +142,9 @@ export const uploadMyProfilePhoto = async (
       throw new ApiError(0, "Couldn't read the selected photo. Please choose it again.");
     form.append("photo", await imageResponse.blob(), "profile-photo");
   } else {
-    form.append("photo", {
-      uri: photo.uri,
-      name: "profile-photo",
-      type: photo.mimeType ?? "image/jpeg",
-    } as unknown as Blob);
+    // Expo's fetch can't send React Native's { uri, name, type } parts, so the
+    // photo goes in as an expo-file-system File, which it reads from disk.
+    form.append("photo", new File(photo.uri));
   }
   const response = await fetch(`${API_URL}/users/me/photo`, {
     method: "POST",

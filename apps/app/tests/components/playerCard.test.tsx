@@ -42,14 +42,12 @@ it("shows supplied preferences and distinguishes zero statistics from unknown", 
     <PlayerCard
       player={{
         ...player,
-        level: "C+",
         positions: ["Setter", "Outside"],
         stats: { matches: 0, wins: 2, topFour: 0 },
       }}
     />,
   );
   expect(screen.getByText("Setter")).toBeOnTheScreen();
-  expect(screen.getByText("C+")).toBeOnTheScreen();
   expect(screen.getByLabelText("Matches: 0")).toBeOnTheScreen();
   expect(screen.getByLabelText("Wins: 2")).toBeOnTheScreen();
   expect(screen.getByLabelText("Top 4: 0")).toBeOnTheScreen();
@@ -76,24 +74,23 @@ it("handles whitespace, a single Unicode name, and the availability flag", async
   expect(screen.getByText("Looking for a team")).toBeOnTheScreen();
 });
 
-it("includes positions and level in interest overflow without dropping data", async () => {
+it("includes positions in interest overflow without dropping data", async () => {
   await render(
     <PlayerCard
       player={{
         ...player,
-        formats: ["Grass 4s", "Co-ed", "Beach"],
+        formats: ["Grass 4s", "Co-ed", "Beach", "Indoors 6s"],
         positions: ["Setter"],
-        level: "C+",
       }}
     />,
   );
   expect(screen.getByText("Grass 4s")).toBeOnTheScreen();
   expect(screen.getByText("Setter")).toBeOnTheScreen();
-  expect(screen.getByText("C+")).toBeOnTheScreen();
   expect(screen.getByText("Co-ed")).toBeOnTheScreen();
-  expect(screen.queryByText("Beach")).not.toBeOnTheScreen();
-  await userEvent.press(screen.getByRole("button", { name: "Show all interests" }));
   expect(screen.getByText("Beach")).toBeOnTheScreen();
+  expect(screen.queryByText("Indoors 6s")).not.toBeOnTheScreen();
+  await userEvent.press(screen.getByRole("button", { name: "Show all interests" }));
+  expect(screen.getByText("Indoors 6s")).toBeOnTheScreen();
 });
 
 it("treats invalid and missing metric values as unknown", async () => {

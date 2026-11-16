@@ -11,7 +11,6 @@ import { searchCopy as copy } from "@/translations/search.en";
 
 // Presentation contract only; unavailable API fields stay unknown.
 export type PlayerCardData = Pick<RallyPlayer, "id" | "displayName" | "lookingForTeam"> & {
-  level?: string | null;
   positions?: readonly string[];
   formats?: readonly string[];
   stats?: {
@@ -65,11 +64,6 @@ const dots = {
     source: require("@/assets/images/player-card/position-dot.svg"),
     width: 8.41558,
     height: 8.8055,
-  },
-  level: {
-    source: require("@/assets/images/player-card/level-dot.svg"),
-    width: 9,
-    height: 9.04639,
   },
   category: {
     source: require("@/assets/images/player-card/gender-dot.svg"),
@@ -145,7 +139,6 @@ function getInterests({ player, highlightedFormat }: Props): Interest[] {
   const formats = [...new Set(player.formats?.map((label) => label.trim()).filter(Boolean))];
   const positions = [...new Set(player.positions?.map((label) => label.trim()).filter(Boolean))];
   const first = formats[0];
-  const level = player.level?.trim();
   return [
     ...(first
       ? [
@@ -157,7 +150,6 @@ function getInterests({ player, highlightedFormat }: Props): Interest[] {
         ]
       : []),
     ...positions.map((label) => ({ label, kind: "position" as const })),
-    ...(level ? [{ label: level, kind: "level" as const }] : []),
     ...formats.slice(1).map((label) => ({ label, kind: "category" as const })),
   ];
 }

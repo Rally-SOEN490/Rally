@@ -108,7 +108,6 @@ function cardData(player: RallyPlayer) {
   );
   return {
     ...player,
-    level: player.skillLevel,
     positions: (player.interests?.positions ?? []).map(
       (key) => PLAYER_POSITIONS.find((option) => option.key === key)?.label ?? key,
     ),

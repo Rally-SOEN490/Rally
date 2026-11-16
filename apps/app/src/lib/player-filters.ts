@@ -2,15 +2,9 @@
 // AI contribution: 50% or more AI-generated
 
 import { getInterestTags, getSharedInterestKeys } from "@/lib/player-preferences";
-import type {
-  InterestKey,
-  PositionKey,
-  SavedInterests,
-  SkillLevel,
-} from "@/lib/player-preferences";
+import type { InterestKey, PositionKey, SavedInterests } from "@/lib/player-preferences";
 
 export type PlayerFilters = {
-  levels: SkillLevel[];
   positions: PositionKey[];
   interests: InterestKey[];
 };
@@ -18,18 +12,15 @@ export type PlayerSort = "recommended" | "name";
 export type SearchablePlayer = {
   id: string;
   displayName: string;
-  skillLevel?: SkillLevel | null;
   interests?: SavedInterests;
 };
 export const emptyPlayerFilters = (): PlayerFilters => ({
-  levels: [],
   positions: [],
   interests: [],
 });
 export const playerFilterCount = (filters: PlayerFilters) =>
-  filters.levels.length + filters.positions.length + filters.interests.length;
+  filters.positions.length + filters.interests.length;
 export const clonePlayerFilters = (filters: PlayerFilters): PlayerFilters => ({
-  levels: [...filters.levels],
   positions: [...filters.positions],
   interests: [...filters.interests],
 });
@@ -43,8 +34,6 @@ function matchesPlayer(player: SearchablePlayer, query: string, filters: PlayerF
   const textMatches = !query || player.displayName.toLocaleLowerCase().includes(query);
   return (
     textMatches &&
-    (filters.levels.length === 0 ||
-      (player.skillLevel != null && filters.levels.includes(player.skillLevel))) &&
     (filters.positions.length === 0 ||
       filters.positions.some((value) => player.interests?.positions.includes(value))) &&
     (filters.interests.length === 0 ||

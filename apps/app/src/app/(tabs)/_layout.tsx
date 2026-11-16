@@ -3,12 +3,14 @@
 
 import { router, Tabs } from "expo-router";
 import { NavBar, type NavTabName } from "@/components/navBar";
+import { useSession } from "@/lib/session";
 
 // The five main screens share one nav bar. Because the bar stays on screen
 // while the pages switch underneath it, its bubble can slide between tabs.
 // Tabs also keep each page as you left it (scroll position, search text).
 // Settings and Awards sit on top of these screens, without the bar.
 export default function TabsLayout() {
+  const { account } = useSession();
   return (
     <Tabs
       screenOptions={{ headerShown: false }}
@@ -17,6 +19,7 @@ export default function TabsLayout() {
           active={state.routes[state.index].name as NavTabName}
           // Every tab's address is its file name, e.g. "You" is /profile.
           onSelect={(name) => router.navigate(`/${name}`)}
+          photoUrl={account?.profilePhotoUrl}
         />
       )}
     >
