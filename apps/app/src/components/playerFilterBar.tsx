@@ -24,7 +24,6 @@ const sorts = [
 export function PlayerFilterBar({ filters, sort, fonts, onRemove, onSort }: Props) {
   const [sortOpen, setSortOpen] = useState(false);
   const chips = [
-    ...filters.levels.map((value) => ({ group: "levels" as const, value, label: value })),
     ...filters.positions.map((value) => ({
       group: "positions" as const,
       value,

@@ -123,3 +123,33 @@ it("keeps a gap at the bottom on phones without a home indicator", async () => {
 
   expect(screen.getByTestId("nav-bar")).toHaveStyle({ bottom: 12 });
 });
+
+describe("the player's photo on the You tab", () => {
+  const photoUrl = "https://photos.example/sam.jpg";
+
+  it("replaces the person icon with the photo", async () => {
+    await render(<NavBar active="home" onSelect={jest.fn()} photoUrl={photoUrl} />, { wrapper });
+
+    expect(screen.getByTestId("nav-profile-photo")).toHaveProp("source", { uri: photoUrl });
+  });
+
+  it("rings the photo only while the You tab is open", async () => {
+    const { rerender } = await render(
+      <NavBar active="home" onSelect={jest.fn()} photoUrl={photoUrl} />,
+      { wrapper },
+    );
+    expect(screen.getByTestId("nav-profile-photo")).toHaveStyle({ borderColor: "transparent" });
+
+    await rerender(<NavBar active="profile" onSelect={jest.fn()} photoUrl={photoUrl} />);
+
+    expect(screen.getByTestId("nav-profile-photo")).toHaveStyle({ borderColor: "#12382d" });
+  });
+
+  it.each([null, undefined])("keeps the person icon when the photo is %s", async (missing) => {
+    await render(<NavBar active="profile" onSelect={jest.fn()} photoUrl={missing} />, {
+      wrapper,
+    });
+
+    expect(screen.queryByTestId("nav-profile-photo")).not.toBeOnTheScreen();
+  });
+});

@@ -23,57 +23,26 @@ afterAll(async () => {
 });
 
 describe("Saved player preferences", () => {
-  test("defaults to no declared level and empty interests", async () => {
+  test("defaults to empty interests", async () => {
     const response = await register("alice");
     expect(response.json()).toMatchObject({
-      skillLevel: null,
       interests: { formats: [], positions: [], clubs: [], other: [] },
     });
   });
 
-  test.each(["C", "C+", "B-", "B"])(
-    "persists level %s and exposes it in the directory",
-    async (skillLevel) => {
-      await register("alice");
-      await register("viewer");
-      expect((await patch("alice", { skillLevel })).statusCode).toBe(200);
-      expect((await getMe("alice")).json().skillLevel).toBe(skillLevel);
-      const response = await app.inject({
-        method: "GET",
-        url: "/users",
-        headers: authHeader("viewer"),
-      });
-      expect(
-        response.json().find((player: { displayName: string }) => player.displayName === "alice")
-          .skillLevel,
-      ).toBe(skillLevel);
-    },
-  );
-
-  test("clears a declared level and cannot change another player's preference", async () => {
+  // Players no longer declare a skill level, so it can't be saved or searched by.
+  test.each(["B", null])("no longer accepts a skill level (%s)", async (skillLevel) => {
     await register("alice");
-    await register("bob");
-    await patch("alice", { skillLevel: "B" });
-    expect((await getMe("bob")).json().skillLevel).toBeNull();
-    await patch("alice", { skillLevel: null });
-    expect((await getMe("alice")).json().skillLevel).toBeNull();
+    const response = await patch("alice", { skillLevel });
+    expect(response.statusCode).toBe(400);
+    expect((await getMe("alice")).json()).not.toHaveProperty("skillLevel");
   });
-
-  test.each(["A", "B+", "c", "", 4, false, ["B"]])(
-    "rejects an invalid level %j without changing it",
-    async (skillLevel) => {
-      await register("alice");
-      const response = await patch("alice", { skillLevel });
-      expect(response.statusCode).toBe(400);
-      expect((await getMe("alice")).json().skillLevel).toBeNull();
-    },
-  );
 
   test("requires authentication to update preferences", async () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/users/me",
-      payload: { skillLevel: "B" },
+      payload: { interests: { formats: ["beach-4s"], positions: [] } },
     });
     expect(response.statusCode).toBe(401);
   });
@@ -111,7 +80,6 @@ describe("Saved player preferences", () => {
     await register("alice", "Alice");
     await register("viewer", "Viewer");
     await patch("alice", {
-      skillLevel: "C+",
       interests: { formats: ["beach-4s"], positions: ["libero"], other: ["co-ed"] },
     });
     const response = await app.inject({
@@ -124,7 +92,6 @@ describe("Saved player preferences", () => {
     const [player] = response.json();
     expect(player).toMatchObject({
       displayName: "Alice",
-      skillLevel: "C+",
       interests: { formats: ["beach-4s"], positions: ["libero"], other: ["co-ed"] },
     });
     expect(Object.keys(player).sort()).toEqual([
@@ -134,7 +101,6 @@ describe("Saved player preferences", () => {
       "id",
       "interests",
       "lookingForTeam",
-      "skillLevel",
     ]);
   });
 });

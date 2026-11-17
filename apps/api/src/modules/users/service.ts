@@ -4,7 +4,6 @@
 import type { ColorTheme, Language, ProfileChanges, UserRepository } from "./repository.ts";
 import { badgeCatalog, getBadgeCompletion, getBadgeTier } from "../badges/catalog.ts";
 import type { ProfilePhotoStorage } from "./photo-storage.ts";
-import type { SkillLevel } from "./preferences.ts";
 import type { AccountRole } from "../../permissions.ts";
 import type { Prisma } from "../../generated/prisma/client.ts";
 
@@ -17,7 +16,6 @@ export type AccountTeams = {
 export type UserResponse = {
   id: string;
   displayName: string;
-  skillLevel: SkillLevel | null;
   // Only sent to the person themselves, so the app can show organizer tools.
   // The server still checks the role on every restricted request.
   role: AccountRole;
@@ -57,7 +55,7 @@ export type UserResponse = {
 
 export type UserDirectoryResponse = Pick<
   UserResponse,
-  "id" | "displayName" | "skillLevel" | "interests" | "lookingForTeam" | "createdAt" | "badges"
+  "id" | "displayName" | "interests" | "lookingForTeam" | "createdAt" | "badges"
 >;
 
 type UserWithBadges = NonNullable<Awaited<ReturnType<UserRepository["findByFirebaseUid"]>>>;
@@ -111,8 +109,6 @@ const toResponse = async (
 ): Promise<UserResponse> => ({
   id: user.id,
   displayName: user.displayName,
-  // The route and database check constraint restrict the stored values.
-  skillLevel: user.skillLevel as SkillLevel | null,
   role: user.role,
   profilePhotoUrl:
     user.profilePhotoKey && photos ? await photos.getUrl(user.profilePhotoKey) : null,
@@ -142,7 +138,6 @@ const toDirectoryResponse = async (user: UserWithBadges): Promise<UserDirectoryR
   return {
     id: response.id,
     displayName: response.displayName,
-    skillLevel: response.skillLevel,
     interests: response.interests,
     lookingForTeam: response.lookingForTeam,
     createdAt: response.createdAt,

@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { skillLevels } from "./preferences.ts";
 import { interestCategories, interestKeys } from "../../../../shared/interests.ts";
 
 // Request schemas for the user routes. Fastify checks requests against them
@@ -45,7 +44,6 @@ const interestsSchema = {
 // Fields the app may change with PATCH /users/me.
 const editableFields = [
   "displayName",
-  "skillLevel",
   "lookingForTeam",
   "shownBadgeKeys",
   "instagramUrl",
@@ -82,7 +80,6 @@ export const profileChangesBodySchema = {
   anyOf: editableFields.map((field) => ({ required: [field] })),
   properties: {
     displayName: displayNameSchema,
-    skillLevel: { enum: [...skillLevels, null] },
     lookingForTeam: boolean,
     shownBadgeKeys: {
       type: "array",

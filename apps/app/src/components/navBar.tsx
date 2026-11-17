@@ -7,6 +7,7 @@ import { type ComponentProps, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -100,12 +101,16 @@ function Bubble({
 function Tab({
   tab,
   selected,
+  photoUrl,
   onPress,
 }: {
   tab: (typeof NAV_TABS)[number];
   selected: boolean;
+  photoUrl?: string | null;
   onPress: () => void;
 }) {
+  // The You tab shows the player's own photo once they have one.
+  const showPhoto = tab.name === "profile" && !!photoUrl;
   return (
     <Pressable
       accessibilityRole="tab"
@@ -114,7 +119,15 @@ function Tab({
       onPress={onPress}
       style={styles.tab}
     >
-      <Ionicons name={tab.icon} size={22} color={selected ? GREEN : MUTED} />
+      {showPhoto ? (
+        <Image
+          testID="nav-profile-photo"
+          source={{ uri: photoUrl }}
+          style={[styles.photo, selected && styles.photoSelected]}
+        />
+      ) : (
+        <Ionicons name={tab.icon} size={22} color={selected ? GREEN : MUTED} />
+      )}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
@@ -132,9 +145,11 @@ function Tab({
 export function NavBar({
   active,
   onSelect,
+  photoUrl,
 }: {
   active: NavTabName;
   onSelect: (name: NavTabName) => void;
+  photoUrl?: string | null;
 }) {
   const insets = useSafeAreaInsets();
   const activeIndex = Math.max(
@@ -160,6 +175,7 @@ export function NavBar({
             key={tab.name}
             tab={tab}
             selected={index === activeIndex}
+            photoUrl={photoUrl}
             onPress={() => {
               if (index !== activeIndex) onSelect(tab.name);
             }}
@@ -229,6 +245,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 6,
     paddingHorizontal: 1,
+  },
+  // Same height as the icons, so the labels stay aligned across the bar.
+  photo: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  photoSelected: {
+    borderColor: GREEN,
   },
   label: {
     fontSize: 11,

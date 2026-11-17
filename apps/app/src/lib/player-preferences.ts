@@ -4,8 +4,6 @@
 import { interestCatalog } from "@/lib/interests";
 import { playerFilterCopy as copy } from "@/translations/player-filters.en";
 
-export const PLAYER_LEVELS = ["C", "C+", "B-", "B"] as const;
-export type SkillLevel = (typeof PLAYER_LEVELS)[number];
 export type SavedInterests = {
   formats: string[];
   positions: string[];

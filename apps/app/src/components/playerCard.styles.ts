@@ -93,7 +93,6 @@ export const playerCardStyles = StyleSheet.create({
   },
   format: { width: 89 },
   position: { width: 65, borderColor: "#cacaca" },
-  level: { width: 44 },
   category: { width: 61 },
   selectedChip: { borderWidth: 0 },
   selectedBackground: { position: "absolute", width: 89, height: 20 },
