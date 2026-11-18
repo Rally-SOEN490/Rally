@@ -35,7 +35,7 @@ The [CodeQL workflow](.github/workflows/codeql.yml) scans the TypeScript code an
 
 | Release | Demo |
 | --- | --- |
-| Release 1 | To be added |
+| Release 1 | [Demo](https://youtu.be/VHuKklxpf80) |
 | Release 2 | To be added |
 | Final release | To be added |
 
