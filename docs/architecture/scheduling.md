@@ -10,8 +10,8 @@ Prototype code: `apps/api/src/modules/scheduling/` (pure TypeScript, no Fastify 
 
 ## 1. The organizer's flow
 
-1. Registration is full. The organizer opens the tournament's **Schedule** tab.
-2. They check the inputs: the days and hours, the courts, the match length per stage (e.g. "Pool play 55'", "1/4 Final 60'"), the referee option and an optional minimum rest time.
+1. Registration is full. In **Game set up**, after the Pools and Playoffs tabs, the organizer opens the **Schedule** tab.
+2. They check the inputs: the start and end, each day's hours, the courts, the match slot of each pool and round (from its match format, plus the time between matches), the most matches a team plays in a day, the referee option and an optional minimum rest time. An estimate shows whether everything fits.
 3. They press **Generate**. The app fills the grid and says what doesn't fit, if anything.
 4. They change what they want: move or swap matches, change a referee, lock matches and generate again around them.
 5. They **Save** (a draft that players can't see) and **Publish**. Players then see the schedule, and publishing again replaces it.
@@ -28,20 +28,21 @@ Players see the **published** schedule in the tournament's tabs, next to Results
 - "Your next match" at the top, and the player's own matches and refereeing duties highlighted.
 - A filter for the player's team.
 
-Mockups: [docs/mockups/schedule.html](../mockups/schedule.html). The Figma prompt is in [docs/spikes/RALLY-257-release-2-plan.md](../spikes/RALLY-257-release-2-plan.md).
+Mockups: [docs/mockups/schedule.html](../mockups/schedule.html), one static page made to import into Figma with an HTML-to-design plugin.
 
 ## 3. How the schedule is built (Generate)
 
 ### Inputs
 
-| Input                                                                            | Where it comes from                                |
-| -------------------------------------------------------------------------------- | -------------------------------------------------- |
-| The days, each with its start and end time (e.g. Sat 8:00–21:00, Sun 9:00–18:00) | Tournament setup                                   |
-| The number of courts                                                             | `Tournament.courts` (already exists)               |
-| The match length of each stage                                                   | Set by the organizer, e.g. pools 55', playoffs 60' |
-| The pool matches and the playoff bracket                                         | #361                                               |
-| The referee option: teams that aren't playing, or dedicated referees             | A checkbox in the Schedule tab                     |
-| The minimum rest time (optional)                                                 | The Schedule tab                                   |
+| Input                                                                            | Where it comes from                                                                                                                                           |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The days, each with its start and end time (e.g. Sat 8:00–21:00, Sun 9:00–18:00) | Tournament setup                                                                                                                                              |
+| The number of courts                                                             | `Tournament.courts` (already exists)                                                                                                                          |
+| The match slot of each pool and round                                            | Its match format (sets × time per set + changeovers + timeouts, from the Pools and Playoffs tabs) plus the time between matches, e.g. pools 50', playoffs 70' |
+| The most matches a team plays in one day (e.g. 3)                                | The Schedule tab                                                                                                                                              |
+| The pool matches and the playoff bracket                                         | #361                                                                                                                                                          |
+| The referee option: teams that aren't playing, or dedicated referees             | A checkbox in the Schedule tab                                                                                                                                |
+| The minimum rest time (optional)                                                 | The Schedule tab                                                                                                                                              |
 
 ### Rules
 
@@ -56,6 +57,7 @@ Errors (the schedule can't be published with them):
 Warning (the organizer confirms):
 
 - A team rests less than the minimum rest time.
+- A team plays more matches in one day than the daily limit. Generate never does this; only a hand edit can. Playoff teams aren't known yet, so Generate assumes the worst: a team that played the most pool matches that day also plays every playoff round that day.
 
 All divisions of a tournament share its courts, so the schedule is built for the whole tournament, not one division at a time.
 
@@ -95,7 +97,15 @@ When the organizer picks **dedicated referees**, the schedule assigns none.
 5. If the most urgent match would end after the day's end, close the court until the next day. When there are no days left, the remaining matches are reported as not fitting.
 6. When every match is placed, pick the referees (see above).
 
-### Prototype results: 12 teams, 2 pools of 6, 3 courts, team referees
+### Prototype results: a weekend with at most 3 matches a day
+
+12 teams in 4 pools of 3, the top 8 to a Gold bracket with a third-place game, 3 courts, Sat 9:00–18:00 and Sun 9:00–14:00, pools 50' and playoffs 70', at most 3 matches per team per day (the mockups use this schedule):
+
+- Saturday: every team plays 2 pool matches (9:00–12:20), then the quarterfinals (12:20–14:40). A quarterfinalist plays 3 matches that day.
+- Sunday: the semifinals at 9:00, then the final and the third-place game at 10:10.
+- With 2 pools of 6 instead, a team can play 5 pool matches plus 3 playoff rounds, which is 8 matches: too many for 2 days at 3 a day. Five playoff matches don't fit. Pools of 3, or a third day (everything then ends Monday 12:30), fix it.
+
+### Prototype results: 12 teams, 2 pools of 6, 3 courts, no daily limit
 
 The playoffs are the top 4 of each pool in crossover quarterfinals, then semifinals and a final. The bracket shape is a placeholder until #361.
 

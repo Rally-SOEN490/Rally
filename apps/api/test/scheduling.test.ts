@@ -223,3 +223,82 @@ describe("checking order and rest", () => {
     expect(canPublish(problems)).toBe(true);
   });
 });
+
+// Matches per team per day, for checking the daily limit.
+const perTeamPerDay = (input: ScheduleInput, slots: ScheduleSlot[]) => {
+  const counts = new Map<string, number>();
+  for (const slot of slots) {
+    const day = slot.startsAt < sunday.startsAt ? "sat" : "sun";
+    for (const team of input.matches.find((m) => m.id === slot.matchId)?.teamIds ?? [])
+      counts.set(`${team}@${day}`, (counts.get(`${team}@${day}`) ?? 0) + 1);
+  }
+  return [...counts.values()];
+};
+
+describe("matches per team per day", () => {
+  test("with pools of 6, a team could need 8 matches: too many for 2 days at 3 a day", () => {
+    // 5 pool matches (3 on Saturday, 2 on Sunday) leave room for one playoff round
+    // on Sunday, so the semifinals and the final don't fit.
+    const input = twelveTeams({ days: [saturday, sunday], maxMatchesPerDay: 3 });
+    const { slots, unscheduled } = generateSchedule(input);
+    expect(unscheduled.map((u) => u.matchId)).toEqual(["div-SF1", "div-SF2", "div-F"]);
+    expect(Math.max(...perTeamPerDay(input, slots))).toBeLessThanOrEqual(3);
+    expect(scheduleProblems(input, slots)).toEqual([]);
+  });
+
+  test("keeps room for the playoff rounds a team could still play that day", () => {
+    // 4 pools of 3: each team plays 2 pool matches, so only one playoff round fits
+    // on the same day, and the semifinals and final move to the next day.
+    const matches = [
+      ...poolsAndPlayoffs({ teams: 12, pools: 4, poolMinutes: 50 }),
+      ...poolsAndPlayoffs({ teams: 8, pools: 2, poolMinutes: 70, playoffMinutes: 70 }).filter(
+        (m) => m.phase === "PLAYOFF",
+      ),
+    ];
+    const input = twelveTeams({ days: [saturday, sunday], maxMatchesPerDay: 3, matches });
+    const { slots, unscheduled } = generateSchedule(input);
+    expect(unscheduled).toEqual([]);
+    const onSunday = (id: string) =>
+      (slots.find((slot) => slot.matchId === id)?.startsAt ?? saturday.startsAt) >= sunday.startsAt;
+    expect(["div-QF1", "div-QF4"].some(onSunday)).toBe(false);
+    expect(["div-SF1", "div-SF2", "div-F"].every(onSunday)).toBe(true);
+  });
+
+  test("says what doesn't fit when the limit needs more days", () => {
+    const { unscheduled } = generateSchedule(twelveTeams({ maxMatchesPerDay: 3 }));
+    expect(unscheduled.length).toBeGreaterThan(0);
+    expect(new Set(unscheduled.map((u) => u.reason))).toEqual(
+      new Set(["It doesn't fit in the tournament's days."]),
+    );
+  });
+});
+
+describe("checking the daily limit", () => {
+  test("an edit over the limit is a warning", () => {
+    const input = twelveTeams({ maxMatchesPerDay: 2, matches: [] });
+    const matches = ["a", "b", "c"].map((id) => ({
+      id,
+      divisionId: "div",
+      phase: "POOL" as const,
+      teamIds: ["X", id],
+      after: [],
+      minutes: 60,
+      round: 0,
+    }));
+    const at = (h: number) => new Date(saturday.startsAt.getTime() + h * 3_600_000);
+    const slots = matches.map((m, i) => ({
+      matchId: m.id,
+      court: 1,
+      startsAt: at(i * 2),
+      endsAt: at(i * 2 + 1),
+      refereeTeamId: null,
+    }));
+    expect(scheduleProblems({ ...input, matches }, slots)).toEqual([
+      {
+        severity: "WARNING",
+        matchIds: ["a", "b", "c"],
+        message: "A team plays more than 2 matches in one day.",
+      },
+    ]);
+  });
+});

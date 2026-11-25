@@ -44,7 +44,7 @@ Low. Times are stored in UTC and shown in Montreal time, like the tournament dat
 
 - [ ] Add the `TournamentDay` table (migration; docs/architecture/scheduling.md §5)
 - [ ] API: add, change and remove days; only the tournament's organizer
-- [ ] Days card in the Schedule setup (mockup F5.2)
+- [ ] Days and hours in the Schedule tab
 - [ ] Translations, loading and error states
 
 **Related references**
@@ -79,7 +79,7 @@ Medium (was High). The algorithm is decided: greedy slotting (docs/architecture/
 - [ ] Move `generate.ts` and `check.ts` from the spike, with their tests
 - [ ] Read the matches from #361's tables and save the result as the draft schedule
 - [ ] API: generate the draft schedule; only the tournament's organizer
-- [ ] Setup screen with the estimate and the Generate button (mockups F5.2, F5.2b)
+- [ ] Setup screen with the estimate and the Generate button
 - [ ] Show what doesn't fit and the ways to fix it
 
 **Related references**
@@ -109,8 +109,8 @@ Medium. With few free teams (e.g. 8 teams on 3 courts) some matches can't have a
 
 - [ ] `refereeMode` on the schedule and `refereeTeamId` on each slot (in #105's migration)
 - [ ] Referee pass after the matches are placed (already in the spike's `generate.ts`)
-- [ ] Referee option in the setup screen (mockup F5.2)
-- [ ] "No referee · add" in the editor and the referee picker (mockups F5.3, F5.4)
+- [ ] Referee option in the setup screen
+- [ ] "No referee · add" in the editor and the referee picker
 
 **Related references**
 Spike #362. Hoang Vu asked for it on 2026-11-25.
@@ -138,8 +138,8 @@ Medium. Edits can create conflicts and change times that players have already se
 
 - [ ] API: move, swap, remove, place, change the referee and lock a slot, returning the schedule's problems
 - [ ] Generate again around the locked matches (extends `generate.ts`)
-- [ ] Web: the grid with the tools and the problems panel (mockup F5.3)
-- [ ] Phone: the list with the edit sheet (mockup F5.4)
+- [ ] Web: the grid with the tools and the problems panel
+- [ ] Phone: the list with the edit sheet
 
 **Related references**
 Spike #362. Drag and drop options from #361.
@@ -166,7 +166,7 @@ Low. Publishing a schedule with conflicts would expose errors. Check: the server
 
 - [ ] API: publish copies the draft into the published schedule in one transaction and adds one to its version
 - [ ] Block publishing on errors on the server too
-- [ ] Publish screen (mockup F5.5)
+- [ ] Publish screen
 - [ ] Hook into the notification from #297
 
 **Related references**
@@ -179,38 +179,28 @@ Spike #362.
 Tasks to add to #112:
 
 - [ ] API: the published schedule of a tournament, by day and division; never the draft
-- [ ] Schedule tab next to Results and the match tabs, matches grouped by time slot with court and referee (mockup F5.1)
-- [ ] My team filter with matches and ref duties (mockup F5.1b)
-- [ ] Empty state before publishing (mockup F5.1c), loading and reconnecting states
+- [ ] Player Schedule tab next to Results and the match tabs, matches grouped by time slot with court and referee
+- [ ] My team filter with matches and ref duties
+- [ ] Empty state before publishing, loading and reconnecting states
 - [ ] Test that a draft is never visible
 
 Tasks to add to #113:
 
-- [ ] "Your next match" card: time, court, opponent and referee (mockup F5.1)
+- [ ] "Your next match" card: time, court, opponent and referee
 - [ ] Show the team's next ref duty too
 - [ ] Updates when a new version of the schedule is published
 
 ---
 
-## Figma prompt
+## Figma
 
-Paste this into Figma Make (or Figma AI) in the team's file, next to the scoreboard frames (F5.2 to F5.4). The HTML mockups (docs/mockups/schedule.html) show the same screens; screenshot them as references.
+The mockups are one static HTML page made for Figma: [docs/mockups/schedule.html](../mockups/schedule.html). It has no tabs or scripts, uses flexbox only and puts every frame on the canvas, so an HTML-to-design plugin imports each frame as editable layers with auto layout.
 
-> Add a **Schedule** feature to "Rally", a volleyball tournament app for Montreal. Match the existing "Tournament scoreboard" frames exactly:
->
-> - **Style:** off-white page (#F2F2EE), white rounded cards (radius 16, no border), a dark green header (#2D4A3A) with rounded bottom corners and a faint volleyball line drawing in the top right, a small uppercase lime eyebrow label (#D4E86A), a bold white title ("Verdun Winter Cup") and a light subtitle ("Sat Nov 15 · Verdun Auditorium"). Pill tabs under the header: the selected tab is dark green with white text, the others grey text. A white dropdown "6v6 · Co-ed B". Rounded geometric sans-serif (like Figtree), sentence case. Score boxes and value fields are light grey rounded rectangles.
-> - **Phone frames:** iPhone (393×852) with the status bar at 9:41.
->
-> Screens:
->
-> 1. **F5.1 Tournament · Schedule (player).** Tabs: "Schedule" (selected, with a small lime "New" badge), "Results", "Match 1", "Match 2". A dark green "Your next match" card: lime eyebrow "Your next match" with "in 14 min" on the right, "9:55 · Court 1" in large bold white, and "Net Ninjas vs Ace Makers · Ref: Quad Squad". An "All matches / My team" segmented control. Then time slots as section headings ("9:00", right side "Match 1 · now"), each with court cards like the scoreboard: "COURT 1" label, the two team names stacked, and a footer row "Referee — Ace Makers". The player's own matches have a dark green outline and a tag "You play" (dark green) or "You referee" (lime).
-> 2. **F5.1b Schedule · My team.** The same header and tabs, "My team" selected. A list for the day: each row has the time in bold, "vs Ace Makers" with "Court 1 · Ref: Quad Squad" below, and a "Play" or "Ref" tag. Heading "Saturday" with "7 matches · 3 referee duties".
-> 3. **F5.1c Schedule · Not published yet.** An empty state with a calendar icon in a pale green circle: "The schedule isn't out yet" and "The organizer publishes it after registration closes. You'll get a notification when it's ready."
-> 4. **F5.2 Organizer · Build the schedule.** Header eyebrow "Organizer · Schedule", subtitle "8 of 8 teams registered · Registration closed". Cards: "Days" (Sat Nov 15 9:00 – 20:00, Sun Nov 16 9:00 – 14:00, "+ Add a day"), "Courts" with a − 3 + stepper, "Match length" (Pool play 55', Quarterfinals 60', Semifinals 60', Final 60'), "Referees" with two radio options ("Teams that aren't playing — Rally picks a free team and spreads the duty evenly" selected, "We have our own referees"), "Minimum rest between matches 0 min". A pale green estimate card: "All 35 matches fit. Pools end Saturday around 18:10, and the final ends Sunday around 12:00." A full-width dark green "Generate schedule" button.
-> 5. **F5.2b Organizer · Something doesn't fit.** A pale red notice "1 match doesn't fit: the final would end at 21:10, after 21:00." A card "Ways to fix it" with rows and a green "Try" link: "Shorten pool play to 45'", "Add a court (4)", "Add Sunday Nov 16", and "Place the final by hand" with "Edit". A pale green note "The other 36 matches are on the grid. Every pool match has a referee." An outlined button "See the schedule".
-> 6. **F5.3 Organizer · Edit and publish (web, 1440×900).** The green header full width with tabs Overview, Teams, Pools & playoffs, Schedule (selected, page-coloured), Results, and a "Draft · players can't see it" tag. A toolbar: segmented tools Move (selected), Swap, Referee, Lock, Remove; on the right "Generate again", "Save draft", a "Published" checkbox and a disabled "Publish" button. Three columns: (a) a left panel with the division's stages and match lengths (Pool play 55', Pool 1, Playoffs, 1/4 Final 60', 1/2 Final 60', Final 60') and "Not on the grid: All matches placed ✓"; (b) a grid titled "Saturday, Nov 15" with day pills (Sat, + Day), columns Court 1–3 and rows 9:00, 9:55, 10:50, 11:45, 12:40; each cell is a light grey rounded card with the match in bold ("Block Party – Side Out") and "Ref · Ace Makers" below, or "No referee · add" in amber; one cell is selected with a green outline, two cells have a red outline and pale red fill (a conflict), and one shows a lock icon; (c) a right "Problems" panel with a red card "Net Ninjas plays two matches at 9:55 (Court 1 and Court 3). Publishing is blocked." and an amber card "9 matches have no referee", then "Selected" details and an "Undo swap" button.
-> 7. **F5.4 Organizer · Edit a match (phone).** The schedule list dimmed behind a white bottom sheet: "Quad Squad vs Bump Club", "Pool play · 55'", rows Time 9:55, Court "Court 3", Referee "None ⌄", a pale red notice "Court 3 already has Side Out vs Set Theory at 9:55, and Quad Squad referees Court 1 then. Swap with that match or pick another time.", and buttons Swap, Lock and "Move anyway".
-> 8. **F5.5 Organizer · Publish (phone).** Tabs Sat, Problems · 0, Publish (selected). A pale green notice "No problems. 28 matches on 3 courts, 9:00 – 18:10.", an amber notice "9 matches have no referee. Players will see 'Organizer's referee'.", a card "When you publish" with three checked rows (players see the schedule, every team gets a notification, publishing again replaces this version), and a "Publish schedule" button.
+1. In Figma, run the **html.to.design** plugin (or another HTML import plugin).
+2. Import the file, or a URL where it's hosted. Use a viewport at least 1560 px wide so the web editor fits.
+3. Move the frames next to the Pools and Playoffs frames of Game set up, then swap the text and colour styles for the file's own.
+
+Frames: Schedule (settings and Generate), Doesn't fit, Proposed · By time, Proposed · Bracket, Proposed · By team, the web editor, Edit a match (phone) and Publish.
 
 ## Presentation outline (about 5 minutes)
 

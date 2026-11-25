@@ -35,6 +35,8 @@ export type ScheduleInput = {
   courts: number;
   // Rest between two matches of the same team. 0 means no rest required.
   minRestMinutes: number;
+  // The most matches a team plays in one day, e.g. 3. Undefined means no limit.
+  maxMatchesPerDay?: number;
   referees: RefereeMode;
   matches: ScheduleMatch[];
 };
@@ -94,13 +96,33 @@ type State = {
   courtFree: number[];
   // When each team's last match ends.
   teamFree: Map<string, number>;
+  // For the daily limit, keyed by "team@day" and "division@day": each team's
+  // matches that day, the most pool matches any team of the division plays that
+  // day, and the playoff rounds played that day.
+  dayCount: Map<string, number>;
+  poolPeak: Map<string, number>;
+  playoffRounds: Map<string, Set<number>>;
   ended: Map<string, number>;
   remaining: ScheduleMatch[];
   result: ScheduleResult;
 };
 
+// Whether a match would make a team play more than the daily limit on day `day`.
+// Playoff teams aren't known yet, so a playoff match assumes the worst: a team that
+// played the most pool matches that day also plays every playoff round that day.
+function overDailyLimit(state: State, match: ScheduleMatch, day: number): boolean {
+  const max = state.input.maxMatchesPerDay;
+  if (max === undefined) return false;
+  if (match.phase === "POOL")
+    return match.teamIds.some((team) => (state.dayCount.get(`${team}@${day}`) ?? 0) >= max);
+  const key = `${match.divisionId}@${day}`;
+  const rounds = new Set(state.playoffRounds.get(key)).add(match.round);
+  return (state.poolPeak.get(key) ?? 0) + rounds.size > max;
+}
+
 // The earliest minute a match can start, or null while a match it waits for isn't placed.
-function readyAt(state: State, match: ScheduleMatch): number | null {
+// A match over the daily limit waits for the next day (Infinity when there is none).
+function readyAt(state: State, match: ScheduleMatch, day: number): number | null {
   const rest = state.input.minRestMinutes;
   let ready = 0;
   for (const id of state.before.get(match.id) ?? []) {
@@ -112,7 +134,22 @@ function readyAt(state: State, match: ScheduleMatch): number | null {
     const free = state.teamFree.get(team);
     if (free !== undefined) ready = Math.max(ready, free + rest);
   }
+  if (overDailyLimit(state, match, day))
+    return Math.max(ready, state.days[day + 1]?.start ?? Infinity);
   return ready;
+}
+
+function countForDay(state: State, match: ScheduleMatch, day: number) {
+  const key = `${match.divisionId}@${day}`;
+  if (match.phase === "PLAYOFF") {
+    state.playoffRounds.set(key, new Set(state.playoffRounds.get(key)).add(match.round));
+    return;
+  }
+  for (const team of match.teamIds) {
+    const count = (state.dayCount.get(`${team}@${day}`) ?? 0) + 1;
+    state.dayCount.set(`${team}@${day}`, count);
+    state.poolPeak.set(key, Math.max(state.poolPeak.get(key) ?? 0, count));
+  }
 }
 
 // Pools first, then lower rounds, then the teams that have waited longest.
@@ -155,7 +192,7 @@ function assignReferees(input: ScheduleInput, slots: ScheduleSlot[]) {
   }
 }
 
-function place(state: State, match: ScheduleMatch, court: number, start: number) {
+function place(state: State, match: ScheduleMatch, court: number, start: number, day: number) {
   const end = start + match.minutes;
   const at = (minutes: number) => new Date(state.origin + minutes * MINUTE);
   state.result.slots.push({
@@ -168,6 +205,7 @@ function place(state: State, match: ScheduleMatch, court: number, start: number)
   state.courtFree[court] = end;
   state.ended.set(match.id, end);
   for (const team of match.teamIds) state.teamFree.set(team, end);
+  countForDay(state, match, day);
   state.remaining.splice(state.remaining.indexOf(match), 1);
 }
 
@@ -182,7 +220,8 @@ function dropAll(state: State, reason: string) {
 function step(state: State): boolean {
   const court = state.courtFree.indexOf(Math.min(...state.courtFree));
   const now = state.courtFree[court];
-  const day = state.days.find((d) => now < d.end);
+  const dayIndex = state.days.findIndex((d) => now < d.end);
+  const day = state.days[dayIndex];
   if (!day) {
     dropAll(state, "It doesn't fit in the tournament's days.");
     return false;
@@ -194,9 +233,11 @@ function step(state: State): boolean {
 
   let next: ScheduleMatch | null = null;
   let soonest = Infinity;
+  let limited = false;
   for (const match of state.remaining) {
-    const ready = readyAt(state, match);
+    const ready = readyAt(state, match, dayIndex);
     if (ready === null) continue;
+    if (ready === Infinity) limited = true;
     if (ready <= now && (next === null || moreUrgent(state, match, next))) next = match;
     soonest = Math.min(soonest, ready);
   }
@@ -204,15 +245,19 @@ function step(state: State): boolean {
   if (next !== null) {
     // Too late in the day for the most urgent match: close this court until tomorrow.
     if (now + next.minutes > day.end) state.courtFree[court] = day.end;
-    else place(state, next, court, now);
+    else place(state, next, court, now, dayIndex);
     return true;
   }
   if (soonest !== Infinity) {
     state.courtFree[court] = soonest;
     return true;
   }
-  // Every remaining match waits on another in a loop: bad input, not a full day.
-  dropAll(state, "Its matches wait for each other.");
+  // The daily limit leaves no day for what's left, or the matches wait on each
+  // other in a loop (bad input).
+  dropAll(
+    state,
+    limited ? "It doesn't fit in the tournament's days." : "Its matches wait for each other.",
+  );
   return false;
 }
 
@@ -235,6 +280,9 @@ export function generateSchedule(input: ScheduleInput): ScheduleResult {
     before: prerequisites(input),
     courtFree: Array.from({ length: input.courts }, () => 0),
     teamFree: new Map(),
+    dayCount: new Map(),
+    poolPeak: new Map(),
+    playoffRounds: new Map(),
     ended: new Map(),
     remaining: [...input.matches],
     result: { slots: [], unscheduled: [] },

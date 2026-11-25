@@ -3,7 +3,7 @@
 
 // Checks a schedule against the rules (stories RALLY-216 and RALLY-217). The
 // organizer can save a draft with problems, but an ERROR blocks publishing. A
-// WARNING (rest time) only asks the organizer to confirm.
+// WARNING (rest time, matches per day) only asks the organizer to confirm.
 
 import type { ScheduleInput, ScheduleSlot } from "./generate.ts";
 
@@ -97,6 +97,30 @@ function refereeProblems(
   return problems;
 }
 
+// A team with more matches in one day than the organizer's limit.
+function dailyLimitProblems(input: ScheduleInput, slots: ScheduleSlot[]): ScheduleProblem[] {
+  const max = input.maxMatchesPerDay;
+  if (max === undefined) return [];
+  const teamsOf = new Map(input.matches.map((match) => [match.id, match.teamIds]));
+  const byTeamAndDay = new Map<string, string[]>();
+  for (const slot of slots) {
+    const day = input.days.findIndex(
+      (d) => d.startsAt <= slot.startsAt && slot.startsAt < d.endsAt,
+    );
+    for (const team of teamsOf.get(slot.matchId) ?? []) {
+      const key = `${team}@${day}`;
+      byTeamAndDay.set(key, [...(byTeamAndDay.get(key) ?? []), slot.matchId]);
+    }
+  }
+  return [...byTeamAndDay.values()]
+    .filter((matchIds) => matchIds.length > max)
+    .map((matchIds) => ({
+      severity: "WARNING",
+      matchIds,
+      message: `A team plays more than ${max} matches in one day.`,
+    }));
+}
+
 export function scheduleProblems(input: ScheduleInput, slots: ScheduleSlot[]): ScheduleProblem[] {
   const slotOf = new Map(slots.map((slot) => [slot.matchId, slot]));
   const teamsOf = new Map(input.matches.map((match) => [match.id, match.teamIds]));
@@ -107,7 +131,7 @@ export function scheduleProblems(input: ScheduleInput, slots: ScheduleSlot[]): S
         ...pairProblems(input, slots[i], slots[j], teamsOf),
         ...refereeProblems(slots[i], slots[j], teamsOf),
       );
-  return problems;
+  return [...problems, ...dailyLimitProblems(input, slots)];
 }
 
 export const canPublish = (problems: ScheduleProblem[]) =>
