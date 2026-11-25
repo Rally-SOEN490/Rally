@@ -1,93 +1,90 @@
-# Match formats and scheduling
+# Tournament schedule
 
 Status: Proposed (spike RALLY-257, [#362](https://github.com/Rally-SOEN490/Rally/issues/362)). The team and Chau still have to agree on it.
 
-This document records the spike's decisions for match formats, forfeits, schedule generation and schedule editing. It depends on the pools and playoffs spike ([#361](https://github.com/Rally-SOEN490/Rally/issues/361)) for pools, seeding and bracket structure, and on the tournament-day spike ([#363](https://github.com/Rally-SOEN490/Rally/issues/363)) for scores and standings.
+This document records how Rally builds and shows a tournament's schedule: which match is played on which court, at what time, and who referees it.
+
+Scheduling is the last step of setting up a tournament. When it starts, registration is full and everything else is already set: the days and hours, the number of courts, how long a match lasts in each stage, the teams, the pools and who plays whom, and the playoff bracket. Those come from the tournament setup and from the pools and playoffs spike ([#361](https://github.com/Rally-SOEN490/Rally/issues/361)), and this document doesn't decide them. Match-format research was moved out of this spike to [docs/spikes/match-format-research.md](../spikes/match-format-research.md).
 
 Prototype code: `apps/api/src/modules/scheduling/` (pure TypeScript, no Fastify or Prisma), tested in `apps/api/test/scheduling.test.ts`.
 
-## 1. Match formats
+## 1. The organizer's flow
 
-### Research
+1. Registration is full. The organizer opens the tournament's **Schedule** tab.
+2. They check the inputs: the days and hours, the courts, the match length per stage (e.g. "Pool play 55'", "1/4 Final 60'"), the referee option and an optional minimum rest time.
+3. They press **Generate**. The app fills the grid and says what doesn't fit, if anything.
+4. They change what they want: move or swap matches, change a referee, lock matches and generate again around them.
+5. They **Save** (a draft that players can't see) and **Publish**. Players then see the schedule, and publishing again replaces it.
 
-MyTeamClick doesn't publish its tournament rules, so the options below come from public Canadian and North American rec and university rules. **Chau still has to confirm which ones their tournaments use** (marked _To confirm_).
+## 2. What the schedule looks like
 
-| Option              | What we found                                                                                                       | Rally keeps it?                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Sets per match      | Pools often play 2 sets (both played, a match can end 1-1). Playoffs play best of 3. Competitive play is best of 5. | Yes: `FIXED_SETS` and `BEST_OF`                 |
-| Points per set      | 25 is standard; 21 is common to save time.                                                                          | Yes                                             |
-| Deciding set target | The third set of a best of 3 is usually played to 15.                                                               | Yes, best-of only                               |
-| Win by 2            | Standard.                                                                                                           | Yes (win by 1 or 2)                             |
-| Point cap           | Common in rec: 27 for sets to 25, 23 for sets to 21, 17 for sets to 15. Some events have none.                      | Yes, optional, per set and for the deciding set |
-| Timed matches       | Some leagues play until a time limit when courts are short.                                                         | Yes: `TIMED` with a time limit                  |
-| Forfeit             | Commonly scored as sets lost at 0 to the target (25-0), or by forfeiting sets for lateness.                         | See section 2                                   |
+The organizer sees a **grid for each day**: courts as columns and time slots as rows. Each cell is a match with its referee, e.g. `A1-A6 (B1)` means team A1 against team A6, refereed by team B1. Team names replace the codes in the app.
 
-### Defaults (_To confirm_)
+A side panel lists the division's stages and their match lengths (Pool A, Pool B, quarterfinals, semifinals, final). It also lists matches that are not on the grid yet, so the organizer can place them by hand.
 
-|                        | Pools               | Playoffs                         |
-| ---------------------- | ------------------- | -------------------------------- |
-| Mode                   | 2 sets, both played | Best of 3                        |
-| Points                 | 25, cap 27          | 25, cap 27; third set 15, cap 17 |
-| Win by                 | 2                   | 2                                |
-| Warm-up / between sets | 5 min / 2 min       | 5 min / 2 min                    |
-| Estimated court time   | 55 min              | 70 min                           |
+Players see the **published** schedule in the tournament's tabs, next to Results and the match tabs of the tournament-day screens (#363):
 
-Each pool and each playoff round stores its own format (story #92 now, #96 in Release 3). Scores are validated against the stored format of their pool or round, never against these defaults.
+- A day picker, and the matches grouped by time slot with their court, like the score screens.
+- "Your next match" at the top, and the player's own matches and refereeing duties highlighted.
+- A filter for the player's team.
 
-### How long a match takes
+Mockups: [docs/mockups/schedule.html](../mockups/schedule.html). The Figma prompt is in [docs/spikes/RALLY-257-release-2-plan.md](../spikes/RALLY-257-release-2-plan.md).
 
-The estimate is about **0.9 minutes per point to win**: a set to 25 ends near 25-20, about 45 rallies of about 30 seconds each with dead time included. The organizer can replace the estimate with their own set length (#287 decides the final formula with Chau).
+## 3. How the schedule is built (Generate)
 
-- Court time = warm-up + every set the match could need + breaks between sets, rounded up to 5 minutes.
-- A best-of match is booked for its deciding set too. A short match leaves a gap, but a long one doesn't make the rest of the day run late.
-- A timed match is booked for warm-up + its time limit.
+### Inputs
 
-| Format              | Court time |
-| ------------------- | ---------- |
-| 2 sets to 25        | 55 min     |
-| 2 sets to 21        | 45 min     |
-| Best of 3, 25/25/15 | 70 min     |
-| Best of 3, 21/21/15 | 65 min     |
-| Timed, 40 min       | 45 min     |
+| Input                                                                            | Where it comes from                                |
+| -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| The days, each with its start and end time (e.g. Sat 8:00–21:00, Sun 9:00–18:00) | Tournament setup                                   |
+| The number of courts                                                             | `Tournament.courts` (already exists)               |
+| The match length of each stage                                                   | Set by the organizer, e.g. pools 55', playoffs 60' |
+| The pool matches and the playoff bracket                                         | #361                                               |
+| The referee option: teams that aren't playing, or dedicated referees             | A checkbox in the Schedule tab                     |
+| The minimum rest time (optional)                                                 | The Schedule tab                                   |
 
-## 2. Forfeits
+### Rules
 
-- A forfeit is stored as a **result type** (`FORFEIT`) with its winner. It doesn't store fake set scores, so a corrected forfeit keeps its revision history like any other score (#363).
-- **Standings** count a forfeit as a win by every set needed, each at the target score to 0 (2 sets at 25-0 for both defaults). This rule is stored with the match format (`forfeitRule`), so a tournament can change it later.
-- In the **playoffs**, the winner advances as usual.
-- _To confirm with Chau:_ partial forfeits (a team arrives late and loses the first set only).
-
-## 3. Schedule generation
-
-### Inputs and rules
-
-Inputs: the tournament's start and end, its number of courts (already on `Tournament`), each match's court time (from its format), the pool matches and the playoff bracket (from #361), and an optional minimum rest time.
-
-Hard rules:
+Errors (the schedule can't be published with them):
 
 - No team plays two matches at once.
 - No court holds two matches at once.
-- Every match is inside the tournament's times.
-- Pool matches of a division end before its playoffs start.
-- A playoff match starts after the matches that feed it (a semifinal after its quarterfinals).
+- Every match is inside one of the tournament's days. Nothing is scheduled at night.
+- A division's pool matches end before its playoffs start, and a playoff match starts after the matches that feed it (a semifinal after its quarterfinals).
+- A team never plays and referees at the same time, never referees its own match, and never referees two matches at once.
 
-Soft rule: a team rests at least the minimum rest time between matches.
+Warning (the organizer confirms):
+
+- A team rests less than the minimum rest time.
 
 All divisions of a tournament share its courts, so the schedule is built for the whole tournament, not one division at a time.
+
+### Referees
+
+When the organizer picks **teams referee**, every match whose teams are known gets a referee:
+
+- a team of the **same division** that **isn't playing or refereeing** at that time;
+- the team with the **fewest duties so far**, so the duty is spread evenly.
+
+The referees are picked **after** all the matches are placed, so refereeing never delays a match. If every team of the division is busy, the match has no referee and the organizer can add one. With 5 teams on 2 courts, the team sitting out referees one of the two matches.
+
+Playoff matches get no referee at Generate, because their teams aren't known until the pools end. The organizer picks them later, usually from the eliminated teams.
+
+When the organizer picks **dedicated referees**, the schedule assigns none.
 
 ### Options compared
 
 |                         | A. Greedy slotting (chosen)                                                        | B. Constraint solver (OR-Tools CP-SAT, or integer programming with HiGHS/GLPK in WebAssembly)                                                                          |
 | ----------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | How it works            | Fill the court that frees up first with the most urgent match that can start then. | Model every match × court × time slot as a variable with the rules as constraints; the solver searches for the best schedule.                                          |
-| Quality                 | Good, not optimal. On the test case it finishes the day at 19:50.                  | Optimal for the stated goal (e.g. the earliest finish).                                                                                                                |
+| Quality                 | Good, not optimal. On the test case it finishes at 19:30.                          | Optimal for the stated goal (e.g. the earliest finish).                                                                                                                |
 | Speed                   | Milliseconds for one tournament.                                                   | Seconds to minutes. 37 matches × 3 courts × 160 five-minute slots is about 18,000 variables.                                                                           |
 | Stack                   | Plain TypeScript in the API.                                                       | CP-SAT has no maintained Node binding, so it would need a Python service, which AGENTS.md forbids without a review. WebAssembly solvers are large and harder to debug. |
-| When it doesn't fit     | It says which matches don't fit and why.                                           | It says only "infeasible", so we'd need extra work to explain why.                                                                                                     |
+| When it doesn't fit     | It says which matches don't fit.                                                   | It says only "infeasible", so we'd need extra work to explain why.                                                                                                     |
 | Same input, same output | Yes, by construction.                                                              | Only with a fixed seed and the same solver version.                                                                                                                    |
 | Editing afterwards      | The same rule checker validates edits.                                             | Needs a separate checker anyway.                                                                                                                                       |
 
-**Decision: greedy slotting plus a rule checker.** It fits the stack, it's explainable to organizers, it's deterministic, and it covers Release 2. Revisit option B if the referee assignments in Release 3 (#107) make greedy schedules noticeably worse.
+**Decision: greedy slotting plus a rule checker.** It fits the stack, it's explainable to organizers, it's deterministic, and it covers Release 2. Revisit option B if real tournaments show greedy schedules that are noticeably worse than what organizers build by hand.
 
 ### How the greedy works
 
@@ -95,99 +92,73 @@ All divisions of a tournament share its courts, so the schedule is built for the
 2. List the matches that can start at that time: their teams have rested, and the matches they wait for have ended.
 3. Put the most urgent one on the court: pool matches before playoffs, then lower rounds, then the teams that have waited the longest.
 4. If no match can start, move that court's time forward to when the next match can start.
-5. If the most urgent match would end after the tournament, it never fits. It's reported, and so are the matches that wait for it.
+5. If the most urgent match would end after the day's end, close the court until the next day. When there are no days left, the remaining matches are reported as not fitting.
+6. When every match is placed, pick the referees (see above).
 
-### Prototype result: 12 teams, 2 pools of 6, 3 courts, 8:00 to 21:00
+### Prototype results: 12 teams, 2 pools of 6, 3 courts, team referees
 
-The playoffs are top 4 of each pool into crossover quarterfinals, then semifinals and a final. The bracket shape is a placeholder until #361.
+The playoffs are the top 4 of each pool in crossover quarterfinals, then semifinals and a final. The bracket shape is a placeholder until #361.
 
-| Formats                             | Result                                                                            |
-| ----------------------------------- | --------------------------------------------------------------------------------- |
-| Defaults (2×25 pools, Bo3 25/25/15) | 36 of 37 matches placed. **The final doesn't fit**, and the organizer is told so. |
-| 2×21 pools, Bo3 21/21/15            | All 37 placed, no conflicts, last match ends **19:50**.                           |
-| Same with 15 min minimum rest       | All 37 placed, ends 20:35.                                                        |
+| Match lengths           | Days                              | Result                                                              |
+| ----------------------- | --------------------------------- | ------------------------------------------------------------------- |
+| Pools 45', playoffs 60' | Sat 8:00–21:00                    | All 37 matches placed, no conflicts, ends at **19:30**              |
+| Pools 55', playoffs 60' | Sat 8:00–21:00                    | 36 placed. **The final doesn't fit**, and the organizer is told so. |
+| Pools 55', playoffs 60' | Sat 8:00–21:00 and Sun 9:00–18:00 | All 37 placed. The final moves to **Sunday 9:00**.                  |
+
+In every case, each team referees 2 or 3 pool matches.
 
 What we learned:
 
-- **Courts, not teams, are the bottleneck.** 30 pool matches on 3 courts take 10 waves whatever the order. The scheduler should show the organizer the estimated end time while they pick formats, so they can see when to shorten sets or add courts.
-- Alternating pools A and B means each team plays every second wave, so it rests about 45 minutes. The teams sitting out can referee (Release 3, #107).
-- The pools-before-playoffs barrier leaves courts idle near the end (QF4 runs alone). Release 3 could let the playoffs of division 1 start while division 2 is still in pools, and that already works because the barrier is per division.
+- **Courts, not teams, are the bottleneck.** 30 pool matches on 3 courts take 10 waves whatever the order. The Generate screen should show the estimated end before the organizer generates.
+- **Pools A and B alternate**, so the 6 teams of the other pool are free in every wave and referee. Each team plays every second wave, so it rests one match length between its matches.
+- **A playoff round can be split across two days.** With 8 teams on 3 courts, Sat 9:00–20:00 and Sun 9:00–14:00, three quarterfinals play Saturday evening and the fourth Sunday morning. Organizers probably want a whole round on one day: a candidate rule for later. Until then, the organizer can move the matches and lock them.
+- **The pools-before-playoffs rule leaves courts idle near the end** (QF4 runs alone). Later, the playoffs of one division could start while another division is still in pools; that already works because the rule is per division.
 
-Full schedule (2×21 / Bo3 21):
+Schedule (pools 45', playoffs 60', Saturday only):
 
 ```
-08:00-08:45  C1 A1 v A6 | C2 A2 v A5 | C3 A3 v A4
-08:45-09:30  C1 B1 v B6 | C2 B2 v B5 | C3 B3 v B4
-...            (pools A and B alternate, 10 waves)
-14:45-15:30  C1 B1 v B2 | C2 B3 v B6 | C3 B4 v B5
-15:30-16:35  C1 QF1     | C2 QF2     | C3 QF3
-16:35-17:40  C1 QF4     | C2 SF1
-17:40-18:45  C1 SF2
-18:45-19:50  C1 Final
+08:00  C1 A1-A6 (B1) | C2 A2-A5 (B2) | C3 A3-A4 (B3)
+08:45  C1 B1-B6 (A1) | C2 B2-B5 (A2) | C3 B3-B4 (A3)
+09:30  C1 A1-A5 (B4) | C2 A6-A4 (B5) | C3 A2-A3 (B6)
+...      (pools A and B alternate, 10 waves)
+14:45  C1 B1-B2 (A1) | C2 B3-B6 (A2) | C3 B4-B5 (A3)
+15:30  C1 QF1        | C2 QF2        | C3 QF3
+16:30  C1 QF4        | C2 SF1
+17:30  C1 SF2
+18:30  C1 Final
 ```
 
-## 4. Editing the schedule (#292) and publishing (#293)
+## 4. Changing the schedule (#292) and publishing (#293)
 
-The organizer works on a **draft** schedule. Players see only the **published** one.
+The organizer works on a **draft**. Players see only the **published** schedule.
 
-What the organizer can do in the draft:
+Editing tools (like the scheduling tool in the reference screenshot the team looked at):
 
-- Move a match to another time or court.
-- Swap two matches.
-- **Lock** a match so that regenerating keeps it where it is.
-- Regenerate the rest around the locked matches.
+| Tool    | What it does                                                                        |
+| ------- | ----------------------------------------------------------------------------------- |
+| Place   | Put a match that isn't on the grid yet into an empty cell.                          |
+| Remove  | Take a match off the grid. It goes back to the side panel.                          |
+| Move    | Drag a match to another cell (web), or pick a time and court (phone).               |
+| Swap    | Exchange two matches.                                                               |
+| Referee | Change or clear a match's referee.                                                  |
+| Lock    | Keep a match where it is. **Generate** again then places only the unlocked matches. |
 
-What happens when a change breaks a rule (`scheduleProblems` in `check.ts`):
+After every change, the app checks the rules (`scheduleProblems` in `check.ts`) and shows the problems next to the grid:
 
-| Problem                                                                     | Severity | Effect                                   |
-| --------------------------------------------------------------------------- | -------- | ---------------------------------------- |
-| A team plays two matches at once                                            | Error    | The draft saves; publishing is blocked   |
-| A court is double-booked                                                    | Error    | The draft saves; publishing is blocked   |
-| A match is outside the tournament's times, or on a court that doesn't exist | Error    | The draft saves; publishing is blocked   |
-| A playoff starts before its pools or its feeding matches end                | Error    | The draft saves; publishing is blocked   |
-| A team rests less than the minimum                                          | Warning  | The organizer confirms, then can publish |
+- An **error** (e.g. "A team plays and referees at the same time") doesn't stop saving the draft, but it blocks **Publish**.
+- A **warning** (too little rest) asks the organizer to confirm before publishing.
 
 The server runs the same check, so a UI shortcut can't publish a broken schedule. Publishing again replaces the published version and sends the schedule notification (#343). A match that already has a confirmed score can't be moved.
 
 ## 5. Database proposal
 
-These are additions to the existing Prisma schema, and **only a proposal: there is no migration yet.** `Pool`, `PlayoffRound` and `Match` belong to the combined diagram from #361. This spike adds the match format link and the schedule.
+These are additions to the existing Prisma schema, and **only a proposal: there is no migration yet.** `Match` belongs to #361's combined diagram.
 
 ```prisma
-enum MatchFormatMode {
-  BEST_OF
-  FIXED_SETS
-  TIMED
-  @@map("match_format_mode")
-}
-
-enum ForfeitRule {
-  // A win by every set needed, each at the target score to 0.
-  ALL_SETS_AT_TARGET
-  @@map("forfeit_rule")
-}
-
-// How the matches of one pool or playoff round are played (#92).
-model MatchFormat {
-  id                  String          @id @default(uuid()) @db.Uuid
-  divisionId          String          @map("division_id") @db.Uuid
-  mode                MatchFormatMode
-  sets                Int
-  pointsPerSet        Int             @map("points_per_set")
-  decidingSetPoints   Int?            @map("deciding_set_points")
-  winBy               Int             @default(2) @map("win_by")
-  pointCap            Int?            @map("point_cap")
-  decidingSetPointCap Int?            @map("deciding_set_point_cap")
-  timeLimitMinutes    Int?            @map("time_limit_minutes")
-  // Null means estimated from the points (#287).
-  setMinutes          Int?            @map("set_minutes")
-  minutesBetweenSets  Int             @default(2) @map("minutes_between_sets")
-  warmupMinutes       Int             @default(5) @map("warmup_minutes")
-  forfeitRule         ForfeitRule     @default(ALL_SETS_AT_TARGET) @map("forfeit_rule")
-  division            Division        @relation(fields: [divisionId], references: [id], onDelete: Cascade)
-  pools               Pool[]          // #361: Pool.matchFormatId
-  playoffRounds       PlayoffRound[]  // #361: PlayoffRound.matchFormatId
-  @@map("match_formats")
+enum RefereeMode {
+  TEAMS
+  DEDICATED
+  @@map("referee_mode")
 }
 
 enum ScheduleStatus {
@@ -196,82 +167,87 @@ enum ScheduleStatus {
   @@map("schedule_status")
 }
 
+// The hours the courts are available on one day of the tournament.
+model TournamentDay {
+  id           String     @id @default(uuid()) @db.Uuid
+  tournamentId String     @map("tournament_id") @db.Uuid
+  startsAt     DateTime   @map("starts_at") @db.Timestamptz
+  endsAt       DateTime   @map("ends_at") @db.Timestamptz
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  @@index([tournamentId, startsAt])
+  @@map("tournament_days")
+}
+
 // One draft and at most one published schedule per tournament. Divisions share
 // the tournament's courts, so the schedule is per tournament, not per division.
 model Schedule {
-  id           String         @id @default(uuid()) @db.Uuid
-  tournamentId String         @map("tournament_id") @db.Uuid
-  status       ScheduleStatus
+  id             String         @id @default(uuid()) @db.Uuid
+  tournamentId   String         @map("tournament_id") @db.Uuid
+  status         ScheduleStatus
+  refereeMode    RefereeMode    @default(TEAMS) @map("referee_mode")
+  minRestMinutes Int            @default(0) @map("min_rest_minutes")
   // Goes up by one each time the organizer publishes.
-  version      Int            @default(1)
-  publishedAt  DateTime?      @map("published_at") @db.Timestamptz
-  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz
-  tournament   Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  slots        ScheduleSlot[]
+  version        Int            @default(1)
+  publishedAt    DateTime?      @map("published_at") @db.Timestamptz
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+  tournament     Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  slots          ScheduleSlot[]
   @@unique([tournamentId, status])
   @@map("schedules")
 }
 
-// When and where one match is played (court and time).
+// When and where one match is played, and who referees it.
 model ScheduleSlot {
-  id         String   @id @default(uuid()) @db.Uuid
-  scheduleId String   @map("schedule_id") @db.Uuid
-  matchId    String   @map("match_id") @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
+  scheduleId       String   @map("schedule_id") @db.Uuid
+  matchId          String   @map("match_id") @db.Uuid
   // 1 to Tournament.courts. Court names come later.
-  court      Int
-  startsAt   DateTime @map("starts_at") @db.Timestamptz
-  endsAt     DateTime @map("ends_at") @db.Timestamptz
-  // Regenerating keeps a locked match where the organizer put it.
-  locked     Boolean  @default(false)
-  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  court            Int
+  startsAt         DateTime @map("starts_at") @db.Timestamptz
+  endsAt           DateTime @map("ends_at") @db.Timestamptz
+  // Null with dedicated referees, or when nobody is free.
+  refereeTeamId    String?  @map("referee_team_id") @db.Uuid
+  // Generate keeps a locked match where the organizer put it.
+  locked           Boolean  @default(false)
+  schedule         Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  match            Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  refereeTeam      Team?    @relation(fields: [refereeTeamId], references: [id], onDelete: SetNull)
   @@unique([scheduleId, matchId])
   @@index([scheduleId, court, startsAt])
+  @@index([refereeTeamId])
   @@map("schedule_slots")
 }
 ```
 
-Changes to existing models:
+What this needs from other tables:
 
-- `Tournament`: add `minRestMinutes Int @default(0) @map("min_rest_minutes")` (#106). `courts`, `startsAt` and `endsAt` already exist.
-- `Match` (#361 and #363): needs a `resultType` (`PLAYED` or `FORFEIT`) for the forfeit rule above.
+- **Match length per stage:** each `Pool` and `PlayoffRound` from #361 needs a `matchMinutes Int` (e.g. 55 and 60). That's all the schedule needs from match formats.
+- `Tournament` keeps `courts`. Its `startsAt` and `endsAt` stay as the first and last moment of the tournament, and `TournamentDay` gives the hours of each day.
 
 Publishing copies the draft's slots into the published schedule in one transaction and adds one to its version.
 
-A PostgreSQL exclusion constraint on `(schedule_id, court, tstzrange(starts_at, ends_at))` could stop a double-booked court in the database itself. Prisma can't declare it, so it would need raw SQL in the migration. The team should decide whether it's worth it: the server check already blocks publishing.
+A PostgreSQL exclusion constraint on `(schedule_id, court, tstzrange(starts_at, ends_at))` could stop a double-booked court in the database itself. Prisma can't declare it, so it would need raw SQL in the migration. Not needed for Release 2: the server check already blocks publishing.
 
 ## 6. Open questions
 
 For Chau:
 
-- Which match formats and caps do they use in pools and in playoffs?
-- How is a forfeit scored, and is there a partial forfeit for lateness?
-- Is 0.9 minutes per point realistic for their tournaments? What warm-up do they allow?
+- Are the days and hours of a tournament always the same courts, or can a day have fewer courts?
+- In the playoffs, who usually referees: eliminated teams, or the losers of the previous round?
 - What minimum rest do they want by default?
-- Do teams referee the matches between theirs? (This affects Release 3, #107.)
+- Should a playoff round always be played on one day?
+
+For the team:
+
+- Team reffing (#107) is in Release 3, but this spike now includes it. Does it move into Release 2?
+- Who owns match formats (#92) now that they're out of this spike? The schedule only needs a match length per stage.
 
 For #361:
 
-- How are pool matchups and the playoff bracket generated? The prototype uses a plain round robin and a 4+4 crossover.
-- Does each pool or round point to a `MatchFormat`, or does a division have one format for pools and one for playoffs in Release 2?
-
-For #363:
-
-- The `Match` table and score revisions, including `resultType` for forfeits.
-
-## Sources
-
-Public rules used as placeholders until Chau confirms:
-
-- [Carleton coed volleyball rules](https://athletics.carleton.ca/wp-content/uploads/coed-volleyball-rules.pdf): third set to 15, cap 17.
-- [UBC volleyball league rules 2025](https://recreation.ubc.ca/wp-content/uploads/2025/09/Cross-Volleyball-League-Rules-2025.pdf): win by 2 unless the point cap is reached first.
-- [Western University indoor volleyball regulations](https://uwo.ca/campusrec/intramurals/intramural_policies_and_playing_regulations/Indoor%20Volleyball%20Regulations%20.html)
-- [University of Calgary volleyball rules 2025](https://active-living.ucalgary.ca/sites/default/files/teams/1/2025%20-%20Volleyball%20Rules%20.pdf)
-- [Volleyball Canada rulebook](https://volleyball.ca/uploads/Development/Referee/Rules/Rulebook_2018-19_EN_FINAL_-_updated_Oct_2018.pdf)
-- [SONJ volleyball tournament rules](https://www.sonj.org/wp-content/uploads/2023/08/VB-Tournament-Rules.pdf): late arrival forfeits the first set 0-25.
-- [Tournify set options](https://tournifyapp.com/en/features/sets): how another tournament app configures sets.
+- Agree on the shape of the matches the scheduler receives: the teams (none for playoffs), the matches each one waits for, the round and the stage. See `ScheduleMatch` in `generate.ts`.
+- Add `matchMinutes` to `Pool` and `PlayoffRound`.
 
 ## AI-use acknowledgment
 
-Claude (Claude Code) researched the public rules, wrote this document and the prototype, and ran its tests. Vincent chose the scope and reviews the decisions with the team.
+Claude (Claude Code) wrote this document and the prototype, and ran its tests. Vincent chose the scope with Hoang Vu and reviews the decisions with the team.

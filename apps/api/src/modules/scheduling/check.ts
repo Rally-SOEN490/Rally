@@ -33,10 +33,12 @@ function slotProblems(
   const problems: ScheduleProblem[] = [];
   if (slot.court < 1 || slot.court > input.courts)
     problems.push(error([slot.matchId], `Court ${slot.court} doesn't exist.`));
-  if (slot.startsAt < input.startsAt || slot.endsAt > input.endsAt)
+  if (!input.days.some((day) => day.startsAt <= slot.startsAt && slot.endsAt <= day.endsAt))
     problems.push(error([slot.matchId], "The match is outside the tournament's times."));
 
   const match = input.matches.find((m) => m.id === slot.matchId);
+  if (slot.refereeTeamId !== null && match?.teamIds.includes(slot.refereeTeamId))
+    problems.push(error([slot.matchId], "A team can't referee its own match."));
   const pools = input.matches.filter(
     (other) =>
       match?.phase === "PLAYOFF" && other.phase === "POOL" && other.divisionId === match.divisionId,
@@ -77,13 +79,34 @@ function pairProblems(
   return problems;
 }
 
+// Referee problems between two matches at the same time.
+function refereeProblems(
+  a: ScheduleSlot,
+  b: ScheduleSlot,
+  teamsOf: Map<string, string[]>,
+): ScheduleProblem[] {
+  if (!overlaps(a, b)) return [];
+  const ids = [a.matchId, b.matchId];
+  const problems: ScheduleProblem[] = [];
+  if (a.refereeTeamId !== null && a.refereeTeamId === b.refereeTeamId)
+    problems.push(error(ids, "A team referees two matches at once."));
+  const refereesWhilePlaying = (ref: ScheduleSlot, play: ScheduleSlot) =>
+    ref.refereeTeamId !== null && (teamsOf.get(play.matchId) ?? []).includes(ref.refereeTeamId);
+  if (refereesWhilePlaying(a, b) || refereesWhilePlaying(b, a))
+    problems.push(error(ids, "A team plays and referees at the same time."));
+  return problems;
+}
+
 export function scheduleProblems(input: ScheduleInput, slots: ScheduleSlot[]): ScheduleProblem[] {
   const slotOf = new Map(slots.map((slot) => [slot.matchId, slot]));
   const teamsOf = new Map(input.matches.map((match) => [match.id, match.teamIds]));
   const problems = slots.flatMap((slot) => slotProblems(input, slot, slotOf));
   for (let i = 0; i < slots.length; i++)
     for (let j = i + 1; j < slots.length; j++)
-      problems.push(...pairProblems(input, slots[i], slots[j], teamsOf));
+      problems.push(
+        ...pairProblems(input, slots[i], slots[j], teamsOf),
+        ...refereeProblems(slots[i], slots[j], teamsOf),
+      );
   return problems;
 }
 
