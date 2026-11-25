@@ -200,7 +200,7 @@ The mockups are one static HTML page made for Figma: [docs/mockups/schedule.html
 2. Import the file, or a URL where it's hosted. Use a viewport at least 1560 px wide so the web editor fits.
 3. Move the frames next to the Pools and Playoffs frames of Game set up, then swap the text and colour styles for the file's own.
 
-Frames: Schedule (settings and Generate), Doesn't fit, Proposed · By time, Proposed · Bracket, Proposed · By team, the web editor, Edit a match (phone) and Publish.
+Frames: Schedule · Before generating, Generated · Saturday and Generated · Sunday (the mobile court × time grid), the other views (by time, bracket, by team), Edit a match and Publish (phone), and the same grid on a computer. The schedule's inputs (dates, courts, pools, formats, bracket) come from the tournament and the Pools and Playoffs tabs, so the Schedule tab only adds the referee option and the daily limit.
 
 ## Presentation outline (about 5 minutes)
 

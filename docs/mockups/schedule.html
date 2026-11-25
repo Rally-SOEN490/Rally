@@ -262,6 +262,9 @@
       .line .main {
         font-weight: 600;
       }
+      .line > b {
+        white-space: nowrap;
+      }
       .line .sub {
         color: var(--muted);
         font-size: 13px;
@@ -865,23 +868,174 @@
         font-weight: 800;
         flex: none;
       }
+
+      /* Mobile schedule grid */
+      .mtools {
+        display: flex;
+        gap: 6px;
+      }
+      .mtools span {
+        white-space: nowrap;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: var(--card);
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+      }
+      .mtools span.on {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+      }
+      .mday {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .mday b {
+        font-size: 18px;
+        font-weight: 800;
+      }
+      .mgrid {
+        background: var(--card);
+        border-radius: 18px;
+        padding: 10px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .mrow {
+        display: flex;
+        gap: 5px;
+      }
+      .mt {
+        width: 38px;
+        flex: none;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        padding-top: 6px;
+      }
+      .mh {
+        flex: 1;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+      .mc {
+        flex: 1;
+        min-height: 62px;
+        background: var(--field);
+        border-radius: 9px;
+        border-left: 4px solid var(--line);
+        padding: 5px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        font-size: 11px;
+        line-height: 1.2;
+        border-top: 1.5px solid transparent;
+        border-right: 1.5px solid transparent;
+        border-bottom: 1.5px solid transparent;
+      }
+      .mc b {
+        font-weight: 700;
+      }
+      .mc i {
+        font-style: normal;
+        color: var(--muted);
+        font-size: 10px;
+        margin-top: 2px;
+      }
+      .mc.a {
+        border-left-color: var(--pool-a);
+      }
+      .mc.b {
+        border-left-color: var(--pool-b);
+      }
+      .mc.c {
+        border-left-color: var(--pool-c);
+      }
+      .mc.d {
+        border-left-color: var(--pool-d);
+      }
+      .mc.po {
+        border-left-color: var(--green);
+        min-height: 76px;
+      }
+      .mc.po .k {
+        color: var(--green);
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+      }
+      .mc.sel {
+        background: var(--green-soft);
+        border-top-color: var(--green);
+        border-right-color: var(--green);
+        border-bottom-color: var(--green);
+      }
+      .mc.empty {
+        background: transparent;
+        border: 1.5px dashed var(--line);
+        align-items: center;
+        justify-content: center;
+        color: var(--faint);
+        font-size: 18px;
+      }
+      .mlegend {
+        display: flex;
+        gap: 10px;
+        font-size: 11px;
+        color: var(--muted);
+        flex-wrap: wrap;
+      }
+      .mlegend span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .mlegend i {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+      }
+      .toast {
+        background: var(--ink);
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .toast u {
+        color: var(--lime);
+        font-weight: 700;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
     <div class="canvas">
-      <!-- ===================== 1. GENERATE ===================== -->
+      <!-- ===================== 1. SCHEDULE TAB (MOBILE GRID) ===================== -->
       <div>
-        <h1 class="section-title">1 · Generate a proposed schedule</h1>
+        <h1 class="section-title">1 · Build the schedule in the Schedule tab</h1>
         <p class="section-note">
-          The Schedule tab of Game set up, next to Pools and Playoffs. The dates, hours and courts
-          come from the tournament, and the match slots from each pool's and round's match format
-          plus the time between matches. Most organizers only check them and press Generate. The
-          estimate updates as a value changes.
+          Everything the schedule needs is already in the tournament, the Pools tab and the Playoffs
+          tab, so the Schedule tab only adds two options and a Generate button. Generate fills a
+          grid: courts across, time slots down, one day at a time, like a court scheduler but on a
+          phone. Each cell shows the two teams and the referee; the left edge is the pool's colour.
+          Pick a tool, then tap a match.
         </p>
         <div class="row">
-          <!-- Settings -->
           <div class="frame">
-            <div class="frame-label">Game set up · Schedule</div>
+            <div class="frame-label">Schedule · Before generating</div>
             <div class="phone">
               <div class="screen">
                 <div class="status">
@@ -908,108 +1062,39 @@
                     <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
                   </div>
                   <div class="division">4v4 Co-ed C / C+</div>
-                  <div class="subtitle">12 teams in 4 pools · Gold bracket (8)</div>
-
+                  <div class="subtitle">Nothing scheduled yet</div>
                   <div class="card">
-                    <div class="card-label">When and where</div>
-                    <div class="field-row">
-                      <div>
-                        <div class="field-label">Starts</div>
-                        <div class="input">Sat Nov 15 <small>9:00</small></div>
-                      </div>
-                      <div>
-                        <div class="field-label">Ends</div>
-                        <div class="input">Sun Nov 16 <small>14:00</small></div>
-                      </div>
-                    </div>
+                    <div class="card-label">What will be scheduled</div>
+                    <div class="line"><span>Pool play · 4 pools of 3</span><b>12 matches</b></div>
                     <div class="line">
-                      <div>
-                        <div class="main">Saturday</div>
-                        <div class="sub">Courts open</div>
-                      </div>
-                      <span class="pill">9:00 – 18:00</span>
+                      <span>Gold bracket · top 8 + 3rd place</span><b>8 matches</b>
                     </div>
+                    <div class="line"><span>Courts</span><b>3</b></div>
+                    <div class="line"><span>Sat Nov 15</span><b>9:00 – 18:00</b></div>
+                    <div class="line"><span>Sun Nov 16</span><b>9:00 – 14:00</b></div>
                     <div class="line">
-                      <div>
-                        <div class="main">Sunday</div>
-                        <div class="sub">Courts open</div>
-                      </div>
-                      <span class="pill">9:00 – 14:00</span>
-                    </div>
-                    <div>
-                      <div class="field-label">Courts</div>
-                      <div class="stepper"><span class="b">−</span>3<span class="b">+</span></div>
+                      <span class="sub">From Pools, Playoffs and the tournament's details</span>
                     </div>
                   </div>
-
                   <div class="card">
-                    <div class="card-label">Match slots</div>
+                    <div class="card-label">Options</div>
                     <div class="line">
                       <div>
-                        <div class="main">Pool play</div>
-                        <div class="sub">2 sets to 25 · 45 min + 5 between</div>
+                        <div class="main">Teams referee</div>
+                        <div class="sub">A team that isn't playing refs each pool match</div>
                       </div>
-                      <span class="pill">50 min</span>
+                      <span class="pill">On</span>
                     </div>
                     <div class="line">
-                      <div>
-                        <div class="main">Gold bracket</div>
-                        <div class="sub">Best of 3 · 65 min + 5 between</div>
-                      </div>
-                      <span class="pill">70 min</span>
-                    </div>
-                    <div class="line">
-                      <span class="sub">From the match formats in Pools and Playoffs</span>
-                      <span class="link">Edit</span>
-                    </div>
-                  </div>
-
-                  <div class="card">
-                    <div class="card-label">Rules</div>
-                    <div class="line">
-                      <div>
-                        <div class="main">Max matches per team per day</div>
-                        <div class="sub">Pools and playoffs together</div>
-                      </div>
+                      <div class="main">Max matches per team per day</div>
                       <span class="pill">3</span>
                     </div>
-                    <div class="line">
-                      <div class="main">Minimum rest between matches</div>
-                      <span class="pill">0 min</span>
-                    </div>
-                    <div>
-                      <div class="field-label">Referees</div>
-                      <div class="seg dark">
-                        <span class="on">Teams referee</span><span>Own referees</span>
-                      </div>
-                    </div>
                   </div>
-
                   <div class="estimate">
-                    <div class="line">
-                      <span class="big">All 20 matches fit</span
-                      ><span class="auto">✦ Estimate</span>
-                    </div>
-                    <div class="day-bar">
-                      <span class="d">Sat</span>
-                      <span class="track"
-                        ><span class="pools" style="width: 37%"></span
-                        ><span class="po" style="width: 26%"></span
-                      ></span>
-                      <span class="t">9:00 – 14:40</span>
-                    </div>
-                    <div class="day-bar">
-                      <span class="d">Sun</span>
-                      <span class="track"><span class="po" style="width: 47%"></span></span>
-                      <span class="t">9:00 – 11:20</span>
-                    </div>
-                    <div class="legend">
-                      <span><i style="background: #2d4a3a"></i>Pools</span>
-                      <span><i style="background: #8fb59e"></i>Gold bracket</span>
-                    </div>
+                    <span class="big">All 20 matches fit</span>
                     <div style="font-size: 13px">
-                      Each team plays 2 pool matches Saturday. Quarterfinals Saturday afternoon,
-                      semis and finals Sunday morning. Never more than 3 matches a day.
+                      Pools Saturday 9:00 – 12:20, quarterfinals until 14:40. Semis and finals
+                      Sunday 9:00 – 11:20.
                     </div>
                   </div>
                 </div>
@@ -1018,10 +1103,8 @@
               </div>
             </div>
           </div>
-
-          <!-- Doesn't fit -->
           <div class="frame">
-            <div class="frame-label">Game set up · Schedule · Doesn't fit</div>
+            <div class="frame-label">Schedule · Generated · Saturday</div>
             <div class="phone">
               <div class="screen">
                 <div class="status">
@@ -1048,42 +1131,177 @@
                     <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
                   </div>
                   <div class="division">4v4 Co-ed C / C+</div>
-                  <div class="subtitle">12 teams in 2 pools of 6 · Gold bracket (8)</div>
-
-                  <div class="banner err">
-                    <b>5 matches don't fit:</b> a quarterfinal, both semifinals, the final and the
-                    3rd place game. In pools of 6, each team plays 5 pool matches, so with 3 a day
-                    there's no room left on Sunday.
+                  <div class="subtitle">Proposed schedule · Draft · players can't see it yet</div>
+                  <div class="mday">
+                    <b>Saturday, Nov 15</b>
+                    <div class="daypills"><span class="on">Sat</span><span>Sun</span></div>
                   </div>
-                  <div class="card">
-                    <div class="card-label">Ways to fix it</div>
-                    <div class="line">
-                      <div>
-                        <div class="main">Use 4 pools of 3</div>
-                        <div class="sub">2 pool matches per team · ends Sun 11:20</div>
-                      </div>
-                      <span class="link">Try</span>
+                  <div class="mtools">
+                    <span class="on">Move</span><span>Swap</span><span>Ref</span><span>🔒 Lock</span
+                    ><span>Remove</span>
+                  </div>
+                  <div class="mgrid">
+                    <div class="mrow">
+                      <div class="mt"></div>
+                      <div class="mh">COURT 1</div>
+                      <div class="mh">COURT 2</div>
+                      <div class="mh">COURT 3</div>
                     </div>
-                    <div class="line">
-                      <div>
-                        <div class="main">Add Monday</div>
-                        <div class="sub">Everything fits · ends Mon 12:30</div>
+                    <div class="mrow">
+                      <div class="mt">9:00</div>
+                      <div class="mc a">
+                        <b>Net Profits</b><b>Block Party</b><i>Ref Sunbirds</i>
                       </div>
-                      <span class="link">Try</span>
-                    </div>
-                    <div class="line">
-                      <div>
-                        <div class="main">Place them by hand</div>
-                        <div class="sub">Some teams will play more than 3 in a day</div>
+                      <div class="mc b">
+                        <b>Set to Kill</b><b>Free Ballers</b><i>Ref Spike Lee</i>
                       </div>
-                      <span class="link">Edit</span>
+                      <div class="mc c"><b>Ace Ventura</b><b>Side Out</b><i>Ref Dig Deep</i></div>
                     </div>
+                    <div class="mrow">
+                      <div class="mt">9:50</div>
+                      <div class="mc d">
+                        <b>Bump Set Spike</b><b>Quad Squad</b><i>Ref Net Profits</i>
+                      </div>
+                      <div class="mc a">
+                        <b>Sunbirds</b><b>Block Party</b><i>Ref Set to Kill</i>
+                      </div>
+                      <div class="mc b">
+                        <b>Spike Lee</b><b>Free Ballers</b><i>Ref Ace Ventura</i>
+                      </div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">10:40</div>
+                      <div class="mc c"><b>Dig Deep</b><b>Side Out</b><i>Ref Block Party</i></div>
+                      <div class="mc d">
+                        <b>Kill Bill</b><b>Quad Squad</b><i>Ref Free Ballers</i>
+                      </div>
+                      <div class="mc a sel">
+                        <b>Sunbirds 🔒</b><b>Net Profits</b><i>Ref Bump Set Spike</i>
+                      </div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">11:30</div>
+                      <div class="mc b"><b>Spike Lee</b><b>Set to Kill</b><i>Ref Side Out</i></div>
+                      <div class="mc c"><b>Dig Deep</b><b>Ace Ventura</b><i>Ref Quad Squad</i></div>
+                      <div class="mc d">
+                        <b>Kill Bill</b><b>Bump Set Spike</b><i>Ref Sunbirds</i>
+                      </div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">12:20</div>
+                      <div class="mc po"><span class="k">QF1</span><b>1st A</b><b>2nd B</b></div>
+                      <div class="mc po"><span class="k">QF2</span><b>1st C</b><b>2nd D</b></div>
+                      <div class="mc po"><span class="k">QF3</span><b>1st B</b><b>2nd A</b></div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">13:30</div>
+                      <div class="mc po"><span class="k">QF4</span><b>1st D</b><b>2nd C</b></div>
+                      <div class="mc empty">+</div>
+                      <div class="mc empty">+</div>
+                    </div>
+                  </div>
+                  <div class="mlegend">
+                    <span><i style="background: var(--pool-a)"></i>Pool A</span>
+                    <span><i style="background: var(--pool-b)"></i>Pool B</span>
+                    <span><i style="background: var(--pool-c)"></i>Pool C</span>
+                    <span><i style="background: var(--pool-d)"></i>Pool D</span>
+                    <span><i style="background: var(--green)"></i>Gold bracket</span>
                   </div>
                   <div class="banner ok">
-                    The other 33 matches are placed. Every pool match has a referee.
+                    No problems · Max 3 matches a day ✓ · Tap a match to change it.
                   </div>
                 </div>
-                <div class="bottom"><div class="btn solid">See the schedule</div></div>
+                <div class="bottom">
+                  <div class="btn outline">Save</div>
+                  <div class="btn solid">Publish</div>
+                </div>
+                <div class="home"></div>
+              </div>
+            </div>
+          </div>
+          <div class="frame">
+            <div class="frame-label">Schedule · Generated · Sunday (swap)</div>
+            <div class="phone">
+              <div class="screen">
+                <div class="status">
+                  <span>9:41</span><span class="island"></span><span>●●● ▮</span>
+                </div>
+                <div class="content">
+                  <div class="setup-head">
+                    <div class="round-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path
+                          d="M15 5l-7 7 7 7"
+                          fill="none"
+                          stroke="#1b1f1c"
+                          stroke-width="2.4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <div class="setup-title"><b>Game set up</b><small>CKVC Holiday 4s</small></div>
+                    <div style="width: 40px"></div>
+                  </div>
+                  <div class="mode-tabs">
+                    <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
+                  </div>
+                  <div class="division">4v4 Co-ed C / C+</div>
+                  <div class="subtitle">Proposed schedule · Draft · players can't see it yet</div>
+                  <div class="mday">
+                    <b>Sunday, Nov 16</b>
+                    <div class="daypills"><span>Sat</span><span class="on">Sun</span></div>
+                  </div>
+                  <div class="mtools">
+                    <span>Move</span><span class="on">Swap</span><span>Ref</span><span>🔒 Lock</span
+                    ><span>Remove</span>
+                  </div>
+                  <div class="mgrid">
+                    <div class="mrow">
+                      <div class="mt"></div>
+                      <div class="mh">COURT 1</div>
+                      <div class="mh">COURT 2</div>
+                      <div class="mh">COURT 3</div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">9:00</div>
+                      <div class="mc po"><span class="k">SF1</span><b>W QF1</b><b>W QF2</b></div>
+                      <div class="mc po"><span class="k">SF2</span><b>W QF3</b><b>W QF4</b></div>
+                      <div class="mc empty">+</div>
+                    </div>
+                    <div class="mrow">
+                      <div class="mt">10:10</div>
+                      <div class="mc po sel">
+                        <span class="k">🏆 FINAL</span><b>W SF1</b><b>W SF2</b>
+                      </div>
+                      <div class="mc po"><span class="k">3RD</span><b>L SF1</b><b>L SF2</b></div>
+                      <div class="mc empty">+</div>
+                    </div>
+                  </div>
+                  <div class="mlegend">
+                    <span><i style="background: var(--pool-a)"></i>Pool A</span>
+                    <span><i style="background: var(--pool-b)"></i>Pool B</span>
+                    <span><i style="background: var(--pool-c)"></i>Pool C</span>
+                    <span><i style="background: var(--pool-d)"></i>Pool D</span>
+                    <span><i style="background: var(--green)"></i>Gold bracket</span>
+                  </div>
+                  <div class="toast">
+                    <span
+                      >Swapped the final and the 3rd place game. The final is now on Court 1.</span
+                    ><u>Undo</u>
+                  </div>
+                  <div class="card">
+                    <div class="card-label">Playoff referees</div>
+                    <div class="sub" style="color: var(--muted); font-size: 13px">
+                      Picked when the pools end, from the teams that don't qualify. Tap a match to
+                      choose one now.
+                    </div>
+                  </div>
+                </div>
+                <div class="bottom">
+                  <div class="btn outline">Save</div>
+                  <div class="btn solid">Publish</div>
+                </div>
                 <div class="home"></div>
               </div>
             </div>
@@ -1093,11 +1311,10 @@
 
       <!-- ===================== 2. REVIEW ===================== -->
       <div>
-        <h1 class="section-title">2 · Review the proposed schedule</h1>
+        <h1 class="section-title">2 · Other views of the same schedule</h1>
         <p class="section-note">
-          After Generate, the Schedule tab shows how the pools play out (who plays whom, when, on
-          which court and who referees), how the playoffs play out, and each team's day. Match cards
-          reuse the scoreboard's court cards, with one colour per pool.
+          Next to the grid, a list by time, the bracket with times and courts, and each team's day.
+          Match cards reuse the scoreboard's court cards, with one colour per pool.
         </p>
         <div class="row">
           <!-- By time -->
@@ -1395,14 +1612,141 @@
         </div>
       </div>
 
-      <!-- ===================== 3. EDIT (WEB) ===================== -->
+      <!-- ===================== 3. EDIT (PHONE) ===================== -->
       <div>
-        <h1 class="section-title">3 · Change it before publishing (web)</h1>
+        <h1 class="section-title">3 · Change a match, then publish</h1>
         <p class="section-note">
-          A court scheduler grid in Rally's style: courts across, time slots down, one day at a
-          time. Each cell is a match with its pool and referee. Tools: Move, Swap, Referee, Lock and
-          Remove. Every change is checked against the rules right away; errors block Publish and
-          warnings ask to confirm. "Generate again" keeps the locked matches.
+          On a phone, tapping a match opens a sheet instead of dragging. The sheet shows a problem
+          before the change is applied. Here the organizer tries to move Kill Bill – Bump Set Spike
+          earlier.
+        </p>
+        <div class="row">
+          <!-- Edit sheet -->
+          <div class="frame">
+            <div class="frame-label">Schedule · Edit a match</div>
+            <div class="phone">
+              <div class="screen">
+                <div class="status">
+                  <span>9:41</span><span class="island"></span><span>●●● ▮</span>
+                </div>
+                <div class="dim">
+                  <div class="content" style="opacity: 0.55">
+                    <div class="mode-tabs">
+                      <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
+                    </div>
+                    <div class="division">4v4 Co-ed C / C+</div>
+                    <div class="slot-head">
+                      <span class="h">11:30</span><span class="s">Round 4</span>
+                    </div>
+                    <div class="court">
+                      <div class="court-top">
+                        <span>Court 3</span><span class="tag d">Pool D</span>
+                      </div>
+                      <div class="team">Kill Bill</div>
+                      <div class="team">Bump Set Spike</div>
+                    </div>
+                  </div>
+                  <div class="sheet">
+                    <div class="grab"></div>
+                    <div style="font-size: 20px; font-weight: 800">Kill Bill – Bump Set Spike</div>
+                    <div class="subtitle">Pool D · 50 min</div>
+                    <div class="field-row">
+                      <div>
+                        <div class="field-label">Time</div>
+                        <div class="input">Sat 10:40 <small>⌄</small></div>
+                      </div>
+                      <div>
+                        <div class="field-label">Court</div>
+                        <div class="input">3 <small>⌄</small></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="field-label">Referee</div>
+                      <div class="input">Sunbirds <small>⌄</small></div>
+                    </div>
+                    <div class="banner err">
+                      <b>Can't move it to 10:40.</b> Kill Bill already plays then on Court 2, Court
+                      3 has Sunbirds – Net Profits, and Bump Set Spike referees that match.
+                    </div>
+                    <div class="sheet-actions">
+                      <div class="btn outline">Swap</div>
+                      <div class="btn outline">🔒 Lock</div>
+                      <div class="btn solid">Pick another time</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Publish -->
+          <div class="frame">
+            <div class="frame-label">Schedule · Publish</div>
+            <div class="phone">
+              <div class="screen">
+                <div class="status">
+                  <span>9:41</span><span class="island"></span><span>●●● ▮</span>
+                </div>
+                <div class="content">
+                  <div class="setup-head">
+                    <div class="round-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path
+                          d="M15 5l-7 7 7 7"
+                          fill="none"
+                          stroke="#1b1f1c"
+                          stroke-width="2.4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <div class="setup-title"><b>Game set up</b><small>CKVC Holiday 4s</small></div>
+                    <div style="width: 40px"></div>
+                  </div>
+                  <div class="mode-tabs">
+                    <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
+                  </div>
+                  <div class="division">4v4 Co-ed C / C+</div>
+                  <div class="subtitle">Publish the schedule</div>
+                  <div class="banner ok">
+                    <b>No problems.</b> 20 matches on 3 courts. Sat 9:00 – 14:40, Sun 9:00 – 11:20.
+                  </div>
+                  <div class="card">
+                    <div class="card-label">Summary</div>
+                    <div class="line"><span>Pool matches</span><b>12</b></div>
+                    <div class="line"><span>Playoff matches</span><b>8</b></div>
+                    <div class="line"><span>Most matches for a team in a day</span><b>3</b></div>
+                    <div class="line"><span>Referee duties per team</span><b>0 – 2</b></div>
+                    <div class="line"><span>Locked by you</span><b>1</b></div>
+                  </div>
+                  <div class="card">
+                    <div class="card-label">When you publish</div>
+                    <div class="ok-line"><span class="dot">✓</span>Players see the schedule</div>
+                    <div class="ok-line">
+                      <span class="dot">✓</span>Every team gets a notification
+                    </div>
+                    <div class="ok-line">
+                      <span class="dot">✓</span>Publishing again replaces this version
+                    </div>
+                  </div>
+                </div>
+                <div class="bottom"><div class="btn solid">Publish schedule</div></div>
+                <div class="home"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== 4. EDIT (WEB) ===================== -->
+      <div>
+        <h1 class="section-title">4 · The same grid on a computer</h1>
+        <p class="section-note">
+          On a computer the grid has room for side panels: courts across, time slots down, one day
+          at a time. Each cell is a match with its pool and referee. Tools: Move, Swap, Referee,
+          Lock and Remove. Every change is checked against the rules right away; errors block
+          Publish and warnings ask to confirm. "Generate again" keeps the locked matches.
         </p>
         <div class="web">
           <div class="chrome"><i></i><i></i><i></i></div>
@@ -1615,133 +1959,6 @@
                 <div class="ok-line"><span class="dot">✓</span>Inside the courts' hours</div>
               </div>
               <div class="banner ok"><b>Ready to publish.</b> Teams get a notification.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===================== 4. EDIT (PHONE) ===================== -->
-      <div>
-        <h1 class="section-title">4 · Change it on a phone, then publish</h1>
-        <p class="section-note">
-          On a phone, tapping a match opens a sheet instead of dragging. The sheet shows a problem
-          before the change is applied. Here the organizer tries to move Kill Bill – Bump Set Spike
-          earlier.
-        </p>
-        <div class="row">
-          <!-- Edit sheet -->
-          <div class="frame">
-            <div class="frame-label">Schedule · Edit a match</div>
-            <div class="phone">
-              <div class="screen">
-                <div class="status">
-                  <span>9:41</span><span class="island"></span><span>●●● ▮</span>
-                </div>
-                <div class="dim">
-                  <div class="content" style="opacity: 0.55">
-                    <div class="mode-tabs">
-                      <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
-                    </div>
-                    <div class="division">4v4 Co-ed C / C+</div>
-                    <div class="slot-head">
-                      <span class="h">11:30</span><span class="s">Round 4</span>
-                    </div>
-                    <div class="court">
-                      <div class="court-top">
-                        <span>Court 3</span><span class="tag d">Pool D</span>
-                      </div>
-                      <div class="team">Kill Bill</div>
-                      <div class="team">Bump Set Spike</div>
-                    </div>
-                  </div>
-                  <div class="sheet">
-                    <div class="grab"></div>
-                    <div style="font-size: 20px; font-weight: 800">Kill Bill – Bump Set Spike</div>
-                    <div class="subtitle">Pool D · 50 min</div>
-                    <div class="field-row">
-                      <div>
-                        <div class="field-label">Time</div>
-                        <div class="input">Sat 10:40 <small>⌄</small></div>
-                      </div>
-                      <div>
-                        <div class="field-label">Court</div>
-                        <div class="input">3 <small>⌄</small></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="field-label">Referee</div>
-                      <div class="input">Sunbirds <small>⌄</small></div>
-                    </div>
-                    <div class="banner err">
-                      <b>Can't move it to 10:40.</b> Kill Bill already plays then on Court 2, Court
-                      3 has Sunbirds – Net Profits, and Bump Set Spike referees that match.
-                    </div>
-                    <div class="sheet-actions">
-                      <div class="btn outline">Swap</div>
-                      <div class="btn outline">🔒 Lock</div>
-                      <div class="btn solid">Pick another time</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Publish -->
-          <div class="frame">
-            <div class="frame-label">Schedule · Publish</div>
-            <div class="phone">
-              <div class="screen">
-                <div class="status">
-                  <span>9:41</span><span class="island"></span><span>●●● ▮</span>
-                </div>
-                <div class="content">
-                  <div class="setup-head">
-                    <div class="round-btn">
-                      <svg width="20" height="20" viewBox="0 0 24 24">
-                        <path
-                          d="M15 5l-7 7 7 7"
-                          fill="none"
-                          stroke="#1b1f1c"
-                          stroke-width="2.4"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <div class="setup-title"><b>Game set up</b><small>CKVC Holiday 4s</small></div>
-                    <div style="width: 40px"></div>
-                  </div>
-                  <div class="mode-tabs">
-                    <span>Pools</span><span>Playoffs</span><span class="on">Schedule</span>
-                  </div>
-                  <div class="division">4v4 Co-ed C / C+</div>
-                  <div class="subtitle">Publish the schedule</div>
-                  <div class="banner ok">
-                    <b>No problems.</b> 20 matches on 3 courts. Sat 9:00 – 14:40, Sun 9:00 – 11:20.
-                  </div>
-                  <div class="card">
-                    <div class="card-label">Summary</div>
-                    <div class="line"><span>Pool matches</span><b>12</b></div>
-                    <div class="line"><span>Playoff matches</span><b>8</b></div>
-                    <div class="line"><span>Most matches for a team in a day</span><b>3</b></div>
-                    <div class="line"><span>Referee duties per team</span><b>0 – 2</b></div>
-                    <div class="line"><span>Locked by you</span><b>1</b></div>
-                  </div>
-                  <div class="card">
-                    <div class="card-label">When you publish</div>
-                    <div class="ok-line"><span class="dot">✓</span>Players see the schedule</div>
-                    <div class="ok-line">
-                      <span class="dot">✓</span>Every team gets a notification
-                    </div>
-                    <div class="ok-line">
-                      <span class="dot">✓</span>Publishing again replaces this version
-                    </div>
-                  </div>
-                </div>
-                <div class="bottom"><div class="btn solid">Publish schedule</div></div>
-                <div class="home"></div>
-              </div>
             </div>
           </div>
         </div>
