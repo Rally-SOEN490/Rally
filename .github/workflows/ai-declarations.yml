@@ -22,12 +22,12 @@ jobs:
       # Then set this to "true" and make the check required in branch protection.
       ENFORCE: "false"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The pull request's own commits, not the merge commit GitHub builds for it.
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Check the files, commits and description changed by this pull request
