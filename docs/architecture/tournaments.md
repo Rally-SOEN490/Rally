@@ -1,6 +1,6 @@
 # Tournaments
 
-How organizers create, set up and publish a tournament (RALLY-48 #70, RALLY-49 #71, RALLY-68 #90, RALLY-51 #73), how players find it in Search (RALLY-226 #302), and its page (RALLY-225 #301, RALLY-209 #285). Status: proposed, for team review.
+How organizers create, set up and publish a tournament (RALLY-48 #70, RALLY-49 #71, RALLY-68 #90, RALLY-51 #73), how players find it in Search (RALLY-226 #302), its page (RALLY-225 #301, RALLY-209 #285), and where its organizer sets up each division's games (RALLY-281 #412). Status: proposed, for team review.
 
 ## Model
 
@@ -63,9 +63,18 @@ One page at `/tournaments/:id` for everyone (#301), with extra parts for the tou
 - **Sign-ups:** the API sends `signUps`: `NOT_OPEN`, `OPEN` or `CLOSED`, worked out from the registration dates and the server's clock. The app never compares Montreal times with the phone's clock.
 - **Layout:** the name and organizer; an info card with the date and hours, the location, when sign-ups open or close (and the other date), and, for a tournament with one division, that division and its price; the description exactly as typed; then the teams count (one division) or the Divisions list (several), where full divisions are greyed out.
 - **The bar at the bottom:** "N spots left" and **Sign up** while sign-ups are open and a division has room; Sign up creates a team (RALLY-36, see [teams](teams.md)). Someone already on a team sees "You're captain of Spike Lee" and its division instead. Otherwise the bar only says why: "Sign-ups open Oct 20", "Sign-ups closed Nov 12" or "Full".
-- **The organizer's extras:** each division's "10 / 15 teams" and the total, a greyed-out "Registered teams" button until the list exists (RALLY-53), and "Continue setup" on a draft. On a published tournament they get the same Sign up as everyone, since organizers may play in their own tournament.
+- **The organizer's extras:** each division's "10 / 15 teams" and the total, a greyed-out "Registered teams" button until the list exists (RALLY-53), "Continue setup" on a draft, and **Game set up** once the tournament has a division (see [Game set up](#game-set-up)). On a published tournament they get the same Sign up as everyone, since organizers may play in their own tournament.
 - **Not yet:** team lists ("See all", tapping a division), Share link, the "…" menu (editing #80, cancelling #81) and the Map button.
 - **Setup screens** load through the same route, and refuse a tournament whose `isOrganizer` is false.
+
+## Game set up
+
+Where the organizer sets up each division's games (RALLY-281 #412), from the Mock-Up page in Figma (Nov 25). It holds the pools, playoffs and schedule screens that later stories build (#101, #103), so it only lays out the way in for now.
+
+- **The way in:** the **Game set up** button on the tournament's page, under the teams. Only the organizer sees it, and only once the tournament has a division.
+- **Picking a division** (`/tournaments/:id/game-setup`): each division with its "12 / 12 teams" and the Pools, Playoffs and Schedule it holds. A tournament with one division skips this list: the button opens that division directly, and the list's address redirects there.
+- **A division's Game set up** (`/tournaments/:id/game-setup/:divisionId`): the tournament's name, a toggle with three tabs (Pools, Playoffs and Schedule, opening on Pools), then the division's name and its teams. Each tab says it's coming soon until its story is built.
+- **Who gets in:** both screens load the tournament through `GET /tournaments/:id`, like the setup screens, and refuse it when `isOrganizer` is false, so anyone else gets "Tournament not found." No new API route was needed.
 
 ## Permissions
 
