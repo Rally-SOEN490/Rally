@@ -2,7 +2,7 @@
 // AI contribution: 50% or more AI-generated
 
 import type { User } from "firebase/auth";
-import { request } from "@/lib/api";
+import { ApiError, request } from "@/lib/api";
 import {
   DIVISION_TYPES,
   FORMATS,
@@ -109,6 +109,18 @@ export type TournamentPage =
 
 export const getTournamentPage = (user: User, id: string): Promise<TournamentPage> =>
   request(user, "GET", `/tournaments/${id}`);
+
+// ---------- Game set up (RALLY-281) ----------
+
+export type OrganizerPage = Extract<TournamentPage, { isOrganizer: true }>;
+
+// The page as its organizer sees it, for screens only they may open, such as
+// Game set up. Anyone else gets "not found", as on the setup screens.
+export const getOrganizerPage = async (user: User, id: string): Promise<OrganizerPage> => {
+  const page = await getTournamentPage(user, id);
+  if (!page.isOrganizer) throw new ApiError(404, "Tournament not found.");
+  return page;
+};
 
 // ---------- Signing up a team (RALLY-36) ----------
 

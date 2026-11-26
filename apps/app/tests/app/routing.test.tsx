@@ -62,6 +62,8 @@ const renderApp = (initialUrl = "/") =>
       "organizer-review": () => <Text>Organizer review screen</Text>,
       "tournaments/new": () => <Text>New tournament screen</Text>,
       "tournaments/[id]/index": () => <Text>Tournament page</Text>,
+      "tournaments/[id]/game-setup/index": () => <Text>Game set up divisions</Text>,
+      "tournaments/[id]/game-setup/[divisionId]": () => <Text>Division game set up</Text>,
     },
     { initialUrl },
   );
@@ -120,6 +122,12 @@ it.each([
     "Login screen",
   ],
   ["a signed-out user away from a tournament's page", "/tournaments/t1", signedOut, "Login screen"],
+  [
+    "a signed-out user away from Game set up",
+    "/tournaments/t1/game-setup/d1",
+    signedOut,
+    "Login screen",
+  ],
 ])("keeps %s when they type the URL", async (_, url, user, expected) => {
   await renderApp(url);
   await act(async () => reportUser(user));
@@ -303,6 +311,15 @@ describe("the Rally account", () => {
       expect(signOut).toHaveBeenCalledWith(auth);
     });
   });
+});
+
+it.each([
+  ["/tournaments/t1/game-setup", "Game set up divisions"],
+  ["/tournaments/t1/game-setup/d1", "Division game set up"],
+])("lets a verified user open %s (the API decides who may)", async (url, expected) => {
+  await renderApp(url);
+  await act(async () => reportUser(verified));
+  expect(await screen.findByText(expected)).toBeOnTheScreen();
 });
 
 it("lets a verified user open a tournament's page (the API decides what they see)", async () => {

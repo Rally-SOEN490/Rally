@@ -8,6 +8,7 @@ import {
   copyTournamentFilters,
   filterTournaments,
   getActiveTournamentFilterCount,
+  getOrganizerPage,
   getTournamentPage,
   getTournaments,
   summarizeDivisions,
@@ -16,7 +17,7 @@ import {
   type TournamentFilters,
 } from "@/lib/tournaments";
 
-jest.mock("@/lib/api", () => ({ request: jest.fn() }));
+jest.mock("@/lib/api", () => ({ ...jest.requireActual("@/lib/api"), request: jest.fn() }));
 
 const division = (overrides: Partial<BrowseDivision>): BrowseDivision => ({
   id: "division",
@@ -118,6 +119,19 @@ it("loads a tournament's page from the API", async () => {
 
   await expect(getTournamentPage(user, "one")).resolves.toEqual({ id: "one" });
   expect(request).toHaveBeenCalledWith(user, "GET", "/tournaments/one");
+});
+
+it("loads a tournament for Game set up only for its organizer", async () => {
+  const user = {} as User;
+  jest.mocked(request).mockResolvedValueOnce({ id: "one", isOrganizer: true });
+  await expect(getOrganizerPage(user, "one")).resolves.toEqual({ id: "one", isOrganizer: true });
+  expect(request).toHaveBeenCalledWith(user, "GET", "/tournaments/one");
+
+  jest.mocked(request).mockResolvedValueOnce({ id: "one", isOrganizer: false });
+  await expect(getOrganizerPage(user, "one")).rejects.toMatchObject({
+    status: 404,
+    message: "Tournament not found.",
+  });
 });
 
 it("matches the name, location and organizer, ignoring case", () => {

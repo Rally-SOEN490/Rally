@@ -172,8 +172,41 @@ export const tournamentCopy = {
     onTeam: (team: string) => `You're on ${team}`,
     registeredTeams: "Registered teams",
     registeredTeamsSoon: "The list of teams is coming soon",
+    gameSetup: "Game set up",
     draft: "Draft · only you can see it",
     continueSetup: "Continue setup",
+  },
+
+  // The organizer's Game set up (RALLY-281): pick a division, then its pools,
+  // playoffs and schedule, each in a tab.
+  gameSetup: {
+    title: "Game set up",
+    // "CKVC Holiday 4s · 3 divisions"
+    tournamentAndDivisions: (tournament: string, count: number) =>
+      `${tournament} · ${count} ${count === 1 ? "division" : "divisions"}`,
+    pickDivision: "PICK A DIVISION",
+    // A division's button, read out by screen readers: "4v4 Co-ed C, 12 / 12 teams".
+    divisionLabel: (division: string, teams: string) => `${division}, ${teams}`,
+    noDivisions: "This tournament has no divisions yet. Add one in its setup first.",
+    eachDivision: "Each division has its own pools, playoffs and schedule.",
+    divisionNotFound: "This division isn't in the tournament anymore.",
+    teamsRegistered: (count: number) => `${count} ${count === 1 ? "team" : "teams"} registered`,
+    tabs: { pools: "Pools", playoffs: "Playoffs", schedule: "Schedule" },
+    // What each tab will hold, until it is built.
+    soon: {
+      pools: {
+        title: "Pools are coming soon",
+        message: "Create this division's pools, then assign its teams and seeds.",
+      },
+      playoffs: {
+        title: "Playoffs are coming soon",
+        message: "Pick how many teams qualify and build the bracket from the pool standings.",
+      },
+      schedule: {
+        title: "The schedule is coming soon",
+        message: "Plan when and on which court each match is played.",
+      },
+    },
   },
 
   // Signing up a team from a tournament's page (RALLY-36): pick a division and

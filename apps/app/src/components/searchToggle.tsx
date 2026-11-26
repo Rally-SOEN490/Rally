@@ -9,6 +9,8 @@ type Props<T extends string> = {
   selected: T;
   onChange: (value: T) => void;
   fontFamily?: string;
+  // "large" for a page's main tabs, like Game set up's (RALLY-281).
+  size?: "small" | "large";
 };
 
 export function SegmentedToggle<T extends string>({
@@ -16,7 +18,9 @@ export function SegmentedToggle<T extends string>({
   selected,
   onChange,
   fontFamily,
+  size = "small",
 }: Props<T>) {
+  const large = size === "large";
   return (
     <View style={styles.track} accessibilityRole="tablist">
       {options.map((option) => {
@@ -26,12 +30,14 @@ export function SegmentedToggle<T extends string>({
             key={option.value}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
-            accessibilityState={{ selected: isActive }}
-            style={[styles.segment, isActive && styles.segmentActive]}
+            // aria-selected, unlike accessibilityState, also reaches the web.
+            aria-selected={isActive}
+            style={[styles.segment, large && styles.segmentLarge, isActive && styles.segmentActive]}
           >
             <Text
               style={[
                 styles.label,
+                large && styles.labelLarge,
                 { fontFamily },
                 isActive ? styles.labelActive : styles.labelInactive,
               ]}
@@ -59,12 +65,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  segmentLarge: {
+    height: 40,
+  },
   segmentActive: {
     backgroundColor: colors.white,
   },
   label: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  labelLarge: {
+    fontSize: 15,
   },
   labelActive: {
     color: colors.forest,

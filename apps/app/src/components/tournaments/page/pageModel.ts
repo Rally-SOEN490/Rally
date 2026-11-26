@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { formatPrice } from "@/lib/organizer-tournaments";
+import { formatPrice, tournamentPaths } from "@/lib/organizer-tournaments";
 import { shortDate } from "@/lib/tournament-dates";
 import {
   summarizeDivisions,
@@ -87,3 +87,9 @@ export function divisionDetail(division: BrowseDivision, isOrganizer: boolean) {
       : copy.priceAndSpots(shownPrice, copy.teamCount(division.registeredTeams, division.maxTeams));
   return copy.priceAndSpots(shownPrice, full ? copy.full : copy.spotsLeft(spotsLeftIn(division)));
 }
+
+// Where Game set up opens: the list of divisions, or straight into the only one.
+export const gameSetupPath = ({ id, divisions }: Pick<TournamentPage, "id" | "divisions">) =>
+  divisions.length === 1
+    ? tournamentPaths.divisionSetup(id, divisions[0].id)
+    : tournamentPaths.gameSetup(id);

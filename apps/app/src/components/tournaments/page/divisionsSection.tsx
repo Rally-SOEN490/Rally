@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Rally. All rights reserved.
 // AI contribution: 50% or more AI-generated
 
-import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 import { summarizeDivisions, type TournamentPage } from "@/lib/tournaments";
 import { tournamentCopy } from "@/translations/tournaments.en";
-import { divisionDetail, spotsLeftIn } from "./pageModel";
+import { divisionDetail, gameSetupPath, spotsLeftIn } from "./pageModel";
 import { pageStyles } from "./pageStyles";
 
 const copy = tournamentCopy.page;
@@ -71,5 +73,24 @@ export function RegisteredTeams() {
       </View>
       <Text style={pageStyles.soonHint}>{copy.registeredTeamsSoon}</Text>
     </View>
+  );
+}
+
+// The organizer's way into Game set up (RALLY-281), under the teams.
+export function GameSetupButton({ page }: { page: TournamentPage }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={copy.gameSetup}
+      onPress={() => router.push(gameSetupPath(page))}
+      style={({ pressed }) => [
+        pageStyles.primaryButton,
+        pageStyles.iconButton,
+        pressed && pageStyles.pressed,
+      ]}
+    >
+      <Ionicons name="options-outline" size={20} color="#ffffff" />
+      <Text style={pageStyles.primaryText}>{copy.gameSetup}</Text>
+    </Pressable>
   );
 }

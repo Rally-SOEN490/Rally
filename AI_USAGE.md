@@ -44,6 +44,7 @@ List every substantive feature, as defined in [rubric §1](docs/course/soen-490/
 | Player filtering | RALLY-115 / #137; [#311](https://github.com/Rally-SOEN490/Rally/pull/311) | 50% or more AI-generated |
 | Tournament page                  | RALLY-225 (#301), RALLY-209 (#285), RALLY-68 (#90), PR [#322](https://github.com/Rally-SOEN490/Rally/pull/322)             | 50% or more AI-generated |
 | Team sign-up                     | RALLY-36 (#58), RALLY-51 (#73), PR [#335](https://github.com/Rally-SOEN490/Rally/pull/335)                                 | 50% or more AI-generated |
+| Game set up                      | RALLY-281 (#412), PR [#418](https://github.com/Rally-SOEN490/Rally/pull/418)                                               | 50% or more AI-generated |
 
 ## Feature descriptions
 
@@ -127,6 +128,16 @@ Claude Code (Claude Opus 5.5) wrote the teams module (`teams` and `team_members`
 Verification: [team tests](apps/api/test/teams.test.ts) run against PostgreSQL and cover creating a team, the name, one-team-per-tournament, sign-up window and full-division rules, two sign-ups at once for the last spot, the same name and the same player, drafts and missing tournaments, invalid requests, and the database constraints on their own. The [sign-up tests](apps/app/tests/components/teamSignUp.test.tsx) cover the sheet from picking a division to the confirmed team, the price note, refusals that keep what was typed, the counts fetched again after a sign-up or a 409, and the organizer's totals; the team tests also cover deleting a captain's account; the [page tests](apps/app/tests/components/tournamentPage.test.tsx) cover the viewer's team in the bottom bar.
 
 Problems and rejected suggestions: `prisma format` rewrote the whole schema file and dropped its AI declaration, so the change was redone by hand. Fastify silently dropped unknown fields in the sign-up request until the schema listed the allowed names. The Figma tool-call limit ran out after one screenshot, so the "Create a team" and "After" mock-ups were read from their layer names. Left for RALLY-38 and RALLY-46: the "Join a team" choice, the "Open to join requests" switch, the live name check and "View my team". Not decided yet: what deleting an organizer's account should do to tournaments that have teams. Review on #335 found that the page added one to team counts that could be out of date, that a division filling up during sign-up still showed spots, that a captain deleting their account left an empty team holding its spot and name, and that the sheet's colours didn't use the app theme (`rallyTheme`). All four were fixed, the first three with tests that fail without the fix; a test also caught an older refresh answer hiding a new team, now ignored. Hoang kept the organizer able to sign up a team in their own tournament.
+
+### RALLY-281: Game set up
+
+Pull request: [#418](https://github.com/Rally-SOEN490/Rally/pull/418).
+
+Claude Code (Claude Opus 5.5) found the story's mock-ups on Figma's Mock-Up page (Nov 25), then wrote the organizer's Game set up button on the tournament page, the division list (skipped for a tournament with one division), the division's page with its Pools, Playoffs and Schedule tabs, the tests and the architecture notes. It ran the app against a local API and database with seeded tournaments and a test organizer account, took the screenshots and recording, and compared each screen with the mock-ups side by side. Hoang Vu wrote the story and the mock-ups. François chose to have Claude Code build it from them.
+
+Verification: the [Game set up tests](apps/app/tests/components/gameSetup.test.tsx) cover the division list, the one-division redirect, no divisions, someone who isn't the organizer, loading errors, the tabs and going back. The [page tests](apps/app/tests/components/tournamentPage.test.tsx) cover who sees the button and where it opens; the [routing tests](apps/app/tests/app/routing.test.tsx) cover the new addresses.
+
+Problems and corrections: the shared tab toggle set `accessibilityState.selected`, which react-native-web drops, so no tab was marked selected on the web. It now sets `aria-selected`, which also fixes Search. The button's icon made its accessible name differ from its label until it got one. Hoang's prototype artifact wasn't shared with this account, so only the Figma mock-ups were used. The Pools, Playoffs and Schedule tabs only say they're coming soon; their screens are #101, #103 and the schedule stories.
 
 ## Additional assisted work
 
