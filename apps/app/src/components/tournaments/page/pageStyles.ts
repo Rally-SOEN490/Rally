@@ -5,8 +5,8 @@ import { StyleSheet } from "react-native";
 import { GREEN, MUTED } from "../styles";
 
 // The tournament page in the Figma mock-ups ("Tournament · Player sign-up", Nov 2).
-const INK = "#101b15";
-const ICON_TILE = "#eef0e8";
+export const INK = "#101b15";
+export const ICON_TILE = "#eef0e8";
 const DIVIDER = "#ecebe6";
 export const OPEN_DOT = "#3fa45b";
 export const FADED = "#9a9a94";

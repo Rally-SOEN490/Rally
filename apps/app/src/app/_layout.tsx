@@ -68,6 +68,9 @@ function RootNavigator() {
         <Stack.Screen name="tournaments/new" />
         <Stack.Screen name="tournaments/[id]/setup" />
         <Stack.Screen name="tournaments/[id]/divisions" />
+        {/* Game set up: pools, playoffs and schedule. Only the organizer gets the tournament. */}
+        <Stack.Screen name="tournaments/[id]/game-setup/index" />
+        <Stack.Screen name="tournaments/[id]/game-setup/[divisionId]" />
       </Stack.Protected>
     </Stack>
   );
