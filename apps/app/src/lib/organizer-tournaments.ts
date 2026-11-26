@@ -173,6 +173,9 @@ export const tournamentPaths = {
   page: (id: string) => `/tournaments/${id}` as Href,
   setup: (id: string) => `/tournaments/${id}/setup` as Href,
   divisions: (id: string) => `/tournaments/${id}/divisions` as Href,
+  gameSetup: (id: string) => `/tournaments/${id}/game-setup` as Href,
+  divisionSetup: (id: string, divisionId: string) =>
+    `/tournaments/${id}/game-setup/${divisionId}` as Href,
 };
 
 // Deletes a draft and its divisions. Published tournaments can't be deleted (#81 is cancelling).
