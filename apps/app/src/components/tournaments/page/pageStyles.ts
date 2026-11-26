@@ -81,6 +81,7 @@ export const pageStyles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryText: { color: "#ffffff", fontSize: 16, fontWeight: "700" },
+  iconButton: { flexDirection: "row", gap: 10 },
   pressed: { opacity: 0.8 },
   // ---------- Loading and errors ----------
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },

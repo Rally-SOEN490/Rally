@@ -172,6 +172,7 @@ export const tournamentCopy = {
     onTeam: (team: string) => `You're on ${team}`,
     registeredTeams: "Registered teams",
     registeredTeamsSoon: "The list of teams is coming soon",
+    gameSetup: "Game set up",
     draft: "Draft · only you can see it",
     continueSetup: "Continue setup",
   },

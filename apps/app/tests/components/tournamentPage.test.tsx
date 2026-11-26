@@ -189,6 +189,26 @@ it("shows Registered teams greyed out until the list exists", async () => {
   expect(screen.getByText("The list of teams is coming soon")).toBeOnTheScreen();
 });
 
+it("opens the list of divisions from Game set up", async () => {
+  await show(forOrganizer);
+
+  await userEvent.press(screen.getByRole("button", { name: "Game set up" }));
+  expect(router.push).toHaveBeenCalledWith("/tournaments/t1/game-setup");
+});
+
+it("opens the only division's Game set up straight away", async () => {
+  await show({ ...forOrganizer, divisions: [division({ id: "d1" })] });
+
+  await userEvent.press(screen.getByRole("button", { name: "Game set up" }));
+  expect(router.push).toHaveBeenCalledWith("/tournaments/t1/game-setup/d1");
+});
+
+it("shows Game set up to the organizer only", async () => {
+  await show(forPlayer);
+
+  expect(screen.queryByRole("button", { name: "Game set up" })).not.toBeOnTheScreen();
+});
+
 it("offers to continue setting up a draft", async () => {
   await show({ ...forOrganizer, status: "DRAFT", signUps: "NOT_OPEN" });
 
@@ -215,6 +235,8 @@ it("shows what's still missing from a bare draft", async () => {
   expect(screen.getByText("Location to be announced")).toBeOnTheScreen();
   expect(screen.getByText("Sign-up dates to be announced")).toBeOnTheScreen();
   expect(screen.queryByRole("header", { name: "Divisions" })).not.toBeOnTheScreen();
+  // No division to set up yet.
+  expect(screen.queryByRole("button", { name: "Game set up" })).not.toBeOnTheScreen();
 });
 
 // ---------- Loading, failing and leaving ----------

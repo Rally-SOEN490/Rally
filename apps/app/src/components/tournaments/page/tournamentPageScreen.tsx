@@ -9,7 +9,7 @@ import { getTournamentPage, type MyTeam, type TournamentPage } from "@/lib/tourn
 import { useSession } from "@/lib/session";
 import { tournamentCopy } from "@/translations/tournaments.en";
 import { BottomBar } from "./bottomBar";
-import { DivisionsSection, RegisteredTeams } from "./divisionsSection";
+import { DivisionsSection, GameSetupButton, RegisteredTeams } from "./divisionsSection";
 import { InfoCard } from "./infoCard";
 import { BackButton, goBack, PageStatus, useLoadPage } from "./loadPage";
 import { withMyTeam } from "./pageModel";
@@ -53,6 +53,7 @@ function PageContent({
         ) : null}
         <DivisionsSection page={page} />
         {page.isOrganizer && <RegisteredTeams />}
+        {page.isOrganizer && page.divisions.length > 0 && <GameSetupButton page={page} />}
       </ScrollView>
       <BottomBar page={page} onSignUp={() => setSigningUp(true)} />
       {signingUp && (
@@ -101,7 +102,7 @@ function useTournamentPage(id: string) {
 }
 
 // A tournament's page (#301): players see the details and can sign up; its
-// organizer also sees the teams (#285).
+// organizer also sees the teams (#285) and opens Game set up (RALLY-281).
 export function TournamentPageScreen({ id }: { id: string }) {
   const { loaded, retry, refresh, signedUp } = useTournamentPage(id);
   if (loaded.kind !== "ready") return <PageStatus loaded={loaded} retry={retry} onBack={back} />;
