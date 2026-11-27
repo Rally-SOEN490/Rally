@@ -4,14 +4,14 @@
 appId: com.rally.app
 ---
 - runFlow:
-    file: signup-verify-and-home.yaml
+    file: login-and-home.yaml
 
 - tapOn: "You"
-- tapOn:
-    id: "open-profile-settings"
+- openLink: "rally://settings"
 - extendedWaitUntil:
     visible: "Settings"
     timeout: 10000
+- assertVisible: ${MAESTRO_TEST_EMAIL}
 - scrollUntilVisible:
     element:
       text: "Delete account"
@@ -20,14 +20,15 @@ appId: com.rally.app
 - tapOn: "Delete account"
 - assertVisible: "Delete account?"
 
-- tapOn: "E-mail address"
-- inputText: ${MAESTRO_TEST_EMAIL}
-- tapOn: "Password"
-- inputText: ${MAESTRO_TEST_PASSWORD}
-- hideKeyboard
 - tapOn:
-    text: "Delete account"
-    index: 1
+    id: "delete-account-email"
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: "delete-account-password"
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- tapOn: "Delete account?"
+- tapOn:
+    id: "confirm-delete-account"
 
 - extendedWaitUntil:
     visible: "Account deleted"

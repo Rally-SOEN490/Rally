@@ -34,12 +34,14 @@ export function DialogActions({
   onConfirm,
   disabled,
   danger,
+  confirmTestID,
 }: {
   onCancel?: () => void;
   confirmLabel: string;
   onConfirm: () => void;
   disabled?: boolean;
   danger?: boolean;
+  confirmTestID?: string;
 }) {
   return (
     <View style={styles.modalActions}>
@@ -50,6 +52,7 @@ export function DialogActions({
       )}
       <Pressable
         accessibilityRole="button"
+        testID={confirmTestID}
         onPress={onConfirm}
         disabled={disabled}
         style={[

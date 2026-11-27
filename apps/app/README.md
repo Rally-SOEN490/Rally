@@ -137,28 +137,30 @@ maestro test .maestro\signup-verify-and-home.yaml
 
 ### Account deletion
 
-The account deletion flow signs up and verifies a new disposable account for
-every run, deletes it through Settings, and confirms that profile and settings
-routes return to Login. It never uses a shared or manually maintained account.
-Because account creation uses the existing email-verification flow, Gmail must
-be installed and signed in on the Android emulator.
+This flow logs into the account configured in the ignored
+`apps/app/.env.local`, checks that Settings shows the configured e-mail, then
+permanently deletes that account's Rally data and Firebase login. **Use only an
+account you intend to delete. Do not use a shared, production, or manually
+maintained test account.** This flow does not create an account and does not
+open Gmail or Chrome.
 
-Add these test-only values to the ignored `apps/app/.env.local` file:
+Set the target account's credentials in the ignored `apps/app/.env.local`:
 
 ```env
-MAESTRO_EMAIL_BASE=your-dedicated-test-inbox@gmail.com
-MAESTRO_TEST_PASSWORD=your-test-only-password
+MAESTRO_EMAIL_BASE=account-to-delete@example.com
+MAESTRO_TEST_PASSWORD=test-only-password
 ```
 
 Start PostgreSQL, the API, the Expo development server, and an Android emulator
-with the Rally development build installed. Run this from `apps/app`:
+with the Rally development build installed. From `apps/app`, run:
 
 ```bash
 node .maestro/run-account-deletion-e2e.mjs
 ```
 
-The runner creates a timestamped plus-address from `MAESTRO_EMAIL_BASE` and
-passes it to the signup and deletion flows. Every run creates and deletes a
-different Firebase/Rally account. Keep the inbox password and test credentials
-out of the repository. Gmail and Chrome are only used during email
-verification.
+After confirming deletion, the flow checks that deep links to Profile and
+Settings redirect to Login. The same account cannot be used for another run
+after it has been deleted; configure another account if you need to repeat the
+test. The runner passes `MAESTRO_EMAIL_BASE` as the exact account email to
+Maestro, overriding any stale `MAESTRO_TEST_EMAIL`. Keep the credentials out of
+the repository.

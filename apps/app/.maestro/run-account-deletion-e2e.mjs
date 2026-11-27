@@ -14,21 +14,14 @@ if (!existsSync(envFile)) {
 
 process.loadEnvFile(envFile);
 
-const emailBase = process.env.MAESTRO_EMAIL_BASE;
+const email = process.env.MAESTRO_EMAIL_BASE;
 const password = process.env.MAESTRO_TEST_PASSWORD;
-if (!emailBase) throw new Error("MAESTRO_EMAIL_BASE is required in apps/app/.env.local.");
+if (!email) throw new Error("MAESTRO_EMAIL_BASE is required in apps/app/.env.local.");
 if (!password) throw new Error("MAESTRO_TEST_PASSWORD is required in apps/app/.env.local.");
 
-const emailParts = emailBase.split("@");
-if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1]) {
-  throw new Error("MAESTRO_EMAIL_BASE must be a valid email address.");
-}
+process.env.MAESTRO_TEST_EMAIL = email;
 
-const runId = `${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 17)}-${process.pid}`;
-process.env.MAESTRO_TEST_EMAIL = `${emailParts[0]}+delete-${runId}@${emailParts[1]}`;
-process.env.MAESTRO_TEST_NAME = `Disposable Account ${runId}`;
-
-console.log("Running account deletion E2E with a new disposable account.");
+console.log("Running account deletion E2E with the configured account.");
 const result = spawnSync("maestro", ["test", ".maestro/account-deletion.yaml"], {
   cwd: appDirectory,
   env: process.env,

@@ -31,13 +31,16 @@ function PasswordInput({
   value,
   onChangeText,
   placeholder,
+  testID,
 }: {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
+  testID?: string;
 }) {
   return (
     <TextInput
+      testID={testID}
       value={value}
       onChangeText={onChangeText}
       secureTextEntry
@@ -191,6 +194,7 @@ function DeleteDialog({ form, handlers }: DialogProps) {
       }
     >
       <TextInput
+        testID="delete-account-email"
         value={form.deleteEmail}
         onChangeText={form.setDeleteEmail}
         autoCapitalize="none"
@@ -199,6 +203,7 @@ function DeleteDialog({ form, handlers }: DialogProps) {
         style={styles.modalInput}
       />
       <PasswordInput
+        testID="delete-account-password"
         value={form.currentPassword}
         onChangeText={form.setCurrentPassword}
         placeholder="Password"
@@ -210,6 +215,7 @@ function DeleteDialog({ form, handlers }: DialogProps) {
         onConfirm={handlers.deleteAccount}
         disabled={form.busy || !form.deleteEmail.trim() || !form.currentPassword}
         danger
+        confirmTestID="confirm-delete-account"
       />
     </DialogCard>
   );
