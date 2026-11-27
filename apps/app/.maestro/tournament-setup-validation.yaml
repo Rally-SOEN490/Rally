@@ -1,0 +1,78 @@
+# AI declaration:
+# 50% or more AI-generated
+
+appId: com.rally.app
+---
+- runFlow:
+    file: login-and-home.yaml
+
+- tapOn: "Events"
+- extendedWaitUntil:
+    visible: "Create tournament"
+    timeout: 15000
+- tapOn: "Create tournament"
+- extendedWaitUntil:
+    visible: "Setup"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Divisions"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Divisions"
+- assertVisible: "Give the tournament a name."
+- tapOn: "OK"
+- assertNotVisible: "Give the tournament a name."
+
+- scrollUntilVisible:
+    element:
+      text: "Tournament name"
+    direction: UP
+    timeout: 10000
+- tapOn: "Tournament name"
+- inputText: ${MAESTRO_TOURNAMENT_NAME}
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Starts"
+    direction: DOWN
+    timeout: 10000
+
+# Put the start in next month and leave the end at today to guarantee an
+# invalid range regardless of the emulator's current time.
+- tapOn: "Starts date.*"
+- tapOn: "Next month"
+- tapOn: "15"
+- tapOn: "OK"
+- tapOn: "Starts time.*"
+- tapOn: "OK"
+- tapOn: "Ends date.*"
+- tapOn: "OK"
+- tapOn: "Ends time.*"
+- tapOn: "OK"
+- scrollUntilVisible:
+    element:
+      text: "Divisions"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Divisions"
+- assertVisible: "The end must be after the start."
+- tapOn: "OK"
+
+# Move the end two months ahead so it is unambiguously after the start.
+- tapOn: "Ends date.*"
+- tapOn: "Next month"
+- tapOn: "Next month"
+- tapOn: "15"
+- tapOn: "OK"
+- scrollUntilVisible:
+    element:
+      text: "Divisions"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Divisions"
+- extendedWaitUntil:
+    visible: "Add one or more divisions.*"
+    timeout: 15000
+- assertVisible: "No divisions yet. Add at least one to create the tournament."
