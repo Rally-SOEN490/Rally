@@ -41,15 +41,15 @@ appId: com.rally.app
 
 # Put the start in next month and leave the end at today to guarantee an
 # invalid range regardless of the emulator's current time.
-- tapOn: "Starts date"
+- tapOn: "Starts date.*"
 - tapOn: "Next month"
 - tapOn: "15"
 - tapOn: "OK"
-- tapOn: "Starts time"
+- tapOn: "Starts time.*"
 - tapOn: "OK"
-- tapOn: "Ends date"
+- tapOn: "Ends date.*"
 - tapOn: "OK"
-- tapOn: "Ends time"
+- tapOn: "Ends time.*"
 - tapOn: "OK"
 - scrollUntilVisible:
     element:
@@ -61,7 +61,7 @@ appId: com.rally.app
 - tapOn: "OK"
 
 # Move the end two months ahead so it is unambiguously after the start.
-- tapOn: "Ends date"
+- tapOn: "Ends date.*"
 - tapOn: "Next month"
 - tapOn: "Next month"
 - tapOn: "15"
@@ -75,4 +75,4 @@ appId: com.rally.app
 - extendedWaitUntil:
     visible: "Add one or more divisions.*"
     timeout: 15000
-- assertVisible: ${MAESTRO_TOURNAMENT_NAME}
+- assertVisible: "No divisions yet. Add at least one to create the tournament."
