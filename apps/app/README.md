@@ -134,3 +134,22 @@ $env:MAESTRO_TEST_EMAIL = "unique-test-address@example.com"
 $env:MAESTRO_TEST_PASSWORD = "your-test-only-password"
 maestro test .maestro\signup-verify-and-home.yaml
 ```
+
+### Organizer tournament setup validation
+
+This flow uses an existing, pre-approved organizer account; it does not submit
+an organizer application or open email, Chrome, or another external app. Keep
+the account credentials in your local environment or secret manager, never in
+the repository. The flow creates a draft tournament with a unique name.
+
+Start the API and PostgreSQL, the Expo development server, and an Android
+emulator with the Rally development build installed. From `apps/app`, set
+`MAESTRO_TEST_EMAIL` and `MAESTRO_TEST_PASSWORD` to the pre-approved organizer
+account and set a unique `MAESTRO_TOURNAMENT_NAME`. Then run:
+
+```powershell
+maestro test .maestro\tournament-setup-validation.yaml
+```
+
+The flow checks the required-name validation, a start date later than the end
+date, and successful continuation after moving the end date later.
