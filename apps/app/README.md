@@ -134,3 +134,31 @@ $env:MAESTRO_TEST_EMAIL = "unique-test-address@example.com"
 $env:MAESTRO_TEST_PASSWORD = "your-test-only-password"
 maestro test .maestro\signup-verify-and-home.yaml
 ```
+
+### Account deletion
+
+The account deletion flow signs up and verifies a new disposable account for
+every run, deletes it through Settings, and confirms that profile and settings
+routes return to Login. It never uses a shared or manually maintained account.
+Because account creation uses the existing email-verification flow, Gmail must
+be installed and signed in on the Android emulator.
+
+Add these test-only values to the ignored `apps/app/.env.local` file:
+
+```env
+MAESTRO_EMAIL_BASE=your-dedicated-test-inbox@gmail.com
+MAESTRO_TEST_PASSWORD=your-test-only-password
+```
+
+Start PostgreSQL, the API, the Expo development server, and an Android emulator
+with the Rally development build installed. Run this from `apps/app`:
+
+```bash
+node .maestro/run-account-deletion-e2e.mjs
+```
+
+The runner creates a timestamped plus-address from `MAESTRO_EMAIL_BASE` and
+passes it to the signup and deletion flows. Every run creates and deletes a
+different Firebase/Rally account. Keep the inbox password and test credentials
+out of the repository. Gmail and Chrome are only used during email
+verification.
