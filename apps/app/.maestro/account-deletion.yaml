@@ -1,0 +1,52 @@
+# AI declaration:
+# 50% or more AI-generated
+
+appId: com.rally.app
+---
+- runFlow:
+    file: login-and-home.yaml
+
+- tapOn: "You"
+- openLink: "rally://settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+- assertVisible: ${MAESTRO_TEST_EMAIL}
+- scrollUntilVisible:
+    element:
+      text: "Delete account"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Delete account"
+- assertVisible: "Delete account?"
+
+- tapOn:
+    id: "delete-account-email"
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: "delete-account-password"
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- tapOn: "Delete account?"
+- tapOn:
+    id: "confirm-delete-account"
+
+- extendedWaitUntil:
+    visible: "Account deleted"
+    timeout: 20000
+- assertVisible: "Your account has been successfully deleted.*"
+- tapOn: "OK"
+- extendedWaitUntil:
+    visible: "Sign up"
+    timeout: 10000
+
+# These protected routes must redirect to Login after Firebase signs out.
+- openLink: "rally://profile"
+- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 10000
+- assertNotVisible: "Settings"
+- openLink: "rally://settings"
+- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 10000
+- assertNotVisible: "Settings"

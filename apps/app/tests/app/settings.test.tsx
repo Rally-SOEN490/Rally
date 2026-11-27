@@ -585,6 +585,9 @@ describe("delete account", () => {
     expect(dialog().getByText("Delete account?")).toBeOnTheScreen();
     expect(screen.getByPlaceholderText("E-mail address")).toBeOnTheScreen();
     expect(screen.getByPlaceholderText("Password")).toBeOnTheScreen();
+    expect(screen.getByTestId("delete-account-email")).toBeOnTheScreen();
+    expect(screen.getByTestId("delete-account-password")).toBeOnTheScreen();
+    expect(screen.getByTestId("confirm-delete-account")).toBeOnTheScreen();
     expect(alertSpy).not.toHaveBeenCalled();
     expect(deleteMyAccount).not.toHaveBeenCalled();
   });

@@ -134,3 +134,33 @@ $env:MAESTRO_TEST_EMAIL = "unique-test-address@example.com"
 $env:MAESTRO_TEST_PASSWORD = "your-test-only-password"
 maestro test .maestro\signup-verify-and-home.yaml
 ```
+
+### Account deletion
+
+This flow logs into the account configured in the ignored
+`apps/app/.env.local`, checks that Settings shows the configured e-mail, then
+permanently deletes that account's Rally data and Firebase login. **Use only an
+account you intend to delete. Do not use a shared, production, or manually
+maintained test account.** This flow does not create an account and does not
+open Gmail or Chrome.
+
+Set the target account's credentials in the ignored `apps/app/.env.local`:
+
+```env
+MAESTRO_EMAIL_BASE=account-to-delete@example.com
+MAESTRO_TEST_PASSWORD=test-only-password
+```
+
+Start PostgreSQL, the API, the Expo development server, and an Android emulator
+with the Rally development build installed. From `apps/app`, run:
+
+```bash
+node .maestro/run-account-deletion-e2e.mjs
+```
+
+After confirming deletion, the flow checks that deep links to Profile and
+Settings redirect to Login. The same account cannot be used for another run
+after it has been deleted; configure another account if you need to repeat the
+test. The runner passes `MAESTRO_EMAIL_BASE` as the exact account email to
+Maestro, overriding any stale `MAESTRO_TEST_EMAIL`. Keep the credentials out of
+the repository.
